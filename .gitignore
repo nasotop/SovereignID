@@ -1,0 +1,6 @@
+/.cursor
+/.vs
+/.vscode
+/graphify-out
+**/bin/**
+**/obj/**

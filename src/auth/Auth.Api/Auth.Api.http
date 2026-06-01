@@ -1,0 +1,14 @@
+@Auth.Api_HostAddress = http://localhost:5132
+
+### GET auth challenge nonce
+GET {{Auth.Api_HostAddress}}/auth/nonce
+Accept: application/json
+
+### POST verify SIWE (replace message and signature)
+POST {{Auth.Api_HostAddress}}/auth/verify
+Content-Type: application/json
+
+{
+  "message": "<SIWE payload>",
+  "signature": "0x..."
+}
