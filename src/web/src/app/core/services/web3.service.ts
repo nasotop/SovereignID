@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, getAddress } from 'ethers';
 
 export interface EthereumProvider {
   request: (args: {
@@ -63,7 +63,7 @@ export class Web3Service {
         return null;
       }
 
-      const address = accounts[0];
+      const address = this.toChecksumAddress(accounts[0]);
       this.connectedAddress.set(address);
       return address;
     } catch (error: unknown) {
@@ -107,7 +107,12 @@ export class Web3Service {
         return;
       }
 
-      this.connectedAddress.set(accounts[0]);
+      this.connectedAddress.set(this.toChecksumAddress(accounts[0]));
     });
+  }
+
+  /** Normalizes a raw wallet address to EIP-55 checksum format required by SIWE */
+  private toChecksumAddress(rawAddress: string): string {
+    return getAddress(rawAddress);
   }
 }

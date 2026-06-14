@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { getAddress } from 'ethers';
 import { SiweMessage } from 'siwe';
 
 import { AuthState, StorageType } from '../models/auth.models';
@@ -84,7 +85,7 @@ export class AuthService {
   private createSiweMessage(address: string, nonce: string): string {
     const message = new SiweMessage({
       domain: window.location.host,
-      address,
+      address: getAddress(address),
       statement: 'Sign in with Ethereum to the app',
       uri: window.location.origin,
       version: '1',
@@ -136,7 +137,7 @@ export class AuthService {
       this.setAuthState({
         isAuthenticated: true,
         token,
-        address,
+        address: getAddress(address),
       });
     }
   }
