@@ -1,0 +1,50 @@
+# ============================================================================
+# docker-compose.override.yml
+# ============================================================================
+# USAR SOLO EN DESARROLLO LOCAL
+# Este archivo sobrescribe valores de docker-compose.yml
+# No comitear cambios productivos aquí
+#
+# Uso: docker compose -f docker-compose.yml -f docker-compose.override.yml up
+# ============================================================================
+
+services:
+  auth-api:
+    # Modo desarrollo: variables específicas
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    # ⚠️ Opcional: descomentar para hot-reload (requiere volumen de bindmount)
+    # volumes:
+    #   - ./src/auth:/src/src/auth
+    #   - ~/.nuget/packages:/root/.nuget/packages:ro
+    ports:
+      - "8080:8080"  # HTTP
+      # - "8081:8081"  # HTTPS (si es necesario en local)
+    # Logging más permisivo en desarrollo
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  web:
+    # En desarrollo: variables para Angular
+    environment:
+      - NODE_ENV=development
+      - API_BASE_URL=http://localhost:8080  # Apunta al localhost de tu máquina
+    # ⚠️ Opcional: descomentar para hot-reload de Angular
+    volumes:
+      - ./src/web/src:/app/src
+      - ./src/web/angular.json:/app/angular.json
+    ports:
+      - "4200:80"
+    # Logging más permisivo en desarrollo
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    depends_on:
+      auth-api:
+        condition: service_started

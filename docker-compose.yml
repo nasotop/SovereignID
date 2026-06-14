@@ -1,0 +1,99 @@
+services:
+  # Microservicio de Autenticación (.NET 10)
+  auth-api:
+    build:
+      context: .
+      dockerfile: src/auth/Auth.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: sovereignid-auth:latest
+    container_name: sovereignid-auth
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - AUTH_JWT_SIGNING_KEY=tu-super-secreta-llave-de-desarrollo-32-bytes!
+      - Auth__AllowedChainId=11155111
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/auth/nonce"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: auth-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Sign-In with Ethereum (SIWE) Authentication Service"
+
+  # Frontend Angular + API Gateway Nginx
+  web:
+    build:
+      context: ./src/web
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+        API_BASE_URL: http://auth-api:8080
+    image: sovereignid-web:latest
+    container_name: sovereignid-web
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    expose:
+      - "80"
+    depends_on:
+      auth-api:
+        condition: service_healthy
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # SOLUCIÓN DEL ERROR: Envolvemos los recursos en 'deploy'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: web
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Angular Frontend + Nginx Reverse Proxy"
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  sovereign-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
