@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+npm-debug.log
+npm-shrinkwrap.json
+package-lock.json
+yarn.lock
+.yarn/cache/
+
+# Build output
+dist/
+.angular/
+.tmp/
+build/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Development
+.env
+.env.local
+.env.*.local
+.env.development
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Testing
+.nyc_output/
+coverage/
+*.lcov
+karma.conf.js
+
+# Misc
+*.md
+docs/
+examples/
+.editorconfig
+.prettierrc
+.eslintrc*
+tsconfig.spec.json
+angular.json (unnecessary in final build)
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+jenkins/
+
+# Documentation files not needed in Docker
+README.md
+LICENSE
+CHANGELOG.md
