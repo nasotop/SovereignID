@@ -1,12 +1,13 @@
 # SovereignID — stack listo para Portainer (+ Nginx Proxy Manager en el host)
 #
 # NPM escucha en 80/443 del servidor. Este stack publica el frontend en un
-# puerto local alternativo (WEB_HOST_PORT, p. ej. 4333). En NPM configura:
-#   Forward Hostname: 127.0.0.1  (o la IP del host)
+# puerto del host (WEB_HOST_PORT, p. ej. 4333). Como NPM también corre en
+# Docker, NO uses localhost en el Proxy Host; apunta al gateway del host:
+#   Forward Hostname: 172.17.0.1  (o la IP LAN del servidor)
 #   Forward Port:     4333        (mismo valor que WEB_HOST_PORT)
 #
 # Dentro del contenedor web, nginx sigue en el puerto 80; el mapeo es
-#   localhost:4333  →  contenedor:80
+#   host:4333  →  contenedor:80
 #
 # auth-api no se publica al host; solo es accesible desde la red interna.
 
@@ -57,7 +58,7 @@ services:
     container_name: sovereignid-web
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-4333}:80"
+      - "${WEB_HOST_PORT:-4333}:80"
     depends_on:
       auth-api:
         condition: service_healthy
