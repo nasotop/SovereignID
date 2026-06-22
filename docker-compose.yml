@@ -56,9 +56,9 @@ services:
     container_name: sovereignid-web
     restart: unless-stopped
     ports:
-      - "4200:80"
+      - "4200:4333"
     expose:
-      - "80"
+      - "4333"
     depends_on:
       auth-api:
         condition: service_healthy
