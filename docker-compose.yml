@@ -1,21 +1,34 @@
+# SovereignID — stack listo para Portainer (+ Nginx Proxy Manager en el host)
+#
+# NPM escucha en 80/443 del servidor. Este stack publica el frontend en un
+# puerto local alternativo (WEB_HOST_PORT, p. ej. 4333). En NPM configura:
+#   Forward Hostname: 127.0.0.1  (o la IP del host)
+#   Forward Port:     4333        (mismo valor que WEB_HOST_PORT)
+#
+# Dentro del contenedor web, nginx sigue en el puerto 80; el mapeo es
+#   localhost:4333  →  contenedor:80
+#
+# auth-api no se publica al host; solo es accesible desde la red interna.
+
 services:
-  # Microservicio de Autenticación (.NET 10)
   auth-api:
     build:
       context: .
       dockerfile: src/auth/Auth.Api/Dockerfile
       args:
-        BUILD_CONFIGURATION: Release
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
     image: sovereignid-auth:latest
     container_name: sovereignid-auth
     restart: unless-stopped
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - AUTH_JWT_SIGNING_KEY=tu-super-secreta-llave-de-desarrollo-32-bytes!
-      - Auth__AllowedChainId=11155111
-    ports:
-      - "8080:8080"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      AUTH_JWT_SIGNING_KEY: ${AUTH_JWT_SIGNING_KEY:?AUTH_JWT_SIGNING_KEY is required}
+      Auth__AllowedChainId: ${Auth__AllowedChainId:-11155111}
+      Auth__JwtIssuer: ${Auth__JwtIssuer:-sovereignid-auth}
+      Auth__JwtAudience: ${Auth__JwtAudience:-sovereignid-clients}
+      Auth__ChallengeTtlSeconds: ${Auth__ChallengeTtlSeconds:-600}
+      Auth__JwtTtlHours: ${Auth__JwtTtlHours:-24}
     expose:
       - "8080"
     networks:
@@ -26,14 +39,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     logging:
       driver: json-file
       options:
@@ -44,21 +49,15 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Sign-In with Ethereum (SIWE) Authentication Service"
 
-  # Frontend Angular + API Gateway Nginx
   web:
     build:
       context: ./src/web
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
-        API_BASE_URL: http://auth-api:8080
     image: sovereignid-web:latest
     container_name: sovereignid-web
     restart: unless-stopped
     ports:
-      - "4200:4333"
-    expose:
-      - "4333"
+      - "127.0.0.1:${WEB_HOST_PORT:-4333}:80"
     depends_on:
       auth-api:
         condition: service_healthy
@@ -70,15 +69,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    # SOLUCIÓN DEL ERROR: Envolvemos los recursos en 'deploy'
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
     logging:
       driver: json-file
       options:
@@ -94,6 +84,3 @@ services:
 networks:
   sovereign-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
