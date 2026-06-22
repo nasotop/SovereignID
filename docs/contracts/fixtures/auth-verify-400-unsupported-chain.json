@@ -1,0 +1,6 @@
+{
+  "title": "Authentication failed",
+  "status": 400,
+  "detail": "Chain ID 1 is not supported. Only Sepolia (11155111) is accepted.",
+  "error": "unsupported_chain"
+}
