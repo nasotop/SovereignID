@@ -10,6 +10,8 @@
 #   host:4333  →  contenedor:80
 #
 # auth-api no se publica al host; solo es accesible desde la red interna.
+# postgres expone 5432 al host para exploración del esquema (psql, DBeaver).
+# auth-api y web NO dependen de postgres en esta fase.
 
 services:
   auth-api:
@@ -82,6 +84,40 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: sovereignid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sovereignid}
+      POSTGRES_USER: ${POSTGRES_USER:-sovereignid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sovereignid_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/BBDD_SovereignID.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: postgres
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "PostgreSQL 16 — canonical schema from database/BBDD_SovereignID.sql"
+
 networks:
   sovereign-net:
     driver: bridge
+
+volumes:
+  postgres_data:
