@@ -26,6 +26,13 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "Auth.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+USER app
 WORKDIR /app
 COPY --from=publish /app/publish .
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --quiet --tries=1 -O /dev/null http://localhost:8080/auth/nonce || exit 1
 ENTRYPOINT ["dotnet", "Auth.Api.dll"]
