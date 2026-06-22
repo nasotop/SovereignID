@@ -11,6 +11,8 @@ SovereignID/
 ├── SovereignID.sln          # Solución raíz
 ├── CONTEXT.md               # Este archivo
 ├── docs/                    # Contratos y documentación transversal
+│   ├── adr/                 # Architecture Decision Records
+│   └── contracts/           # OpenAPI snapshots y fixtures JSON
 ├── openspec/                # Cambios y specs OpenSpec
 ├── src/
 │   └── auth/                # Microservicio de autenticación SIWE
@@ -34,7 +36,31 @@ Autenticación **Sign-In with Ethereum (EIP-4361)** para Ethereum Sepolia:
 | `GET /auth/nonce` | Emite reto (nonce 32 hex, TTL 600 s) |
 | `POST /auth/verify` | Verifica mensaje SIWE firmado y emite JWT 24 h |
 
-Contrato observable: [`docs/siwe-backend-contract.md`](docs/siwe-backend-contract.md).
+Contratos del servicio auth (dos capas complementarias):
+
+| Capa | Fuente | Qué define |
+|------|--------|------------|
+| **Contrato HTTP (forma JSON)** | OpenAPI generado por `Auth.Api` | Rutas, DTOs de request/response, códigos HTTP |
+| **Contrato de dominio (semántica)** | [`docs/siwe-backend-contract.md`](docs/siwe-backend-contract.md) | Reglas SIWE, chain policy, catálogo de errores, AC-01…AC-07 |
+
+El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`, `expiresAt`, …). El markdown complementa lo que el schema no expresa (p. ej. `nonce_consumed`, TTL del auth challenge).
+
+**Frontend (web):** los tipos TypeScript de request/response se mantienen **alineados manualmente** con el OpenAPI; CI valida alineación con **fixtures JSON** (respuestas de ejemplo) y **snapshot OpenAPI** versionado en `docs/contracts/`; además ejecuta `dotnet test` (AC-01…AC-07). Sin codegen automático. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
+
+## Modelo de errores HTTP (transversal)
+
+Todos los microservicios del monorepo responden errores de negocio con **RFC 7807 Problem Details** (`application/problem+json`). Referencia de implementación: `AuthFailureExceptionFilter` en auth.
+
+| Campo | Obligatorio | Uso |
+|-------|-------------|-----|
+| `title` | sí | Resumen corto del tipo de error (p. ej. `"Authentication failed"`) |
+| `status` | sí | Código HTTP (`400`, `401`, …) |
+| `detail` | sí | Mensaje legible para humanos — **fuente para mostrar al usuario en web** |
+| `error` | sí | Código estable en `snake_case` para lógica programática (p. ej. `nonce_expired`) |
+
+**Web:** un único seam en `error.utils.ts` parsea Problem Details y expone `detail` al usuario. Los componentes no leen el cuerpo HTTP directamente.
+
+**Backend:** cada servicio mapea fallos de dominio a Problem Details con extensión `error`. Los catálogos de códigos viven en el contrato de dominio de cada servicio. Decisión registrada en [ADR-0001](docs/adr/0001-problem-details-errors.md).
 
 ## Glosario
 
@@ -47,6 +73,10 @@ Contrato observable: [`docs/siwe-backend-contract.md`](docs/siwe-backend-contrac
 | **personal_sign** | Firma off-chain con prefijo EIP-191 sobre UTF-8 del mensaje |
 | **JWT de sesión** | Token HS256 post-login con claims `sub`, `address`, `did`, etc. |
 | **Sepolia** | Red de prueba Ethereum; chain ID **11155111** (única aceptada en v1) |
+| **Contrato HTTP** | OpenAPI del servicio auth: forma observable de endpoints y DTOs JSON |
+| **Contrato de dominio** | Documento markdown con reglas de negocio, errores estables y criterios de aceptación |
+| **Problem Details** | Formato RFC 7807 de respuesta de error HTTP usado transversalmente en el monorepo |
+| **Código de error** | Valor estable en extensión `error` (`snake_case`); distinto del texto `detail` mostrado al usuario |
 
 ## Configuración relevante
 

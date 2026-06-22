@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Functional HTTP interceptor that adds JWT token to Authorization header
+ * Functional HTTP interceptor that adds JWT to Authorization header
  * for authenticated requests
  */
 export const jwtInterceptor: HttpInterceptorFn = (
@@ -17,13 +17,12 @@ export const jwtInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
-  const token = authService.getToken();
+  const jwt = authService.getJwt();
 
-  // If token exists, clone the request and add Authorization header
-  if (token) {
+  if (jwt) {
     request = request.clone({
       setHeaders: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${jwt}`,
       },
     });
   }

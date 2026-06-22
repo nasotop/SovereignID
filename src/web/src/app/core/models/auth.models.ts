@@ -1,6 +1,7 @@
-/** Response from GET /auth/nonce */
+/** Response from GET /auth/nonce — aligned with OpenAPI / AuthContracts */
 export interface NonceResponse {
   readonly nonce: string;
+  readonly expiresAt: string;
 }
 
 /** Request body for POST /auth/verify */
@@ -11,14 +12,17 @@ export interface VerifyRequest {
 
 /** Response from POST /auth/verify */
 export interface VerifyResponse {
-  readonly token: string;
+  readonly jwt: string;
+  readonly address: string;
+  readonly expiresAt: string;
 }
 
-/** User authentication state */
+/** Client-side session state after successful SIWE login */
 export interface AuthState {
   readonly isAuthenticated: boolean;
-  readonly token: string | null;
+  readonly jwt: string | null;
   readonly address: string | null;
+  readonly expiresAt: string | null;
 }
 
 export enum StorageType {

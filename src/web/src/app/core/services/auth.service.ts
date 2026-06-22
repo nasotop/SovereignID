@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAddress } from 'ethers';
 import { SiweMessage } from 'siwe';
 
+import { SEPOLIA_CHAIN_ID } from '../constants/auth.constants';
 import { AuthState, StorageType } from '../models/auth.models';
 import { toThrownError } from '../utils/error.utils';
 import { AuthApiService } from './auth-api.service';
@@ -16,8 +17,9 @@ export class AuthService {
 
   private readonly authState = signal<AuthState>({
     isAuthenticated: false,
-    token: null,
+    jwt: null,
     address: null,
+    expiresAt: null,
   });
 
   readonly authState$ = this.authState.asReadonly();
@@ -31,20 +33,24 @@ export class AuthService {
   /** Initiates SIWE login flow */
   async login(): Promise<void> {
     try {
-      const address = await this.web3Service.connectWallet();
-      if (!address) {
+      const walletAddress = await this.web3Service.connectWallet();
+      if (!walletAddress) {
         throw new Error('Failed to connect wallet');
       }
 
       const { nonce } = await this.authApi.fetchNonce();
-      const message = this.createSiweMessage(address, nonce);
+      const message = this.createSiweMessage(walletAddress, nonce);
       const signature = await this.signMessage(message);
-      const { token } = await this.authApi.verifySignature({ message, signature });
+      const verifyResponse = await this.authApi.verifySignature({
+        message,
+        signature,
+      });
 
       this.setAuthState({
         isAuthenticated: true,
-        token,
-        address,
+        jwt: verifyResponse.jwt,
+        address: getAddress(verifyResponse.address),
+        expiresAt: verifyResponse.expiresAt,
       });
 
       this.saveAuthState();
@@ -60,8 +66,9 @@ export class AuthService {
     this.web3Service.disconnectWallet();
     this.setAuthState({
       isAuthenticated: false,
-      token: null,
+      jwt: null,
       address: null,
+      expiresAt: null,
     });
     this.clearAuthState();
   }
@@ -74,8 +81,8 @@ export class AuthService {
     return this.authState().isAuthenticated;
   }
 
-  getToken(): string | null {
-    return this.authState().token;
+  getJwt(): string | null {
+    return this.authState().jwt;
   }
 
   getAddress(): string | null {
@@ -89,7 +96,7 @@ export class AuthService {
       statement: 'Sign in with Ethereum to the app',
       uri: window.location.origin,
       version: '1',
-      chainId: 1,
+      chainId: SEPOLIA_CHAIN_ID,
       nonce,
       issuedAt: new Date().toISOString(),
     });
@@ -120,33 +127,50 @@ export class AuthService {
     const state = this.authState();
     const storage = this.getStorage();
 
-    if (state.token) {
-      storage.setItem('auth_token', state.token);
-      storage.setItem('auth_address', state.address ?? '');
+    if (state.jwt && state.address && state.expiresAt) {
+      storage.setItem('auth_jwt', state.jwt);
+      storage.setItem('auth_address', state.address);
+      storage.setItem('auth_expires_at', state.expiresAt);
       storage.setItem('auth_authenticated', 'true');
     }
   }
 
   private restoreAuthState(): void {
     const storage = this.getStorage();
-    const token = storage.getItem('auth_token');
+    const jwt = storage.getItem('auth_jwt');
     const address = storage.getItem('auth_address');
+    const expiresAt = storage.getItem('auth_expires_at');
     const isAuthenticated = storage.getItem('auth_authenticated') === 'true';
 
-    if (token && address && isAuthenticated) {
-      this.setAuthState({
-        isAuthenticated: true,
-        token,
-        address: getAddress(address),
-      });
+    if (!jwt || !address || !expiresAt || !isAuthenticated) {
+      return;
     }
+
+    if (this.isSessionExpired(expiresAt)) {
+      this.clearAuthState();
+      return;
+    }
+
+    this.setAuthState({
+      isAuthenticated: true,
+      jwt,
+      address: getAddress(address),
+      expiresAt,
+    });
+  }
+
+  private isSessionExpired(expiresAt: string): boolean {
+    const expiry = Date.parse(expiresAt);
+    return Number.isNaN(expiry) || Date.now() >= expiry;
   }
 
   private clearAuthState(): void {
     const storage = this.getStorage();
-    storage.removeItem('auth_token');
+    storage.removeItem('auth_jwt');
     storage.removeItem('auth_address');
+    storage.removeItem('auth_expires_at');
     storage.removeItem('auth_authenticated');
+    storage.removeItem('auth_token');
   }
 
   private getStorage(): Storage {
