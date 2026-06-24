@@ -23,7 +23,7 @@ SovereignID/
 │       ├── Auth.Api/        # HTTP, DI, configuración
 │       ├── Auth.Application/# Casos de uso (IssueNonce, VerifySiwe)
 │       ├── Auth.Domain/     # AuthChallenge, códigos de error
-│       └── Auth.Infrastructure/ # Parser SIWE, store, JWT, firma, Persistence/
+│       └── Auth.Infrastructure/ # Parser SIWE, JWT, firma; Persistence/ (Generated, Stores, Composition)
 └── tests/
     └── auth/
         └── Auth.IntegrationTests/  # AC-01…AC-07
@@ -80,6 +80,14 @@ PostgreSQL 16 en Docker (`docker-compose.yml`, servicio `postgres`). El esquema 
 
 Decisión completa: [ADR-0002](docs/adr/0002-database-consumption.md).
 
+Layout en `Auth.Infrastructure/Persistence/`:
+
+| Zona | Carpeta | Contenido |
+|------|---------|-----------|
+| Generada (efcpt) | `Generated/` | `SovereignIdDbContext`, entidades EF en `Generated/Entities/` |
+| Adapters | `Stores/<Aggregate>/` | Implementaciones de interfaces Application (p. ej. `ChallengeStore/`) |
+| Composición DI | `Composition/` | `AddAuthPersistence()`, opciones, registro Npgsql |
+
 **Stack local:**
 
 ```bash
@@ -105,7 +113,7 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Problem Details** | Formato RFC 7807 de respuesta de error HTTP usado transversalmente en el monorepo |
 | **Código de error** | Valor estable en extensión `error` (`snake_case`); distinto del texto `detail` mostrado al usuario |
 | **Adapter de persistencia** | Implementación en Infrastructure de una interfaz de Application; único lugar con EF y mapeo dominio ↔ BD |
-| **Entidad EF** | Clase scaffold en `Persistence.Entities`; representa fila de tabla, no modelo de dominio |
+| **Entidad EF** | Clase scaffold en `Persistence/Generated/Entities` (namespace `Generated.Entities`); representa fila de tabla, no modelo de dominio |
 | **Proveedor de persistencia** | `InMemory` o `Postgres`; selecciona el adapter activo sin cambiar casos de uso |
 
 ## Configuración relevante

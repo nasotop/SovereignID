@@ -1,8 +1,9 @@
+using Auth.Infrastructure.Persistence.Generated;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Auth.Infrastructure.Persistence;
+namespace Auth.Infrastructure.Persistence.Composition;
 
 public static class PersistenceServiceCollectionExtensions
 {

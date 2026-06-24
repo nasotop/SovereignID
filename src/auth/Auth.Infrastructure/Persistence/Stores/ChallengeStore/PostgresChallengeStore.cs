@@ -1,11 +1,13 @@
 using Auth.Application;
 using Auth.Domain;
+using Auth.Infrastructure.Persistence.Generated;
+using Auth.Infrastructure.Persistence.Generated.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using DomainAuthChallenge = Auth.Domain.AuthChallenge;
-using AuthChallengeRow = Auth.Infrastructure.Persistence.Entities.AuthChallenge;
+using AuthChallengeRow = Auth.Infrastructure.Persistence.Generated.Entities.AuthChallenge;
 
-namespace Auth.Infrastructure.Persistence;
+namespace Auth.Infrastructure.Persistence.Stores.ChallengeStore;
 
 internal sealed class PostgresChallengeStore : IChallengeStore
 {

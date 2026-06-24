@@ -27,12 +27,12 @@
   },
   "file-layout": {
     "output-dbcontext-path": null,
-    "output-path": "Persistence"
+    "output-path": "Persistence/Generated"
   },
   "names": {
     "dbcontext-name": "SovereignIdDbContext",
     "dbcontext-namespace": null,
-    "model-namespace": "Persistence.Entities",
+    "model-namespace": "Persistence.Generated.Entities",
     "root-namespace": "Auth.Infrastructure"
   },
   "tables": [
