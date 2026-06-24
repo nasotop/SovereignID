@@ -2,9 +2,9 @@ using System.Collections.Concurrent;
 using Auth.Application;
 using Auth.Domain;
 
-namespace Auth.Infrastructure;
+namespace Auth.Infrastructure.Persistence.Stores.ChallengeStore;
 
-public sealed class InMemoryChallengeStore : IChallengeStore
+internal sealed class InMemoryChallengeStore : IChallengeStore
 {
     private readonly ConcurrentDictionary<string, AuthChallenge> _challenges = new();
 

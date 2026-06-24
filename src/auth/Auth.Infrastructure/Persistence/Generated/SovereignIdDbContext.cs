@@ -2,10 +2,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using Auth.Infrastructure.Persistence.Entities;
+using Auth.Infrastructure.Persistence.Generated.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Auth.Infrastructure.Persistence;
+namespace Auth.Infrastructure.Persistence.Generated;
 
 internal partial class SovereignIdDbContext : DbContext
 {

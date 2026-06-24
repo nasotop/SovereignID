@@ -30,7 +30,7 @@ Sin reglas explícitas, el riesgo es:
 | Capa | Puede consumir BD | No puede |
 |------|-------------------|----------|
 | **Domain** | Nada | EF, connection strings, entidades scaffold |
-| **Application** | Interfaces de persistencia propias del servicio (p. ej. `IChallengeStore`) | `DbContext`, `DbSet`, tipos en `Persistence.Entities` |
+| **Application** | Interfaces de persistencia propias del servicio (p. ej. `IChallengeStore`) | `DbContext`, `DbSet`, tipos en `Persistence.Generated.Entities` |
 | **Infrastructure** | `DbContext`, entidades EF, adapters | Exponer `DbContext` fuera del ensamblado |
 | **Api** | Configuración (`ConnectionStrings`, `Persistence:Provider`) | Referenciar tipos EF ni inyectar `DbContext` |
 
@@ -47,7 +47,7 @@ Sin reglas explícitas, el riesgo es:
 
 ### Dominio vs entidades EF
 
-- Los tipos en `Auth.Infrastructure.Persistence.Entities` son **filas de BD**, no modelos de dominio.
+- Los tipos en `Auth.Infrastructure.Persistence.Generated.Entities` son **filas de BD**, no modelos de dominio.
 - Si el nombre colisiona (p. ej. `AuthChallenge`), el dominio vive en `Auth.Domain`; la entidad EF no se reutiliza en Application.
 - Rehidratación desde BD: factories estáticas en dominio (p. ej. `AuthChallenge.Rehydrate`) invocadas solo desde adapters.
 
@@ -78,9 +78,9 @@ Validación en arranque: `ValidateAuthConfiguration()` falla si `Postgres` está
 
 ### Archivos generados
 
-- Código bajo `Persistence/` generado por `efcpt` **no se edita a mano** salvo:
+- Código bajo `Persistence/Generated/` generado por `efcpt` **no se edita a mano** salvo:
   - `internal` en `SovereignIdDbContext` (post-scaffold).
-- Lógica de negocio y mapeo viven en adapters separados (p. ej. `PostgresChallengeStore.cs`).
+- Lógica de negocio y mapeo viven en adapters bajo `Persistence/Stores/` (p. ej. `Stores/ChallengeStore/PostgresChallengeStore.cs`).
 
 ## Consecuencias
 
@@ -103,4 +103,4 @@ Validación en arranque: `ValidateAuthConfiguration()` falla si `Postgres` está
 - [`CONTEXT.md`](../../CONTEXT.md) — mapa del monorepo y glosario
 - `database/BBDD_SovereignID.sql` — esquema canónico
 - `scripts/scaffold-auth-db.ps1` — regeneración database-first
-- `src/auth/Auth.Infrastructure/Persistence/PostgresChallengeStore.cs` — adapter de referencia
+- `src/auth/Auth.Infrastructure/Persistence/Stores/ChallengeStore/PostgresChallengeStore.cs` — adapter de referencia

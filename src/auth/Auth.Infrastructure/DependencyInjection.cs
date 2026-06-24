@@ -1,6 +1,6 @@
 using System.Text;
 using Auth.Application;
-using Auth.Infrastructure.Persistence;
+using Auth.Infrastructure.Persistence.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +12,6 @@ public static class DependencyInjection
     public static IServiceCollection AddAuthInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
-        services.Configure<PersistenceOptions>(configuration.GetSection(PersistenceOptions.SectionName));
         services.PostConfigure<AuthOptions>(options =>
         {
             var envKey = configuration["AUTH_JWT_SIGNING_KEY"];
@@ -29,15 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IssueNonceUseCase>();
         services.AddScoped<VerifySiweUseCase>();
 
-        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration))
-        {
-            services.AddAuthPostgresPersistence(configuration);
-            services.AddScoped<IChallengeStore, PostgresChallengeStore>();
-        }
-        else
-        {
-            services.AddSingleton<IChallengeStore, InMemoryChallengeStore>();
-        }
+        services.AddAuthPersistence(configuration);
 
         return services;
     }

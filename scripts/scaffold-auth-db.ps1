@@ -20,11 +20,11 @@ docker run --rm `
     mcr.microsoft.com/dotnet/sdk:10.0 `
     bash -lc "dotnet tool install ErikEJ.EFCorePowerTools.Cli --tool-path /tools --version 10.* >/dev/null && /tools/efcpt '$conn' postgres -v"
 
-$dbContext = Join-Path $infraDir "Persistence/SovereignIdDbContext.cs"
+$dbContext = Join-Path $infraDir "Persistence/Generated/SovereignIdDbContext.cs"
 if (Test-Path $dbContext) {
     (Get-Content $dbContext -Raw) `
         -replace 'public partial class SovereignIdDbContext', 'internal partial class SovereignIdDbContext' `
         | Set-Content $dbContext -NoNewline
 }
 
-Write-Host "Modelo regenerado en src/auth/Auth.Infrastructure/Persistence"
+Write-Host "Modelo regenerado en src/auth/Auth.Infrastructure/Persistence/Generated"

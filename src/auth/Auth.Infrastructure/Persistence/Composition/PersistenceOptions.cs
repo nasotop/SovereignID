@@ -1,4 +1,4 @@
-namespace Auth.Infrastructure.Persistence;
+namespace Auth.Infrastructure.Persistence.Composition;
 
 public sealed class PersistenceOptions
 {
