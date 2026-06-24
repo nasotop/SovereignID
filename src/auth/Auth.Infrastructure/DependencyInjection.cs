@@ -1,5 +1,6 @@
 using System.Text;
 using Auth.Application;
+using Auth.Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +12,7 @@ public static class DependencyInjection
     public static IServiceCollection AddAuthInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+        services.Configure<PersistenceOptions>(configuration.GetSection(PersistenceOptions.SectionName));
         services.PostConfigure<AuthOptions>(options =>
         {
             var envKey = configuration["AUTH_JWT_SIGNING_KEY"];
@@ -21,19 +23,38 @@ public static class DependencyInjection
         });
 
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IChallengeStore, InMemoryChallengeStore>();
         services.AddSingleton<ISiweMessageParser, SiweMessageParser>();
         services.AddSingleton<ISignatureVerifier, PersonalSignSignatureVerifier>();
         services.AddSingleton<IJwtTokenIssuer, JwtBearerTokenIssuer>();
         services.AddScoped<IssueNonceUseCase>();
         services.AddScoped<VerifySiweUseCase>();
 
+        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration))
+        {
+            services.AddAuthPostgresPersistence(configuration);
+            services.AddScoped<IChallengeStore, PostgresChallengeStore>();
+        }
+        else
+        {
+            services.AddSingleton<IChallengeStore, InMemoryChallengeStore>();
+        }
+
         return services;
     }
 
     public static void ValidateAuthConfiguration(this IHost host)
     {
-        if (host.Services.GetRequiredService<IHostEnvironment>().IsDevelopment())
+        var configuration = host.Services.GetRequiredService<IConfiguration>();
+        var environment = host.Services.GetRequiredService<IHostEnvironment>();
+
+        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration)
+            && string.IsNullOrWhiteSpace(configuration.GetConnectionString("DefaultConnection")))
+        {
+            throw new InvalidOperationException(
+                "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
+        }
+
+        if (environment.IsDevelopment())
         {
             return;
         }

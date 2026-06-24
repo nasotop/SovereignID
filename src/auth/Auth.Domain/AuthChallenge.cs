@@ -14,4 +14,28 @@ public sealed class AuthChallenge
 
     public bool TryMarkConsumed() =>
         Interlocked.CompareExchange(ref _consumed, 1, 0) == 0;
+
+    /// <summary>
+    /// Rehidrata un auth challenge desde persistencia (p. ej. fila <c>auth_challenges</c>).
+    /// </summary>
+    public static AuthChallenge Rehydrate(
+        string nonce,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt,
+        bool consumed)
+    {
+        var challenge = new AuthChallenge
+        {
+            Nonce = nonce,
+            IssuedAt = issuedAt,
+            ExpiresAt = expiresAt
+        };
+
+        if (consumed)
+        {
+            challenge.TryMarkConsumed();
+        }
+
+        return challenge;
+    }
 }
