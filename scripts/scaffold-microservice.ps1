@@ -219,11 +219,14 @@ public static class DependencyInjection
     <UserSecretsId>$UserSecretsId</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..\..</DockerfileContext>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>`$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -235,13 +238,14 @@ public static class DependencyInjection
 "@ | Set-Content -Encoding utf8 (Join-Path $base "$Name.Api\$Name.Api.csproj")
 
 @"
+using ${Name}.Api.OpenApi;
 using ${Name}.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi();
+builder.Services.Add${Name}OpenApiDocumentation();
 builder.Services.Add${Name}Infrastructure(builder.Configuration);
 
 var app = builder.Build();
@@ -250,7 +254,7 @@ app.Validate${Name}Configuration();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.Map${Name}OpenApiDocumentation();
 }
 
 app.UseExceptionHandler();
@@ -261,6 +265,63 @@ app.Run();
 
 public partial class Program;
 "@ | Set-Content -Encoding utf8 (Join-Path $base "$Name.Api\Program.cs")
+
+$openApiDir = Join-Path $base "$Name.Api\OpenApi"
+New-Item -ItemType Directory -Force -Path $openApiDir | Out-Null
+
+@"
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
+
+namespace ${Name}.Api.OpenApi;
+
+internal static class ${Name}OpenApiExtensions
+{
+    private const string DocumentName = "v1";
+
+    public static IServiceCollection Add${Name}OpenApiDocumentation(this IServiceCollection services)
+    {
+        services.AddOpenApi(DocumentName, options =>
+        {
+            options.AddDocumentTransformer((document, _, _) =>
+            {
+                document.Info = new OpenApiInfo
+                {
+                    Title = "SovereignID · $Name API",
+                    Version = "v1",
+                    Description =
+                        "Servicio $($Name.ToLowerInvariant()) de la plataforma SovereignID. "
+                        + "Expone un health-check (``GET /health``); los endpoints de negocio se añadirán en próximas iteraciones. "
+                        + "Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable "
+                        + "en la extensión ``error``.",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "SovereignID",
+                        Url = new Uri("https://github.com/nasotop/SovereignID")
+                    }
+                };
+
+                return Task.CompletedTask;
+            });
+        });
+
+        return services;
+    }
+
+    public static WebApplication Map${Name}OpenApiDocumentation(this WebApplication app)
+    {
+        app.MapOpenApi();
+        app.MapScalarApiReference(options =>
+        {
+            options
+                .WithTitle("SovereignID · $Name API")
+                .WithTheme(ScalarTheme.Purple);
+        });
+
+        return app;
+    }
+}
+"@ | Set-Content -Encoding utf8 (Join-Path $openApiDir "${Name}OpenApiExtensions.cs")
 
 @"
 {
@@ -342,9 +403,12 @@ namespace ${Name}.Api.Controllers;
 
 [ApiController]
 [Route("health")]
+[Produces("application/json")]
 public sealed class HealthController : ControllerBase
 {
+    /// <summary>Comprueba que el servicio está operativo (liveness check).</summary>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Get() => Ok(new { status = "healthy", service = "$($Name.ToLowerInvariant())" });
 }
 "@ | Set-Content -Encoding utf8 (Join-Path $controllersDir "HealthController.cs")
@@ -480,3 +544,9 @@ public sealed class ${Name}ApiTests : IClassFixture<${Name}WebApplicationFactory
 "@ | Set-Content -Encoding utf8 (Join-Path $testBase "${Name}ApiTests.cs")
 
 Write-Host "Scaffolded $Name at src/$folder"
+Write-Host ""
+Write-Host "Next steps for OpenAPI documentation:" -ForegroundColor Cyan
+Write-Host "  1. Register the service in scripts/openapi-lib.sh (OPENAPI_SERVICES):"
+Write-Host "       `"$folder|src/$folder/$Name.Api|<export-port>|docs/contracts/$folder.openapi.json`""
+Write-Host "  2. Export its snapshot:  bash scripts/export-openapi.sh $folder"
+Write-Host "  3. Scalar UI (dev) at /scalar/v1 ; raw OpenAPI document at /openapi/v1.json"

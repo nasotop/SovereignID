@@ -87,8 +87,8 @@ jobs:
       - name: Run Auth integration tests
         run: dotnet test tests/auth/Auth.IntegrationTests --configuration Release --no-restore
 
-  verify-auth-openapi:
-    name: Verify Auth OpenAPI snapshot
+  verify-openapi:
+    name: Verify OpenAPI snapshots
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -99,5 +99,5 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Verify OpenAPI snapshot
-        run: bash scripts/verify-auth-openapi.sh
+      - name: Verify OpenAPI snapshots (all services)
+        run: bash scripts/verify-openapi.sh

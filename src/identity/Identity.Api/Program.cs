@@ -1,10 +1,11 @@
-﻿using Identity.Infrastructure;
+﻿using Identity.Api.OpenApi;
+using Identity.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi();
+builder.Services.AddIdentityOpenApiDocumentation();
 builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
 var app = builder.Build();
@@ -13,7 +14,7 @@ app.ValidateIdentityConfiguration();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapIdentityOpenApiDocumentation();
 }
 
 app.UseExceptionHandler();
