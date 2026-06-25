@@ -1,8 +1,13 @@
-﻿{
+{
   "openapi": "3.1.1",
   "info": {
-    "title": "Auth.Api | v1",
-    "version": "1.0.0"
+    "title": "SovereignID · Auth API",
+    "description": "Autenticación Sign-In with Ethereum (EIP-4361) para Ethereum Sepolia (chain ID 11155111). Emite un reto de un solo uso (`GET /auth/nonce`) y verifica un mensaje SIWE firmado para entregar un JWT de sesión (`POST /auth/verify`). Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error` (p. ej. `nonce_expired`, `signature_mismatch`).",
+    "contact": {
+      "name": "SovereignID",
+      "url": "https://github.com/nasotop/SovereignID"
+    },
+    "version": "v1"
   },
   "paths": {
     "/auth/nonce": {
@@ -10,21 +15,13 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Emite un auth challenge (nonce de un solo uso, TTL 600 s).",
+        "description": "El nonce devuelto debe incluirse en el mensaje SIWE que se firma y envía a `POST /auth/verify`.",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/NonceResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NonceResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NonceResponse"
                 }
@@ -39,6 +36,8 @@
         "tags": [
           "Auth"
         ],
+        "summary": "Verifica un mensaje SIWE firmado y, si es válido, emite un JWT de sesión (TTL 24 h).",
+        "description": "Errores de negocio (RFC 7807 Problem Details, extensión `error`): `siwe_parse_failed` y `unsupported_chain` (400); `nonce_unknown`, `nonce_expired`, `nonce_consumed` y `signature_mismatch` (401).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -63,19 +62,29 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/VerifyResponse"
-                }
-              },
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VerifyResponse"
                 }
-              },
-              "text/json": {
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VerifyResponse"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -99,6 +108,44 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
