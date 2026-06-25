@@ -2,7 +2,10 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAddress } from 'ethers';
 import { SiweMessage } from 'siwe';
 
-import { SEPOLIA_CHAIN_ID } from '../constants/auth.constants';
+import {
+  SEPOLIA_CHAIN_ID,
+  SEPOLIA_NETWORK_PARAMS,
+} from '../constants/auth.constants';
 import { AuthState, StorageType } from '../models/auth.models';
 import { toThrownError } from '../utils/error.utils';
 import { AuthApiService } from './auth-api.service';
@@ -38,8 +41,10 @@ export class AuthService {
         throw new Error('Failed to connect wallet');
       }
 
+      const chainId = await this.ensureSupportedChain();
+
       const { nonce } = await this.authApi.fetchNonce();
-      const message = this.createSiweMessage(walletAddress, nonce);
+      const message = this.createSiweMessage(walletAddress, nonce, chainId);
       const signature = await this.signMessage(message);
       const verifyResponse = await this.authApi.verifySignature({
         message,
@@ -89,14 +94,43 @@ export class AuthService {
     return this.authState().address;
   }
 
-  private createSiweMessage(address: string, nonce: string): string {
+  /**
+   * Ensures the wallet is on the supported chain, prompting an in-wallet
+   * network switch when needed. Returns the active chain ID once confirmed.
+   */
+  private async ensureSupportedChain(): Promise<number> {
+    let chainId = await this.web3Service.getChainId();
+    if (chainId === SEPOLIA_CHAIN_ID) {
+      return chainId;
+    }
+
+    await this.web3Service.switchToChain(
+      SEPOLIA_CHAIN_ID,
+      SEPOLIA_NETWORK_PARAMS,
+    );
+
+    chainId = await this.web3Service.getChainId();
+    if (chainId !== SEPOLIA_CHAIN_ID) {
+      throw new Error(
+        `Unsupported network (chain ID ${chainId}). Please switch your wallet to Sepolia (chain ID ${SEPOLIA_CHAIN_ID}).`,
+      );
+    }
+
+    return chainId;
+  }
+
+  private createSiweMessage(
+    address: string,
+    nonce: string,
+    chainId: number,
+  ): string {
     const message = new SiweMessage({
       domain: window.location.host,
       address: getAddress(address),
       statement: 'Sign in with Ethereum to the app',
       uri: window.location.origin,
       version: '1',
-      chainId: SEPOLIA_CHAIN_ID,
+      chainId,
       nonce,
       issuedAt: new Date().toISOString(),
     });

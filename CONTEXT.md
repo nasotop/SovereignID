@@ -66,6 +66,26 @@ Todos los microservicios del monorepo responden errores de negocio con **RFC 780
 
 **Backend:** cada servicio mapea fallos de dominio a Problem Details con extensión `error`. Los catálogos de códigos viven en el contrato de dominio de cada servicio. Decisión registrada en [ADR-0001](docs/adr/0001-problem-details-errors.md).
 
+## Documentación de APIs (OpenAPI)
+
+Todos los microservicios documentan su contrato HTTP con el estándar **OpenAPI 3.1** usando el generador nativo de .NET 10 (`Microsoft.AspNetCore.OpenApi`). Los comentarios XML (`<summary>`, `<remarks>`) de controladores enriquecen automáticamente el documento (`<GenerateDocumentationFile>` activado en cada `*.Api`).
+
+| Recurso | Ruta | Disponibilidad |
+|---------|------|----------------|
+| Documento OpenAPI (JSON) | `GET /openapi/v1.json` | Solo `Development` |
+| UI navegable (Scalar) | `GET /scalar/v1` | Solo `Development` |
+
+Los metadatos del documento (título, descripción, contacto) se definen por servicio en `*.Api/OpenApi/{Servicio}OpenApiExtensions.cs` (`Add{Servicio}OpenApiDocumentation` / `Map{Servicio}OpenApiDocumentation`). El scaffold (`scripts/scaffold-microservice.ps1`) genera este patrón para nuevos servicios.
+
+**Snapshots versionados** — la fuente de verdad del contrato HTTP vive en `docs/contracts/{servicio}.openapi.json` (sin bloque `servers`, host-independiente):
+
+| Acción | Comando |
+|--------|---------|
+| Exportar/regenerar snapshots | `bash scripts/export-openapi.sh [servicio\|all]` |
+| Verificar snapshots vs. servicio vivo | `bash scripts/verify-openapi.sh [servicio\|all]` |
+
+El registro de servicios (proyecto, puerto de export, ruta de snapshot) está en `scripts/openapi-lib.sh`. CI ejecuta el job **`verify-openapi`** que falla si algún snapshot está desactualizado; tras cambiar un contrato hay que reexportar y commitear el JSON.
+
 ## Base de datos y persistencia
 
 PostgreSQL 16 en Docker (`docker-compose.yml`, servicio `postgres`). El esquema se aplica al primer arranque desde `database/BBDD_SovereignID.sql`.

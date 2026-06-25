@@ -1,0 +1,35 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "SovereignID · Verifier API",
+    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone un health-check (`GET /health`); los endpoints de verificación se añadirán en próximas iteraciones. Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
+    "contact": {
+      "name": "SovereignID",
+      "url": "https://github.com/nasotop/SovereignID"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Comprueba que el servicio está operativo (liveness check).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health"
+    }
+  ]
+}
