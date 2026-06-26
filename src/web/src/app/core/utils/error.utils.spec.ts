@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isProblemDetails } from './problem-details.models';
+import { isProblemDetails } from '../models/problem-details.models';
 import { toHttpErrorMessage } from '../utils/error.utils';
 import { HttpErrorResponse } from '@angular/common/http';
 
