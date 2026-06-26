@@ -2,9 +2,9 @@ name: SovereignID CI Pipeline
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "master", "dev" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "master", "dev" ]
 
 jobs:
   build-frontend:
@@ -101,3 +101,13 @@ jobs:
 
       - name: Verify OpenAPI snapshots (all services)
         run: bash scripts/verify-openapi.sh
+
+  deploy-production:
+    name: Deploy to Portainer
+    needs: [build-frontend, test-frontend, build-backend, test-backend, verify-openapi]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger Portainer stack redeploy
+        run: curl -fsSL -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
