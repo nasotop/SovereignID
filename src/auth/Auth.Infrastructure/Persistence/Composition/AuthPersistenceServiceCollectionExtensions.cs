@@ -11,17 +11,8 @@ public static class AuthPersistenceServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<PersistenceOptions>(configuration.GetSection(PersistenceOptions.SectionName));
-
-        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration))
-        {
-            services.AddAuthPostgresPersistence(configuration);
-            services.AddScoped<IChallengeStore, PostgresChallengeStore>();
-        }
-        else
-        {
-            services.AddSingleton<IChallengeStore, InMemoryChallengeStore>();
-        }
+        services.AddAuthPostgresPersistence(configuration);
+        services.AddScoped<IChallengeStore, EfChallengeStore>();
 
         return services;
     }

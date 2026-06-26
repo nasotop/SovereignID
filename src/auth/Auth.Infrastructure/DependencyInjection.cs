@@ -38,11 +38,10 @@ public static class DependencyInjection
         var configuration = host.Services.GetRequiredService<IConfiguration>();
         var environment = host.Services.GetRequiredService<IHostEnvironment>();
 
-        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration)
-            && string.IsNullOrWhiteSpace(configuration.GetConnectionString("DefaultConnection")))
+        if (string.IsNullOrWhiteSpace(configuration.GetConnectionString("DefaultConnection")))
         {
             throw new InvalidOperationException(
-                "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
+                "ConnectionStrings:DefaultConnection is required.");
         }
 
         if (environment.IsDevelopment())

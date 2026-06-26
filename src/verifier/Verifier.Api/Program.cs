@@ -1,10 +1,17 @@
-﻿using Verifier.Api.OpenApi;
+﻿using Verifier.Api;
+using Verifier.Api.OpenApi;
+using Verifier.Application;
 using Verifier.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<VerifierFailureExceptionFilter>();
+});
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IVerifierRequestContext, HttpVerifierRequestContext>();
 builder.Services.AddVerifierOpenApiDocumentation();
 builder.Services.AddVerifierInfrastructure(builder.Configuration);
 

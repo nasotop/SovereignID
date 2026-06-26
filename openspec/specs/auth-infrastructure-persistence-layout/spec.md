@@ -39,48 +39,50 @@ Las entidades EF generadas MUST usar el namespace `Auth.Infrastructure.Persisten
 
 ### Requirement: Adapters de IChallengeStore colocados juntos
 
-Ambas implementaciones de `IChallengeStore` (`InMemoryChallengeStore` y `PostgresChallengeStore`) SHALL residir bajo `Persistence/Stores/ChallengeStore/`.
+La única implementación de `IChallengeStore` (`EfChallengeStore`) SHALL residir bajo `Persistence/Stores/ChallengeStore/`.
 
-Ambas clases MUST ser `internal sealed` y usar el namespace `Auth.Infrastructure.Persistence.Stores.ChallengeStore`.
+La clase MUST ser `internal sealed` y usar el namespace `Auth.Infrastructure.Persistence.Stores.ChallengeStore`.
 
-#### Scenario: Ubicación de adapters de auth challenge
+No SHALL existir ningún adapter `InMemoryChallengeStore` ni ninguna otra implementación alternativa de `IChallengeStore`.
+
+#### Scenario: Ubicación del adapter de auth challenge
 
 - **WHEN** un desarrollador busca implementaciones de `IChallengeStore` en el repositorio
-- **THEN** ambas están en `src/auth/Auth.Infrastructure/Persistence/Stores/ChallengeStore/`
-- **AND** ninguna permanece en la raíz de `Auth.Infrastructure`
+- **THEN** encuentra exactamente una, `EfChallengeStore`, en `src/auth/Auth.Infrastructure/Persistence/Stores/ChallengeStore/`
+- **AND** no existe ningún `InMemoryChallengeStore`
 
-#### Scenario: Visibilidad coherente
+#### Scenario: Visibilidad del adapter
 
 - **WHEN** se compila `Auth.Infrastructure`
-- **THEN** `InMemoryChallengeStore` y `PostgresChallengeStore` tienen la misma visibilidad (`internal`)
+- **THEN** `EfChallengeStore` es `internal sealed`
 
 ### Requirement: Módulo de composición de persistencia
 
 La capa Infrastructure SHALL exponer un método de extensión `AddAuthPersistence(IServiceCollection, IConfiguration)` en `Persistence/Composition/` que:
 
-1. Registre `PersistenceOptions` desde configuración.
-2. Si `Persistence:Provider` es `Postgres`: registre `SovereignIdDbContext` vía Npgsql y `IChallengeStore` como scoped hacia `PostgresChallengeStore`.
-3. Si no: registre `IChallengeStore` como singleton hacia `InMemoryChallengeStore`.
+1. Registre `SovereignIdDbContext` vía Npgsql usando `ConnectionStrings:DefaultConnection`.
+2. Registre `IChallengeStore` como scoped hacia `EfChallengeStore`.
 
-`AddAuthInfrastructure()` MUST delegar el registro de persistencia a `AddAuthPersistence()` sin duplicar la lógica del selector de proveedor.
+No SHALL existir un selector de proveedor (`Persistence:Provider`) ni una rama de registro alternativa. `ConnectionStrings:DefaultConnection` MUST ser obligatoria.
+
+`AddAuthInfrastructure()` MUST delegar el registro de persistencia a `AddAuthPersistence()` sin duplicar lógica.
 
 #### Scenario: Composición desde DependencyInjection raíz
 
 - **WHEN** se inspecciona `DependencyInjection.AddAuthInfrastructure()`
-- **THEN** la selección InMemory vs Postgres no aparece inline
-- **AND** se invoca `AddAuthPersistence(configuration)`
+- **THEN** invoca `AddAuthPersistence(configuration)` sin lógica de selección de proveedor inline
 
-#### Scenario: Registro InMemory sin Postgres
+#### Scenario: Registro único respaldado por EF
 
-- **WHEN** `Persistence:Provider` es `InMemory` (o ausente)
-- **THEN** `AddAuthPersistence` registra `IChallengeStore` como singleton
-- **AND** no registra `SovereignIdDbContext`
+- **WHEN** se inspecciona `AddAuthPersistence`
+- **THEN** registra `SovereignIdDbContext` scoped con Npgsql
+- **AND** registra `IChallengeStore` como scoped hacia `EfChallengeStore`
+- **AND** no contiene ninguna rama InMemory
 
-#### Scenario: Registro Postgres
+#### Scenario: Connection string obligatoria
 
-- **WHEN** `Persistence:Provider` es `Postgres` y existe connection string
-- **THEN** `AddAuthPersistence` registra `SovereignIdDbContext` scoped con Npgsql
-- **AND** registra `IChallengeStore` como scoped hacia `PostgresChallengeStore`
+- **WHEN** se arranca `auth` sin `ConnectionStrings:DefaultConnection`
+- **THEN** la validación de configuración falla con un error claro
 
 ### Requirement: Tooling alineado con el layout
 
@@ -98,9 +100,10 @@ La capa Infrastructure SHALL exponer un método de extensión `AddAuthPersistenc
 
 La reorganización MUST NOT alterar el comportamiento observable de `GET /auth/nonce`, `POST /auth/verify`, ni los criterios de aceptación AC-01…AC-07.
 
-Los tests de integración existentes MUST pasar sin modificar sus aserciones de dominio HTTP.
+Los tests de integración MUST seguir validando AC-01…AC-07 sin cambiar sus aserciones de dominio HTTP, ejecutándose ahora contra un PostgreSQL efímero (Testcontainers) en lugar del proveedor InMemory.
 
-#### Scenario: Tests de integración verdes
+#### Scenario: Tests de integración verdes sobre Postgres
 
-- **WHEN** se ejecuta `dotnet test tests/auth/Auth.IntegrationTests` tras la reorganización
-- **THEN** todos los tests pasan con la misma configuración `Persistence:Provider=InMemory` que antes
+- **WHEN** se ejecuta `dotnet test tests/auth/Auth.IntegrationTests` tras el cambio
+- **THEN** todos los tests AC-01…AC-07 pasan contra un PostgreSQL efímero (Testcontainers)
+- **AND** las aserciones de dominio HTTP permanecen sin cambios

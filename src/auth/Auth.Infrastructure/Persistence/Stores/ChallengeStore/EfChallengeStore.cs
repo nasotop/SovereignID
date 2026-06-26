@@ -9,13 +9,13 @@ using AuthChallengeRow = Auth.Infrastructure.Persistence.Generated.Entities.Auth
 
 namespace Auth.Infrastructure.Persistence.Stores.ChallengeStore;
 
-internal sealed class PostgresChallengeStore : IChallengeStore
+internal sealed class EfChallengeStore : IChallengeStore
 {
     private readonly SovereignIdDbContext _db;
     private readonly TimeProvider _timeProvider;
     private readonly AuthOptions _options;
 
-    public PostgresChallengeStore(
+    public EfChallengeStore(
         SovereignIdDbContext db,
         TimeProvider timeProvider,
         IOptions<AuthOptions> options)
@@ -76,8 +76,10 @@ internal sealed class PostgresChallengeStore : IChallengeStore
             ToUtcOffset(row.ExpiresAt),
             row.ConsumedAt is not null);
 
+    // 'timestamp without time zone' columns reject DateTimes with Kind=Utc; persist the UTC
+    // wall-clock as Unspecified so it round-trips with the Kind=Utc applied on read.
     private static DateTime ToUtcDateTime(DateTimeOffset value) =>
-        value.UtcDateTime;
+        DateTime.SpecifyKind(value.UtcDateTime, DateTimeKind.Unspecified);
 
     private static DateTimeOffset ToUtcOffset(DateTime value) =>
         new(DateTime.SpecifyKind(value, DateTimeKind.Utc));

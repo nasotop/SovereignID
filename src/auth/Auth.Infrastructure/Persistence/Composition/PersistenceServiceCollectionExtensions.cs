@@ -11,23 +11,20 @@ public static class PersistenceServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(connectionString))
+        // The connection string is resolved at runtime (not at registration) so that test hosts
+        // and other late configuration sources (e.g. WebApplicationFactory) can override it.
+        services.AddDbContext<SovereignIdDbContext>((sp, options) =>
         {
-            throw new InvalidOperationException(
-                "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
-        }
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection is required.");
+            }
 
-        services.AddDbContext<SovereignIdDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString);
+        });
 
         return services;
     }
-
-    public static bool UsesPostgresPersistence(IConfiguration configuration) =>
-        string.Equals(
-            configuration.GetSection(PersistenceOptions.SectionName).Get<PersistenceOptions>()?.Provider
-            ?? PersistenceProviders.InMemory,
-            PersistenceProviders.Postgres,
-            StringComparison.OrdinalIgnoreCase);
 }

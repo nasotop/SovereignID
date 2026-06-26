@@ -19,14 +19,21 @@ SovereignID/
 │   └── scaffold-auth-db.ps1 # Regenerar modelo EF (database-first)
 ├── openspec/                # Cambios y specs OpenSpec
 ├── src/
-│   └── auth/                # Microservicio de autenticación SIWE
-│       ├── Auth.Api/        # HTTP, DI, configuración
-│       ├── Auth.Application/# Casos de uso (IssueNonce, VerifySiwe)
-│       ├── Auth.Domain/     # AuthChallenge, códigos de error
-│       └── Auth.Infrastructure/ # Parser SIWE, JWT, firma; Persistence/ (Generated, Stores, Composition)
+│   ├── auth/                # Microservicio de autenticación SIWE
+│   │   ├── Auth.Api/        # HTTP, DI, configuración
+│   │   ├── Auth.Application/# Casos de uso (IssueNonce, VerifySiwe)
+│   │   ├── Auth.Domain/     # AuthChallenge, códigos de error
+│   │   └── Auth.Infrastructure/ # Parser SIWE, JWT, firma; Persistence/ (Generated, Stores, Composition)
+│   └── verifier/            # Microservicio verificador de Verifiable Credentials
+│       ├── Verifier.Api/        # HTTP (POST /verifications), DI, Problem Details
+│       ├── Verifier.Application/# Caso de uso de verificación, interfaces de store
+│       ├── Verifier.Domain/     # Veredicto (VerificationResult), códigos de error
+│       └── Verifier.Infrastructure/ # Modelo EF acotado, adapters EF, composición DI
 └── tests/
-    └── auth/
-        └── Auth.IntegrationTests/  # AC-01…AC-07
+    ├── auth/
+    │   └── Auth.IntegrationTests/      # AC-01…AC-07 (Testcontainers Postgres)
+    └── verifier/
+        └── Verifier.IntegrationTests/  # Escenarios VER (Testcontainers Postgres)
 ```
 
 Futuros microservicios seguirán `src/{servicio}/` (carpeta en minúscula) con capas análogas.
@@ -50,6 +57,26 @@ Contratos del servicio auth (dos capas complementarias):
 El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`, `expiresAt`, …). El markdown complementa lo que el schema no expresa (p. ej. `nonce_consumed`, TTL del auth challenge).
 
 **Frontend (web):** los tipos TypeScript de request/response se mantienen **alineados manualmente** con el OpenAPI; CI valida alineación con **fixtures JSON** (respuestas de ejemplo) y **snapshot OpenAPI** versionado en `docs/contracts/`; además ejecuta `dotnet test` (AC-01…AC-07). Sin codegen automático. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
+
+## Servicio `verifier`
+
+Verificación pública (anónima) de **Verifiable Credentials** emitidas a estudiantes:
+
+| Endpoint | Propósito |
+|----------|-----------|
+| `POST /verifications` | Verifica una VC por su UUID (`credentials.id`) y devuelve un veredicto (`result`) |
+| `GET /health` | Liveness check |
+
+Contratos del servicio verifier (dos capas, igual que auth):
+
+| Capa | Fuente | Qué define |
+|------|--------|------------|
+| **Contrato HTTP (forma JSON)** | OpenAPI generado por `Verifier.Api` → `docs/contracts/verifier.openapi.json` | Rutas, DTOs, códigos HTTP |
+| **Contrato de dominio (semántica)** | [`docs/verifier-backend-contract.md`](docs/verifier-backend-contract.md) | Reglas de veredicto, precedencia, errores, criterios VER-01… |
+
+**Modelo de respuesta:** un **veredicto de negocio** (credencial revocada, expirada o inexistente) es un resultado legítimo y se devuelve como **`200 OK` con campo `result`** ∈ { `valid`, `revoked`, `expired`, `not_found` }. Problem Details (RFC 7807) se reserva **solo** para errores de entrada/protocolo → `400` con `error = invalid_credential_id`. Esto matiza la sección transversal «Modelo de errores HTTP» para el verifier (ver `docs/verifier-backend-contract.md`).
+
+**Veredicto escalonado v1:** se computan contra la BD los chequeos sin red (`found`, `notRevoked`, `notExpired`); los chequeos con dependencia externa (`hashMatches`, `onChainExists`, `signatureValid`) se devuelven `null` (reservados). La expiración se computa desde `expires_at` vía `TimeProvider` (no se confía solo en `status`). Precedencia: `not_found` > `revoked` > `expired` > `valid`. Cada intento se registra en `verification_logs` (incluido `not_found`, con `credential_id = NULL`).
 
 ## Modelo de errores HTTP (transversal)
 
@@ -96,9 +123,10 @@ PostgreSQL 16 en Docker (`docker-compose.yml`, servicio `postgres`). El esquema 
 | Modelo .NET | Database-first con EF Core Power Tools (`scripts/scaffold-auth-db.ps1`) |
 | Consumo en código | Interfaces en Application → adapters en Infrastructure |
 | DbContext | `internal` en Infrastructure; no inyectar en Api ni casos de uso |
-| Proveedor auth | `Persistence:Provider` = `InMemory` (default) \| `Postgres` |
+| Proveedor | Persistencia única respaldada por EF/Npgsql; `ConnectionStrings:DefaultConnection` siempre obligatoria (sin toggle `Persistence:Provider`) |
+| Modelo por servicio | Cada microservicio tiene su propio modelo EF acotado a las tablas que consume (auth: 12 tablas; verifier: 4 tablas). No se comparte el modelo generado |
 
-Decisión completa: [ADR-0002](docs/adr/0002-database-consumption.md).
+Decisiones completas: [ADR-0002](docs/adr/0002-database-consumption.md) (database-first, seams) y [ADR-0003](docs/adr/0003-single-ef-persistence.md) (persistencia única EF; retiro de `InMemory`).
 
 Layout en `Auth.Infrastructure/Persistence/`:
 
@@ -111,8 +139,9 @@ Layout en `Auth.Infrastructure/Persistence/`:
 **Stack local:**
 
 ```bash
-docker compose up -d postgres          # levantar solo BD
-.\scripts\scaffold-auth-db.ps1       # regenerar modelo EF (requiere postgres healthy)
+docker compose up -d postgres            # levantar solo BD
+.\scripts\scaffold-auth-db.ps1         # regenerar modelo EF de auth (requiere postgres healthy)
+.\scripts\scaffold-verifier-db.ps1     # regenerar modelo EF del verifier (4 tablas)
 ```
 
 Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereignid;Username=sovereignid;Password=sovereignid_dev`. Ver `.env.example`.
@@ -134,7 +163,10 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Código de error** | Valor estable en extensión `error` (`snake_case`); distinto del texto `detail` mostrado al usuario |
 | **Adapter de persistencia** | Implementación en Infrastructure de una interfaz de Application; único lugar con EF y mapeo dominio ↔ BD |
 | **Entidad EF** | Clase scaffold en `Persistence/Generated/Entities` (namespace `Generated.Entities`); representa fila de tabla, no modelo de dominio |
-| **Proveedor de persistencia** | `InMemory` o `Postgres`; selecciona el adapter activo sin cambiar casos de uso |
+| **Verificación** | Operación de comprobar la validez de una VC por su UUID; crea un recurso auditado en `verification_logs` |
+| **Verificador** | Tercero (típicamente anónimo) que solicita una verificación; no requiere autenticación |
+| **Veredicto** | Resultado de una verificación: un `result` resumido más los booleanos `checks` (`found`, `notRevoked`, `notExpired`, …) |
+| **`result`** | Valor estable del veredicto ∈ { `valid`, `revoked`, `expired`, `not_found` } en v1; `invalid_signature`, `tampered`, `ipfs_unreachable` reservados |
 
 ## Configuración relevante
 
@@ -144,15 +176,16 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | `Auth:JwtIssuer` / `Auth:JwtAudience` | Claims `iss` y `aud` del JWT |
 | `Auth:ChallengeTtlSeconds` | TTL del reto (default 600) |
 | `Auth:JwtTtlHours` | TTL del JWT (default 24) |
-| `Persistence:Provider` | `InMemory` (default) o `Postgres` para auth challenges |
-| `ConnectionStrings:DefaultConnection` | Cadena Npgsql; obligatoria si `Persistence:Provider=Postgres` |
+| `ConnectionStrings:DefaultConnection` | Cadena Npgsql; **siempre obligatoria** (auth y verifier) |
 | `POSTGRES_*` | Variables Docker del servicio `postgres` (ver `.env.example`) |
 
 ## Ejecución local
 
 ```bash
 dotnet run --project src/auth/Auth.Api
-dotnet test tests/auth/Auth.IntegrationTests
+dotnet run --project src/verifier/Verifier.Api
+dotnet test tests/auth/Auth.IntegrationTests        # requiere Docker (Testcontainers)
+dotnet test tests/verifier/Verifier.IntegrationTests # requiere Docker (Testcontainers)
 ```
 
-Puerto HTTP de desarrollo: `http://localhost:5132` (ver `Properties/launchSettings.json`).
+Puerto HTTP de desarrollo (auth): `http://localhost:5132` (ver `Properties/launchSettings.json`).

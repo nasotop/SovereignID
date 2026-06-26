@@ -19,9 +19,9 @@ internal static class VerifierOpenApiExtensions
                     Version = "v1",
                     Description =
                         "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. "
-                        + "Expone un health-check (`GET /health`); los endpoints de verificación se añadirán en próximas iteraciones. "
-                        + "Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable "
-                        + "en la extensión `error`.",
+                        + "Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). "
+                        + "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`; "
+                        + "los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
                     Contact = new OpenApiContact
                     {
                         Name = "SovereignID",

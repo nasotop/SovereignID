@@ -4,6 +4,8 @@
 
 Aceptado — 2026-06-23
 
+> **Superseded by [ADR-0003](0003-single-ef-persistence.md) (proveedor).** El punto del **proveedor de persistencia** descrito aquí —toggle `Persistence:Provider`, adapter `InMemory` y connection string condicional— queda reemplazado por una persistencia única respaldada por EF/Npgsql (connection string siempre obligatoria). El resto de este ADR (database-first, seams Application↔Infrastructure, `DbContext` internal, reglas de escritura/concurrencia) sigue vigente.
+
 ## Contexto
 
 El monorepo SovereignID usa PostgreSQL 16 con esquema canónico en `database/BBDD_SovereignID.sql`. El microservicio `auth` ya tiene modelo EF generado (`SovereignIdDbContext`) y un primer adapter (`PostgresChallengeStore` sobre `IChallengeStore`).
