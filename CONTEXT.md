@@ -156,3 +156,14 @@ dotnet test tests/auth/Auth.IntegrationTests
 ```
 
 Puerto HTTP de desarrollo: `http://localhost:5132` (ver `Properties/launchSettings.json`).
+
+## CI/CD y despliegue
+
+| Rama | CI (build + test) | Deploy |
+|------|-------------------|--------|
+| `dev` | Sí (push y PR) | No |
+| `master` | Sí (push y PR) | Sí → webhook Portainer en VPS |
+
+Flujo: `feature/*` → PR → `dev` → PR → `master` → deploy automático.
+
+Detalle completo (secretos, Portainer, branch protection, SonarCloud): [`docs/deployment.md`](docs/deployment.md).
