@@ -43,9 +43,9 @@ CREATE TABLE "institutions" (
   "code" varchar(40) UNIQUE NOT NULL,
   "legal_name" varchar(200) NOT NULL,
   "display_name" varchar(120) NOT NULL,
-  "did" varchar(200) UNIQUE NOT NULL,
-  "issuer_wallet_address" varchar(42) UNIQUE NOT NULL,
-  "public_key" text NOT NULL,
+  "did" varchar(200) UNIQUE,
+  "issuer_wallet_address" varchar(42) UNIQUE,
+  "public_key" text,
   "country_code" char(2) NOT NULL DEFAULT 'CL',
   "website_url" varchar(300),
   "is_active" boolean NOT NULL DEFAULT true,
@@ -71,6 +71,21 @@ CREATE TABLE "institution_users" (
   "role" user_role NOT NULL,
   "granted_by_user_id" uuid,
   "granted_at" timestamp NOT NULL DEFAULT (now()),
+  "revoked_at" timestamp
+);
+
+CREATE TABLE "institution_invitations" (
+  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "institution_id" uuid NOT NULL,
+  "email" varchar(200) NOT NULL,
+  "role" user_role NOT NULL DEFAULT 'issuer',
+  "token_hash" char(64) UNIQUE NOT NULL,
+  "invitation_url" varchar(700) NOT NULL,
+  "expires_at" timestamp NOT NULL,
+  "accepted_at" timestamp,
+  "accepted_by_user_id" uuid,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "created_by_user_id" uuid,
   "revoked_at" timestamp
 );
 
@@ -210,6 +225,14 @@ CREATE INDEX ON "institution_users" ("institution_id");
 
 CREATE INDEX ON "institution_users" ("user_id");
 
+CREATE INDEX ON "institution_invitations" ("institution_id");
+
+CREATE INDEX ON "institution_invitations" ("email");
+
+CREATE INDEX ON "institution_invitations" ("token_hash");
+
+CREATE INDEX ON "institution_invitations" ("expires_at");
+
 CREATE UNIQUE INDEX "uq_inst_external_ref" ON "students" ("institution_id", "external_reference");
 
 CREATE INDEX ON "students" ("institution_id");
@@ -319,6 +342,16 @@ COMMENT ON TABLE "institution_users" IS 'Relación N:M entre usuarios e instituc
 COMMENT ON COLUMN "institution_users"."granted_by_user_id" IS 'Quién asignó este rol';
 
 COMMENT ON COLUMN "institution_users"."revoked_at" IS 'Si tiene valor, el rol está inactivo';
+
+COMMENT ON TABLE "institution_invitations" IS 'Invitaciones con link temporal para que usuarios institucionales conecten una wallet MetaMask existente. El token crudo no se persiste.';
+
+COMMENT ON COLUMN "institution_invitations"."token_hash" IS 'SHA-256 hexadecimal del token enviado por email.';
+
+COMMENT ON COLUMN "institution_invitations"."invitation_url" IS 'URL enviada al frontend para completar la vinculación de wallet.';
+
+COMMENT ON COLUMN "institution_invitations"."expires_at" IS 'Fecha de expiración del link de invitación.';
+
+COMMENT ON COLUMN "institution_invitations"."accepted_at" IS 'Nullable. Si tiene valor, el link ya fue consumido.';
 
 COMMENT ON TABLE "students" IS 'Estudiante sin datos personales. La identidad real solo existe dentro de la VC en IPFS y en el SIS interno de la institución.';
 
@@ -433,6 +466,12 @@ ALTER TABLE "institution_users" ADD FOREIGN KEY ("institution_id") REFERENCES "i
 ALTER TABLE "institution_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "institution_users" ADD FOREIGN KEY ("granted_by_user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "institution_invitations" ADD FOREIGN KEY ("institution_id") REFERENCES "institutions" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "institution_invitations" ADD FOREIGN KEY ("accepted_by_user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "institution_invitations" ADD FOREIGN KEY ("created_by_user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "students" ADD FOREIGN KEY ("institution_id") REFERENCES "institutions" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 

@@ -1,0 +1,6 @@
+﻿@Academy.Api_HostAddress = http://localhost:5135
+
+GET {{Academy.Api_HostAddress}}/health
+Accept: application/json
+
+###
