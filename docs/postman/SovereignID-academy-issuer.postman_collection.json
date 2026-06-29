@@ -49,6 +49,18 @@
     {
       "key": "credentialId",
       "value": ""
+    },
+    {
+      "key": "contentHash",
+      "value": ""
+    },
+    {
+      "key": "transactionHash",
+      "value": ""
+    },
+    {
+      "key": "eip712Signature",
+      "value": ""
     }
   ],
   "item": [
@@ -96,6 +108,9 @@
                   "pm.collectionVariables.set('adminWallet', wallet('aa'));",
                   "pm.collectionVariables.set('studentWallet', wallet('bb'));",
                   "pm.collectionVariables.set('issuerWallet', wallet('cc'));",
+                  "pm.collectionVariables.set('contentHash', '0x' + run + 'a'.repeat(56));",
+                  "pm.collectionVariables.set('transactionHash', '0x' + run + 'b'.repeat(56));",
+                  "pm.collectionVariables.set('eip712Signature', '0x' + 'c'.repeat(130));",
                   "pm.collectionVariables.unset('institutionId');",
                   "pm.collectionVariables.unset('invitationToken');",
                   "pm.collectionVariables.unset('careerId');",
@@ -279,7 +294,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"careerId\": \"{{careerId}}\",\n  \"credentialTypeCode\": \"TITULO\",\n  \"ipfsCid\": \"bafy-{{run}}\",\n  \"ipfsGatewayUrl\": \"https://ipfs.io/ipfs/bafy-{{run}}\",\n  \"contentHash\": \"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"transactionHash\": \"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"blockNumber\": 123456,\n  \"chainId\": 11155111,\n  \"eip712Signature\": \"0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\n  \"expiresAt\": null,\n  \"metadata\": {\n    \"run\": \"{{run}}\",\n    \"source\": \"postman\"\n  }\n}"
+              "raw": "{\n  \"careerId\": \"{{careerId}}\",\n  \"credentialTypeCode\": \"TITULO\",\n  \"ipfsCid\": \"bafy-{{run}}\",\n  \"ipfsGatewayUrl\": \"https://ipfs.io/ipfs/bafy-{{run}}\",\n  \"contentHash\": \"{{contentHash}}\",\n  \"transactionHash\": \"{{transactionHash}}\",\n  \"blockNumber\": 123456,\n  \"chainId\": 11155111,\n  \"eip712Signature\": \"{{eip712Signature}}\",\n  \"expiresAt\": null,\n  \"metadata\": {\n    \"run\": \"{{run}}\",\n    \"source\": \"postman\"\n  }\n}"
             },
             "url": "{{issuerBaseUrl}}/issuer/students/{{studentId}}/title"
           }
