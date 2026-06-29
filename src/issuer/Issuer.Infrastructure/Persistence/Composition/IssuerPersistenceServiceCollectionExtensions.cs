@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+using Issuer.Application;
+using Issuer.Infrastructure.Persistence.Stores;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Issuer.Infrastructure.Persistence.Composition;
@@ -14,6 +16,10 @@ public static class IssuerPersistenceServiceCollectionExtensions
         if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration))
         {
             services.AddIssuerPostgresPersistence(configuration);
+        }
+        else
+        {
+            services.AddSingleton<ITitleIssuerRepository, InMemoryTitleIssuerRepository>();
         }
 
         return services;

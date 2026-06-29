@@ -1,4 +1,4 @@
-﻿using Issuer.Application;
+using Issuer.Application;
 using Issuer.Infrastructure.Persistence.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +11,8 @@ public static class DependencyInjection
     public static IServiceCollection AddIssuerInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<IssuerOptions>(configuration.GetSection(IssuerOptions.SectionName));
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<IssuerService>();
         services.AddIssuerPersistence(configuration);
 
         return services;

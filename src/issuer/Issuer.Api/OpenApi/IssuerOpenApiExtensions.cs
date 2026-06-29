@@ -15,13 +15,14 @@ internal static class IssuerOpenApiExtensions
             {
                 document.Info = new OpenApiInfo
                 {
-                    Title = "SovereignID · Issuer API",
+                    Title = "SovereignID - Issuer API",
                     Version = "v1",
                     Description =
                         "Servicio emisor de Verifiable Credentials de la plataforma SovereignID. "
-                        + "Expone un health-check (`GET /health`); los endpoints de emisión se añadirán en próximas iteraciones. "
-                        + "Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable "
-                        + "en la extensión `error`.",
+                        + "Vincula la wallet/DID emisor de una institucion y titulos emitidos a estudiantes "
+                        + "usando la wallet primaria activa del estudiante. "
+                        + "Los errores de negocio se devuelven como RFC 7807 Problem Details con un codigo estable "
+                        + "en la extension `error`.",
                     Contact = new OpenApiContact
                     {
                         Name = "SovereignID",
@@ -42,7 +43,7 @@ internal static class IssuerOpenApiExtensions
         app.MapScalarApiReference(options =>
         {
             options
-                .WithTitle("SovereignID · Issuer API")
+                .WithTitle("SovereignID - Issuer API")
                 .WithTheme(ScalarTheme.Saturn);
         });
 

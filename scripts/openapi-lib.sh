@@ -7,6 +7,7 @@
 OPENAPI_SERVICES=(
   "auth|src/auth/Auth.Api|5199|docs/contracts/auth.openapi.json"
   "identity|src/identity/Identity.Api|5198|docs/contracts/identity.openapi.json"
+  "academy|src/academy/Academy.Api|5195|docs/contracts/academy.openapi.json"
   "issuer|src/issuer/Issuer.Api|5197|docs/contracts/issuer.openapi.json"
   "verifier|src/verifier/Verifier.Api|5196|docs/contracts/verifier.openapi.json"
 )
