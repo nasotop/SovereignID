@@ -157,6 +157,37 @@ dotnet test tests/auth/Auth.IntegrationTests
 
 Puerto HTTP de desarrollo: `http://localhost:5132` (ver `Properties/launchSettings.json`).
 
+## Servicio `academy`
+
+El microservicio `academy` concentra el dominio academico del MVP: instituciones, carreras, estudiantes e invitaciones institucionales.
+
+| Endpoint | Proposito |
+|----------|-----------|
+| `POST /academy/institutions` | Crea institucion y genera una invitacion admin |
+| `GET /academy/institutions/{institutionId}` | Consulta institucion |
+| `POST /academy/institutions/{institutionId}/careers` | Crea carrera |
+| `POST /academy/institutions/{institutionId}/students` | Crea estudiante, con wallet opcional |
+| `POST /academy/institutions/{institutionId}/invitations` | Invita un usuario institucional |
+| `POST /academy/invitations/accept` | Acepta invitacion y vincula wallet MetaMask existente |
+Regla MVP: el backend **no crea cuentas MetaMask**. Las wallets son existentes y se vinculan cuando el usuario acepta una invitacion o cuando la institucion registra la wallet del estudiante. El link de invitacion expira; en BD se persiste solo el hash SHA-256 del token, no el token crudo.
+
+La wallet/DID emisor de la institucion y la emision o vinculacion de titulos/credenciales quedan en el servicio `issuer`.
+
+Contrato de dominio: [`docs/academy-domain-contract.md`](docs/academy-domain-contract.md).
+
+## Servicio `issuer`
+
+El microservicio `issuer` concentra la emision y vinculacion de credenciales verificables.
+
+| Endpoint | Proposito |
+|----------|-----------|
+| `POST /issuer/institutions/{institutionId}/wallet` | Vincula wallet/DID emisor de una institucion |
+| `POST /issuer/students/{studentId}/title` | Vincula un titulo emitido a un estudiante |
+
+Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincular un titulo, el estudiante debe tener wallet primaria activa y la institucion debe tener DID emisor. El servicio valida carrera, tipo de credencial, datos IPFS, hash, transaccion y firma EIP-712 antes de registrar la fila en `credentials`.
+
+Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
+
 ## CI/CD y despliegue
 
 | Rama | CI (build + test) | Deploy |

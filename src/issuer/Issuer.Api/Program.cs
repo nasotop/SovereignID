@@ -3,7 +3,10 @@ using Issuer.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<Issuer.Api.IssuerFailureExceptionFilter>();
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddIssuerOpenApiDocumentation();
 builder.Services.AddIssuerInfrastructure(builder.Configuration);

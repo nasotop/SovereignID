@@ -1,0 +1,305 @@
+{
+  "info": {
+    "_postman_id": "a6dd0fd4-5d29-42b3-a373-sovereignid",
+    "name": "SovereignID - Academy + Issuer MVP",
+    "description": "Flujo integrado para probar Academy e Issuer localmente. Requiere Academy en http://127.0.0.1:5135, Issuer en http://127.0.0.1:5134 y Postgres con credential_types sembrado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "academyBaseUrl",
+      "value": "http://127.0.0.1:5135"
+    },
+    {
+      "key": "issuerBaseUrl",
+      "value": "http://127.0.0.1:5134"
+    },
+    {
+      "key": "run",
+      "value": ""
+    },
+    {
+      "key": "adminWallet",
+      "value": ""
+    },
+    {
+      "key": "studentWallet",
+      "value": ""
+    },
+    {
+      "key": "issuerWallet",
+      "value": ""
+    },
+    {
+      "key": "institutionId",
+      "value": ""
+    },
+    {
+      "key": "invitationToken",
+      "value": ""
+    },
+    {
+      "key": "careerId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "credentialId",
+      "value": ""
+    },
+    {
+      "key": "contentHash",
+      "value": ""
+    },
+    {
+      "key": "transactionHash",
+      "value": ""
+    },
+    {
+      "key": "eip712Signature",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Academy health",
+          "request": {
+            "method": "GET",
+            "url": "{{academyBaseUrl}}/health"
+          }
+        },
+        {
+          "name": "Issuer health",
+          "request": {
+            "method": "GET",
+            "url": "{{issuerBaseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Academy flow",
+      "item": [
+        {
+          "name": "Create institution and admin invitation",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function randomHex(length) {",
+                  "  const chars = '0123456789abcdef';",
+                  "  let value = '';",
+                  "  for (let i = 0; i < length; i++) value += chars[Math.floor(Math.random() * chars.length)];",
+                  "  return value;",
+                  "}",
+                  "function wallet(prefix) {",
+                  "  return '0x' + prefix + randomHex(40 - prefix.length);",
+                  "}",
+                  "const run = randomHex(8);",
+                  "pm.collectionVariables.set('run', run);",
+                  "pm.collectionVariables.set('adminWallet', wallet('aa'));",
+                  "pm.collectionVariables.set('studentWallet', wallet('bb'));",
+                  "pm.collectionVariables.set('issuerWallet', wallet('cc'));",
+                  "pm.collectionVariables.set('contentHash', '0x' + run + 'a'.repeat(56));",
+                  "pm.collectionVariables.set('transactionHash', '0x' + run + 'b'.repeat(56));",
+                  "pm.collectionVariables.set('eip712Signature', '0x' + 'c'.repeat(130));",
+                  "pm.collectionVariables.unset('institutionId');",
+                  "pm.collectionVariables.unset('invitationToken');",
+                  "pm.collectionVariables.unset('careerId');",
+                  "pm.collectionVariables.unset('studentId');",
+                  "pm.collectionVariables.unset('credentialId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created institution', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('institutionId', body.institution.id);",
+                  "const invitationUrl = body.invitation.invitationUrl;",
+                  "const token = new URL(invitationUrl).searchParams.get('token');",
+                  "pm.collectionVariables.set('invitationToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"QA-{{run}}\",\n  \"legalName\": \"QA Institution {{run}} SpA\",\n  \"displayName\": \"QA Institution {{run}}\",\n  \"contactEmail\": \"admin-{{run}}@qa.test\",\n  \"countryCode\": \"CL\"\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions"
+          }
+        },
+        {
+          "name": "Accept invitation with existing MetaMask wallet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Accepted invitation', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitationToken}}\",\n  \"walletAddress\": \"{{adminWallet}}\",\n  \"displayName\": \"Admin {{run}}\"\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/invitations/accept"
+          }
+        },
+        {
+          "name": "Create career",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created career', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('careerId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CAR-{{run}}\",\n  \"name\": \"Ingenieria QA {{run}}\"\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/careers"
+          }
+        },
+        {
+          "name": "Create student with existing wallet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created student', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('studentId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalReference\": \"ALU-{{run}}\",\n  \"enrollmentYear\": 2026,\n  \"walletAddress\": \"{{studentWallet}}\"\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/students"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Issuer flow",
+      "item": [
+        {
+          "name": "Link institution issuer wallet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Linked issuer wallet', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"{{issuerWallet}}\",\n  \"did\": \"did:ethr:sepolia:{{issuerWallet}}\",\n  \"publicKey\": \"0x1111111111111111111111111111111111111111111111111111111111111111\"\n}"
+            },
+            "url": "{{issuerBaseUrl}}/issuer/institutions/{{institutionId}}/wallet"
+          }
+        },
+        {
+          "name": "Link issued title to student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Linked title', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('credentialId', body.credentialId);",
+                  "pm.test('Credential is active', function () { pm.expect(body.status).to.eql('active'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"careerId\": \"{{careerId}}\",\n  \"credentialTypeCode\": \"TITULO\",\n  \"ipfsCid\": \"bafy-{{run}}\",\n  \"ipfsGatewayUrl\": \"https://ipfs.io/ipfs/bafy-{{run}}\",\n  \"contentHash\": \"{{contentHash}}\",\n  \"transactionHash\": \"{{transactionHash}}\",\n  \"blockNumber\": 123456,\n  \"chainId\": 11155111,\n  \"eip712Signature\": \"{{eip712Signature}}\",\n  \"expiresAt\": null,\n  \"metadata\": {\n    \"run\": \"{{run}}\",\n    \"source\": \"postman\"\n  }\n}"
+            },
+            "url": "{{issuerBaseUrl}}/issuer/students/{{studentId}}/title"
+          }
+        }
+      ]
+    }
+  ]
+}
