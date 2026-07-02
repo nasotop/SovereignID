@@ -27,6 +27,7 @@ internal sealed class StudentEntity
 {
     public Guid Id { get; set; }
     public Guid InstitutionId { get; set; }
+    public string? ExternalReference { get; set; }
     public bool IsActive { get; set; }
 }
 
@@ -73,6 +74,10 @@ internal sealed class CredentialEntity
     public CredentialStatus Status { get; set; } = CredentialStatus.active;
     public DateTime IssuedAt { get; set; }
     public DateTime? ExpiresAt { get; set; }
+    public DateTime? RevokedAt { get; set; }
+    public Guid? RevokedByUserId { get; set; }
+    public string? RevocationReason { get; set; }
+    public string? RevocationTxHash { get; set; }
     public DateTime CreatedAt { get; set; }
     public string? Metadata { get; set; }
 }

@@ -15,6 +15,9 @@ El servicio `issuer` concentra la emision y vinculacion de credenciales verifica
 |--------|------|-----------|
 | `POST` | `/issuer/institutions/{institutionId}/wallet` | Vincula la wallet/DID emisor de la institucion |
 | `POST` | `/issuer/students/{studentId}/title` | Registra un titulo emitido y lo vincula al estudiante |
+| `GET` | `/issuer/institutions/{institutionId}/credentials` | Lista credenciales emitidas por la institucion |
+| `GET` | `/issuer/credentials/{credentialId}` | Consulta una credencial |
+| `POST` | `/issuer/credentials/{credentialId}/revoke` | Revoca una credencial activa tras tx on-chain |
 
 ## Reglas principales
 
@@ -40,3 +43,8 @@ El servicio `issuer` concentra la emision y vinculacion de credenciales verifica
 | `invalid_credential_type` | 400 | Tipo de credencial vacio |
 | `invalid_title_payload` | 400 | Payload incompleto para emitir/vincular titulo |
 | `title_link_failed` | 409 | No existe estudiante, wallet, DID emisor, carrera o tipo de credencial valido |
+| `credential_not_found` | 404 | Credencial inexistente |
+| `credential_not_active` | 409 | Solo credenciales activas pueden revocarse |
+| `invalid_revocation_reason` | 400 | Motivo de revocacion vacio |
+| `invalid_revocation_payload` | 400 | Evidencia de revocacion incompleta |
+| `blockchain_anchor_invalid` | 409 | La transaccion on-chain no pudo verificarse |

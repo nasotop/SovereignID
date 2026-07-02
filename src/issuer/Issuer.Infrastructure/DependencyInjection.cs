@@ -1,8 +1,12 @@
 using Issuer.Application;
+using Issuer.Infrastructure.Blockchain;
 using Issuer.Infrastructure.Persistence.Composition;
+using Issuer.Infrastructure.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Issuer.Infrastructure;
 
@@ -14,6 +18,19 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IssuerService>();
         services.AddIssuerPersistence(configuration);
+
+        services.AddHttpClient<RpcBlockchainAnchorVerifier>();
+        services.AddSingleton<NullBlockchainAnchorVerifier>();
+        services.AddScoped<IBlockchainAnchorVerifier, ConfigurableBlockchainAnchorVerifier>();
+
+        services.AddIssuerJwtAuthentication(configuration);
+        services.AddSingleton<IConfigureOptions<AuthorizationOptions>>(sp =>
+        {
+            var environment = sp.GetRequiredService<IHostEnvironment>();
+            var options = sp.GetRequiredService<IOptions<IssuerOptions>>().Value.Auth;
+            return new ConfigureNamedOptions<AuthorizationOptions>(null, authOptions =>
+                IssuerAuthorizationPolicy.Configure(authOptions, environment, options));
+        });
 
         return services;
     }

@@ -1,46 +1,42 @@
-import { HttpClient } from '@angular/common/http';
-import { Service, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 
+import { ISSUER_INSTITUTION_STORAGE_KEY } from '../constants/issuer.constants';
 import {
+  CredentialSummaryResponse,
   IssueCredentialModel,
   IssuedCredential,
-  MOCK_ISSUED_CREDENTIALS,
 } from '../models/credential.models';
+import { IssuerApiService } from './issuer-api.service';
+import { TitleIssuanceService } from './title-issuance.service';
 
-/**
- * Credential data layer prepared for real HTTP integration.
- *
- * `credentialsResource` uses rxResource — the ideal pattern for the Issuer
- * portal table once GET /api/credentials is available. Until then, local
- * overlay signals keep mock data editable for UI demos.
- */
-@Service()
+@Injectable({ providedIn: 'root' })
 export class CredentialService {
-  private readonly http = inject(HttpClient);
+  private readonly issuerApiService = inject(IssuerApiService);
+  private readonly titleIssuanceService = inject(TitleIssuanceService);
 
-  private readonly localCredentials = signal<ReadonlyArray<IssuedCredential>>([
-    ...MOCK_ISSUED_CREDENTIALS,
-  ]);
+  readonly institutionId = signal(this.readInstitutionId());
 
-  /**
-   * Reactive credential list resource.
-   * TODO: Replace mock stream with:
-   *   this.http.get<ReadonlyArray<IssuedCredential>>('/api/credentials')
-   */
   readonly credentialsResource = rxResource({
-    stream: () => {
-      // Placeholder until backend endpoint exists
-      void this.http;
-      return of([...this.localCredentials()] as IssuedCredential[]);
+    params: () => ({ institutionId: this.institutionId() }),
+    stream: ({ params }) => {
+      if (!params.institutionId) {
+        return of([] as CredentialSummaryResponse[]);
+      }
+
+      return this.issuerApiService.listInstitutionCredentials(params.institutionId);
     },
   });
 
-  /** Merges remote resource value with local overlay for mock/demo flows */
   readonly credentials = computed<ReadonlyArray<IssuedCredential>>(() => {
     const remote = this.credentialsResource.value();
-    return remote ?? this.localCredentials();
+    if (!remote) {
+      return [];
+    }
+
+    return remote.map(mapSummaryToIssuedCredential);
   });
 
   readonly totalIssued = computed(() => this.credentials().length);
@@ -53,19 +49,38 @@ export class CredentialService {
     () => this.credentials().filter((c) => c.status === 'revoked').length,
   );
 
-  /** Adds a credential locally and reloads the resource stream */
-  addCredential(model: IssueCredentialModel): IssuedCredential {
-    const credential: IssuedCredential = {
-      id: crypto.randomUUID(),
-      student: model.student,
-      documentType: model.documentType,
-      issuedDate: model.issuedDate,
-      status: 'active',
-    };
-
-    this.localCredentials.update((current) => [...current, credential]);
+  setInstitutionId(institutionId: string): void {
+    localStorage.setItem(ISSUER_INSTITUTION_STORAGE_KEY, institutionId);
+    this.institutionId.set(institutionId);
     this.credentialsResource.reload();
-
-    return credential;
   }
+
+  async issueCredential(model: IssueCredentialModel): Promise<void> {
+    await this.titleIssuanceService.issueTitle(model);
+    this.credentialsResource.reload();
+  }
+
+  async revokeCredential(credentialId: string, reason: string): Promise<void> {
+    await this.titleIssuanceService.revokeTitle(credentialId, reason);
+    this.credentialsResource.reload();
+  }
+
+  private readInstitutionId(): string {
+    return localStorage.getItem(ISSUER_INSTITUTION_STORAGE_KEY) ?? '';
+  }
+}
+
+function mapSummaryToIssuedCredential(
+  summary: CredentialSummaryResponse,
+): IssuedCredential {
+  return {
+    credentialId: summary.credentialId,
+    institutionId: summary.institutionId,
+    studentId: summary.studentId,
+    studentLabel: summary.studentLabel ?? summary.studentId,
+    documentType: summary.credentialTypeCode,
+    issuedDate: summary.issuedAt.slice(0, 10),
+    status: summary.status === 'revoked' ? 'revoked' : 'active',
+    ipfsGatewayUrl: summary.ipfsGatewayUrl,
+  };
 }

@@ -41,6 +41,7 @@ internal sealed class IssuerDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.InstitutionId).HasColumnName("institution_id");
+            entity.Property(e => e.ExternalReference).HasColumnName("external_reference").HasMaxLength(80);
             entity.Property(e => e.IsActive).HasColumnName("is_active");
         });
 
@@ -95,6 +96,10 @@ internal sealed class IssuerDbContext : DbContext
             entity.Property(e => e.Status).HasColumnName("status").HasColumnType("credential_status");
             entity.Property(e => e.IssuedAt).HasColumnName("issued_at");
             entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at");
+            entity.Property(e => e.RevokedByUserId).HasColumnName("revoked_by_user_id");
+            entity.Property(e => e.RevocationReason).HasColumnName("revocation_reason");
+            entity.Property(e => e.RevocationTxHash).HasColumnName("revocation_tx_hash").HasMaxLength(66);
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.Metadata).HasColumnName("metadata").HasColumnType("jsonb");
         });
