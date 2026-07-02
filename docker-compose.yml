@@ -52,6 +52,47 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Sign-In with Ethereum (SIWE) Authentication Service"
 
+  issuer-api:
+    build:
+      context: .
+      dockerfile: src/issuer/Issuer.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-issuer:latest
+    container_name: sovereignid-issuer
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      AUTH_JWT_SIGNING_KEY: ${AUTH_JWT_SIGNING_KEY:?AUTH_JWT_SIGNING_KEY is required}
+      Issuer__DefaultChainId: ${Issuer__DefaultChainId:-11155111}
+      Issuer__Blockchain__Enabled: ${Issuer__Blockchain__Enabled:-false}
+      Issuer__Blockchain__RpcUrl: ${Issuer__Blockchain__RpcUrl:-https://rpc.sepolia.org}
+      Issuer__Auth__RequireAuthentication: ${Issuer__Auth__RequireAuthentication:-true}
+      Issuer__Auth__JwtIssuer: ${Issuer__Auth__JwtIssuer:-sovereignid-auth}
+      Issuer__Auth__JwtAudience: ${Issuer__Auth__JwtAudience:-sovereignid-clients}
+      Persistence__Provider: ${Persistence__Provider:-InMemory}
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:-}
+    expose:
+      - "8080"
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: issuer-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Academic credential issuer (IPFS + blockchain anchor)"
+
   web:
     build:
       context: ./src/web
@@ -63,6 +104,8 @@ services:
       - "${WEB_HOST_PORT:-4333}:80"
     depends_on:
       auth-api:
+        condition: service_healthy
+      issuer-api:
         condition: service_healthy
     networks:
       - sovereign-net
@@ -97,6 +140,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/BBDD_SovereignID.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed_credential_types.sql:/docker-entrypoint-initdb.d/02-seed-credential-types.sql:ro
     networks:
       - sovereign-net
     healthcheck:
