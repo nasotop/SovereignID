@@ -1,4 +1,3 @@
-using Issuer.Api.Models;
 using Issuer.Application;
 using Issuer.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +13,8 @@ public sealed class InstitutionCredentialsController : ControllerBase
 {
     private readonly IssuerService _issuerService;
 
-    public InstitutionCredentialsController(IssuerService issuerService)
-    {
+    public InstitutionCredentialsController(IssuerService issuerService) =>
         _issuerService = issuerService;
-    }
 
     /// <summary>Lists credentials issued by an institution.</summary>
     [HttpGet("{institutionId:guid}/credentials")]
@@ -28,16 +25,11 @@ public sealed class InstitutionCredentialsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _issuerService.ListInstitutionCredentialsAsync(institutionId, cancellationToken);
-        return FromResult(result, success => (ActionResult<IReadOnlyList<CredentialSummary>>)Ok(success));
-    }
-
-    private static ActionResult<T> FromResult<T>(
-        IssuerResult<T> result,
-        Func<T, ActionResult<T>> onSuccess) =>
-        result switch
+        return result switch
         {
-            IssuerSuccess<T> success => onSuccess(success.Value),
-            IssuerFailureResult<T> failure => throw new IssuerFailureException(failure.Failure),
+            IssuerSuccess<IReadOnlyList<CredentialSummary>> success => Ok(success.Value),
+            IssuerFailureResult<IReadOnlyList<CredentialSummary>> failure => throw new IssuerFailureException(failure.Failure),
             _ => throw new InvalidOperationException("Unexpected issuer result.")
         };
+    }
 }

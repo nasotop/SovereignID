@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Issuer.Application;
-using Issuer.Infrastructure.Persistence.Entities;
 
 namespace Issuer.Infrastructure.Persistence.Stores;
 
@@ -12,7 +11,7 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
     public static readonly Guid WalletId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
     private static readonly object Sync = new();
-    private static readonly List<CredentialEntity> Credentials = [];
+    private static readonly List<InMemoryCredential> Credentials = [];
     private static string? _issuerWalletAddress = "0x1111111111111111111111111111111111111111";
 
     public Task<InstitutionIssuerWalletLinked?> LinkInstitutionIssuerWalletAsync(
@@ -48,27 +47,20 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
             return Task.FromResult<StudentTitleLinked?>(null);
         }
 
-        var credentialId = command.CredentialId ?? Guid.NewGuid();
-        var entity = new CredentialEntity
+        var entity = new InMemoryCredential
         {
-            Id = credentialId,
+            Id = command.CredentialId ?? Guid.NewGuid(),
             InstitutionId = InstitutionId,
-            CredentialTypeId = 1,
             StudentId = StudentId,
             CareerId = CareerId,
-            IssuedToWalletId = WalletId,
             SubjectDid = "did:ethr:sepolia:0x2222222222222222222222222222222222222222",
             IssuerDid = "did:ethr:sepolia:0x1111111111111111111111111111111111111111",
             IpfsCid = command.IpfsCid,
             IpfsGatewayUrl = command.IpfsGatewayUrl,
             ContentHash = command.ContentHash,
             TransactionHash = command.TransactionHash,
-            BlockNumber = command.BlockNumber,
-            ChainId = command.ChainId ?? 11155111,
-            Eip712Signature = command.Eip712Signature,
-            Status = CredentialStatus.active,
-            IssuedAt = now.UtcDateTime,
-            CreatedAt = now.UtcDateTime,
+            Status = "active",
+            IssuedAt = now,
             Metadata = command.Metadata?.GetRawText()
         };
 
@@ -122,16 +114,15 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
         lock (Sync)
         {
             var entity = Credentials.SingleOrDefault(c => c.Id == command.CredentialId);
-            if (entity is null || entity.Status != CredentialStatus.active)
+            if (entity is null || !string.Equals(entity.Status, "active", StringComparison.OrdinalIgnoreCase))
             {
                 return Task.FromResult<CredentialRevoked?>(null);
             }
 
-            entity.Status = CredentialStatus.revoked;
-            entity.RevokedAt = now.UtcDateTime;
+            entity.Status = "revoked";
+            entity.RevokedAt = now;
             entity.RevocationReason = command.Reason;
             entity.RevocationTxHash = command.RevocationTxHash;
-            entity.RevokedByUserId = command.RevokedByUserId;
 
             return Task.FromResult<CredentialRevoked?>(new CredentialRevoked(
                 entity.Id,
@@ -164,7 +155,7 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
             ? GetInstitutionIssuerWalletAsync(InstitutionId, cancellationToken)
             : Task.FromResult<string?>(null);
 
-    private static CredentialSummary MapSummary(CredentialEntity entity) =>
+    private static CredentialSummary MapSummary(InMemoryCredential entity) =>
         new(
             entity.Id,
             entity.InstitutionId,
@@ -173,15 +164,33 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
             "TITULO",
             entity.SubjectDid,
             entity.IssuerDid,
-            entity.Status.ToString(),
+            entity.Status,
             entity.IpfsCid,
             entity.IpfsGatewayUrl,
             entity.ContentHash,
             entity.TransactionHash,
-            new DateTimeOffset(DateTime.SpecifyKind(entity.IssuedAt, DateTimeKind.Utc)),
-            entity.RevokedAt is null
-                ? null
-                : new DateTimeOffset(DateTime.SpecifyKind(entity.RevokedAt.Value, DateTimeKind.Utc)),
+            entity.IssuedAt,
+            entity.RevokedAt,
             entity.RevocationReason,
             "Student Demo");
+
+    private sealed class InMemoryCredential
+    {
+        public Guid Id { get; init; }
+        public Guid InstitutionId { get; init; }
+        public Guid StudentId { get; init; }
+        public Guid? CareerId { get; init; }
+        public string SubjectDid { get; init; } = string.Empty;
+        public string IssuerDid { get; init; } = string.Empty;
+        public string IpfsCid { get; init; } = string.Empty;
+        public string IpfsGatewayUrl { get; init; } = string.Empty;
+        public string ContentHash { get; init; } = string.Empty;
+        public string TransactionHash { get; init; } = string.Empty;
+        public string Status { get; set; } = "active";
+        public DateTimeOffset IssuedAt { get; init; }
+        public DateTimeOffset? RevokedAt { get; set; }
+        public string? RevocationReason { get; set; }
+        public string? RevocationTxHash { get; set; }
+        public string? Metadata { get; init; }
+    }
 }

@@ -2,6 +2,7 @@
 using Verifier.Infrastructure.Persistence.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Verifier.Infrastructure;
@@ -11,7 +12,10 @@ public static class DependencyInjection
     public static IServiceCollection AddVerifierInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<VerifierOptions>(configuration.GetSection(VerifierOptions.SectionName));
+        services.TryAddSingleton(TimeProvider.System);
+
         services.AddVerifierPersistence(configuration);
+        services.AddScoped<VerifyCredentialUseCase>();
 
         return services;
     }
@@ -20,11 +24,10 @@ public static class DependencyInjection
     {
         var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration)
-            && string.IsNullOrWhiteSpace(configuration.GetConnectionString("DefaultConnection")))
+        if (string.IsNullOrWhiteSpace(configuration.GetConnectionString("DefaultConnection")))
         {
             throw new InvalidOperationException(
-                "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
+                "ConnectionStrings:DefaultConnection is required.");
         }
     }
 }

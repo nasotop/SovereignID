@@ -1,6 +1,8 @@
 using Issuer.Application;
-using Issuer.Infrastructure.Persistence.Entities;
+using Issuer.Infrastructure.Persistence.Generated;
+using Issuer.Infrastructure.Persistence.Generated.Entities;
 using Issuer.Infrastructure.Persistence.Stores;
+using Issuer.Infrastructure.Persistence.Stores.CredentialStore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,22 +15,24 @@ public static class PersistenceServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(connectionString))
+        services.AddDbContext<IssuerDbContext>((sp, options) =>
         {
-            throw new InvalidOperationException(
-                "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
-        }
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
+            }
 
-        services.AddDbContext<IssuerDbContext>(options =>
-        {
             options.UseNpgsql(connectionString, npgsql =>
             {
-                npgsql.MapEnum<WalletStatus>("wallet_status");
                 npgsql.MapEnum<CredentialStatus>("credential_status");
+                npgsql.MapEnum<WalletStatus>("wallet_status");
             });
         });
+
         services.AddScoped<ITitleIssuerRepository, PostgresTitleIssuerRepository>();
+        services.AddScoped<ICredentialReadStore, EfCredentialReadStore>();
 
         return services;
     }

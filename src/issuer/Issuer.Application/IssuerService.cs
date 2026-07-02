@@ -133,21 +133,6 @@ public sealed class IssuerService
         return new IssuerSuccess<IReadOnlyList<CredentialSummary>>(credentials);
     }
 
-    public async Task<IssuerResult<CredentialSummary>> GetCredentialAsync(
-        Guid credentialId,
-        CancellationToken cancellationToken)
-    {
-        if (credentialId == Guid.Empty)
-        {
-            return Fail<CredentialSummary>("invalid_credential", 400, "credentialId is required.");
-        }
-
-        var credential = await _repository.GetCredentialAsync(credentialId, cancellationToken);
-        return credential is null
-            ? Fail<CredentialSummary>("credential_not_found", 404, "Credential was not found.")
-            : new IssuerSuccess<CredentialSummary>(credential);
-    }
-
     public async Task<IssuerResult<CredentialRevoked>> RevokeCredentialAsync(
         RevokeCredentialCommand command,
         CancellationToken cancellationToken)

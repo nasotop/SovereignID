@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { NonceResponse, VerifyResponse } from './auth.models';
+import type { NonceResponse } from '../../api/auth/models/nonce-response';
+import type { VerifyResponse } from '../../api/auth/models/verify-response';
 import { isProblemDetails } from './problem-details.models';
 
 import nonceFixture from '../../../../../../docs/contracts/fixtures/auth-nonce-200.json';

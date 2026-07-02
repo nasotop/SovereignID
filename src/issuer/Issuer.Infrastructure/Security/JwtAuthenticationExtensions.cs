@@ -16,6 +16,8 @@ public static class JwtAuthenticationExtensions
         var issuerSection = configuration.GetSection(IssuerOptions.SectionName);
         var authOptions = issuerSection.GetSection(nameof(IssuerOptions.Auth)).Get<AuthOptions>() ?? new AuthOptions();
         var signingKey = ResolveSigningKey(configuration, authOptions);
+        var jwtIssuer = configuration["Auth:JwtIssuer"] ?? authOptions.JwtIssuer;
+        var jwtAudience = configuration["Auth:JwtAudience"] ?? authOptions.JwtAudience;
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -26,8 +28,8 @@ public static class JwtAuthenticationExtensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = authOptions.JwtIssuer,
-                    ValidAudience = authOptions.JwtAudience,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                     ClockSkew = TimeSpan.FromMinutes(1),
                 };
@@ -43,6 +45,12 @@ public static class JwtAuthenticationExtensions
         if (!string.IsNullOrWhiteSpace(envKey))
         {
             return envKey;
+        }
+
+        var rootAuthKey = configuration["Auth:JwtSigningKey"];
+        if (!string.IsNullOrWhiteSpace(rootAuthKey))
+        {
+            return rootAuthKey;
         }
 
         if (!string.IsNullOrWhiteSpace(authOptions.JwtSigningKey))

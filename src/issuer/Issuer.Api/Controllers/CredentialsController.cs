@@ -1,6 +1,5 @@
 using Issuer.Api.Models;
 using Issuer.Application;
-using Issuer.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,26 +8,36 @@ namespace Issuer.Api.Controllers;
 [ApiController]
 [Route("issuer/credentials")]
 [Produces("application/json")]
-[Authorize(Policy = IssuerAuthorizationPolicy.IssuerPolicyName)]
 public sealed class CredentialsController : ControllerBase
 {
+    private readonly GetHolderCredentialUseCase _getCredential;
     private readonly IssuerService _issuerService;
 
-    public CredentialsController(IssuerService issuerService)
+    public CredentialsController(
+        GetHolderCredentialUseCase getCredential,
+        IssuerService issuerService)
     {
+        _getCredential = getCredential;
         _issuerService = issuerService;
     }
 
-    /// <summary>Gets a credential by identifier.</summary>
+    /// <summary>Devuelve el detalle de una credencial autenticada si pertenece al titular del JWT.</summary>
     [HttpGet("{credentialId:guid}")]
-    [ProducesResponseType(typeof(CredentialSummary), StatusCodes.Status200OK)]
+    [Authorize]
+    [ProducesResponseType(typeof(HolderCredentialDetail), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CredentialSummary>> GetCredential(
+    public async Task<ActionResult<HolderCredentialDetail>> Get(
         Guid credentialId,
         CancellationToken cancellationToken)
     {
-        var result = await _issuerService.GetCredentialAsync(credentialId, cancellationToken);
-        return FromResult(result, success => (ActionResult<CredentialSummary>)Ok(success));
+        var result = await _getCredential.ExecuteAsync(credentialId, cancellationToken);
+        return result switch
+        {
+            IssuerSuccess<HolderCredentialDetail> success => Ok(success.Value),
+            IssuerFailureResult<HolderCredentialDetail> failure => throw new IssuerFailureException(failure.Failure),
+            _ => throw new InvalidOperationException("Unexpected issuer result.")
+        };
     }
 
     /// <summary>Revokes an active credential after on-chain revocation.</summary>
@@ -53,16 +62,11 @@ public sealed class CredentialsController : ControllerBase
                 request.RevokedByUserId),
             cancellationToken);
 
-        return FromResult(result, success => (ActionResult<CredentialRevoked>)Ok(success));
-    }
-
-    private static ActionResult<T> FromResult<T>(
-        IssuerResult<T> result,
-        Func<T, ActionResult<T>> onSuccess) =>
-        result switch
+        return result switch
         {
-            IssuerSuccess<T> success => onSuccess(success.Value),
-            IssuerFailureResult<T> failure => throw new IssuerFailureException(failure.Failure),
+            IssuerSuccess<CredentialRevoked> success => Ok(success.Value),
+            IssuerFailureResult<CredentialRevoked> failure => throw new IssuerFailureException(failure.Failure),
             _ => throw new InvalidOperationException("Unexpected issuer result.")
         };
+    }
 }

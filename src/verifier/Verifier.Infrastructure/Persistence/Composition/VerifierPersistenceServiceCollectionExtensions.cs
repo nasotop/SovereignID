@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Verifier.Application;
+using Verifier.Infrastructure.Persistence.Stores.CredentialStore;
+using Verifier.Infrastructure.Persistence.Stores.VerificationLogStore;
 
 namespace Verifier.Infrastructure.Persistence.Composition;
 
@@ -9,12 +12,10 @@ public static class VerifierPersistenceServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<PersistenceOptions>(configuration.GetSection(PersistenceOptions.SectionName));
+        services.AddVerifierPostgresPersistence(configuration);
 
-        if (PersistenceServiceCollectionExtensions.UsesPostgresPersistence(configuration))
-        {
-            services.AddVerifierPostgresPersistence(configuration);
-        }
+        services.AddScoped<ICredentialReadStore, EfCredentialReadStore>();
+        services.AddScoped<IVerificationLogStore, EfVerificationLogStore>();
 
         return services;
     }

@@ -1,0 +1,4 @@
+Warning: KiotaBuilder OpenAPI warning: #/ - A servers entry (v3) or host + basePath + schemes properties (v2) was not present in the OpenAPI description. The root URL will need to be set manually with the request adapter.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/AnchorsResponse/properties/chainId - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/ProblemDetails/properties/status - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
+Warning: KiotaBuilder No server url found in the OpenAPI document. The base url will need to be set when using the client.

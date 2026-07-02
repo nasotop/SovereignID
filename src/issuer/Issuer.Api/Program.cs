@@ -1,4 +1,6 @@
-﻿using Issuer.Api.OpenApi;
+﻿using Issuer.Api;
+using Issuer.Api.OpenApi;
+using Issuer.Application;
 using Issuer.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,8 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<Issuer.Api.IssuerFailureExceptionFilter>();
 });
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIssuerRequestContext, HttpIssuerRequestContext>();
 builder.Services.AddIssuerOpenApiDocumentation();
 builder.Services.AddIssuerInfrastructure(builder.Configuration);
 

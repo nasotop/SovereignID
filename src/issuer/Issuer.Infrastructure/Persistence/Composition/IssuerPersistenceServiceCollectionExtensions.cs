@@ -1,5 +1,6 @@
 using Issuer.Application;
 using Issuer.Infrastructure.Persistence.Stores;
+using Issuer.Infrastructure.Persistence.Stores.CredentialStore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +21,7 @@ public static class IssuerPersistenceServiceCollectionExtensions
         else
         {
             services.AddSingleton<ITitleIssuerRepository, InMemoryTitleIssuerRepository>();
+            services.AddSingleton<ICredentialReadStore, InMemoryCredentialReadStore>();
         }
 
         return services;
