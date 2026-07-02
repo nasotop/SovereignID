@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+  "input": "../../docs/contracts/issuer.openapi.json",
+  "output": "src/app/api/issuer",
+  "removeStaleFiles": true,
+  "indexFile": true
+}

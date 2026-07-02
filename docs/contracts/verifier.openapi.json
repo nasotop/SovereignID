@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "SovereignID · Verifier API",
-    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone un health-check (`GET /health`); los endpoints de verificación se añadirán en próximas iteraciones. Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
+    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`; los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
     "contact": {
       "name": "SovereignID",
       "url": "https://github.com/nasotop/SovereignID"
@@ -25,11 +25,300 @@
           }
         }
       }
+    },
+    "/verifications": {
+      "post": {
+        "tags": [
+          "Verifications"
+        ],
+        "summary": "Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).",
+        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo\r\n`result`. El único error de protocolo es `invalid_credential_id` (`400`, RFC 7807 Problem Details\r\ncon extensión `error`) cuando `credentialId` está ausente o no es un UUID válido.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnchorsResponse": {
+        "required": [
+          "ipfsCid",
+          "contentHash",
+          "transactionHash",
+          "chainId"
+        ],
+        "type": "object",
+        "properties": {
+          "ipfsCid": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "transactionHash": {
+            "type": "string"
+          },
+          "chainId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Anclas verificables (IPFS / on-chain)."
+      },
+      "CredentialResponse": {
+        "required": [
+          "id",
+          "type",
+          "status",
+          "issuedAt",
+          "expiresAt",
+          "subjectDid",
+          "issuer",
+          "anchors"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "subjectDid": {
+            "type": "string"
+          },
+          "issuer": {
+            "$ref": "#/components/schemas/IssuerResponse"
+          },
+          "anchors": {
+            "$ref": "#/components/schemas/AnchorsResponse"
+          }
+        },
+        "description": "Bloque `credential`; presente cuando la credencial existe."
+      },
+      "IssuerResponse": {
+        "required": [
+          "did",
+          "displayName",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "description": "Emisor de la credencial (datos de `institutions`)."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "VerificationChecksResponse": {
+        "required": [
+          "found",
+          "notRevoked",
+          "notExpired",
+          "hashMatches",
+          "onChainExists",
+          "signatureValid"
+        ],
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "notRevoked": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "notExpired": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hashMatches": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "onChainExists": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "signatureValid": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "Booleanos por chequeo; `null` = no evaluado."
+      },
+      "VerificationRequest": {
+        "required": [
+          "credentialId"
+        ],
+        "type": "object",
+        "properties": {
+          "credentialId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Cuerpo de `POST /verifications`."
+      },
+      "VerificationResponse": {
+        "required": [
+          "result",
+          "checks",
+          "credential"
+        ],
+        "type": "object",
+        "properties": {
+          "result": {
+            "enum": [
+              "valid",
+              "revoked",
+              "expired",
+              "not_found"
+            ],
+            "type": "string"
+          },
+          "checks": {
+            "$ref": "#/components/schemas/VerificationChecksResponse"
+          },
+          "credential": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CredentialResponse"
+              }
+            ]
+          }
+        },
+        "description": "Respuesta de `POST /verifications`: veredicto resumido, chequeos y credencial (o `null`)."
+      }
     }
   },
   "tags": [
     {
       "name": "Health"
+    },
+    {
+      "name": "Verifications"
     }
   ]
 }

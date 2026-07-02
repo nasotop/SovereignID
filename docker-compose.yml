@@ -52,6 +52,83 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Sign-In with Ethereum (SIWE) Authentication Service"
 
+  verifier-api:
+    build:
+      context: .
+      dockerfile: src/verifier/Verifier.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-verifier:latest
+    container_name: sovereignid-verifier
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: verifier-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Public Verifiable Credential verification service"
+
+  issuer-api:
+    build:
+      context: .
+      dockerfile: src/issuer/Issuer.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-issuer:latest
+    container_name: sovereignid-issuer
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      Auth__JwtSigningKey: ${AUTH_JWT_SIGNING_KEY:?AUTH_JWT_SIGNING_KEY is required}
+      Auth__JwtIssuer: ${Auth__JwtIssuer:-sovereignid-auth}
+      Auth__JwtAudience: ${Auth__JwtAudience:-sovereignid-clients}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+      Persistence__Provider: Postgres
+      Issuer__DefaultChainId: ${Issuer__DefaultChainId:-11155111}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: issuer-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Verifiable Credential issuance and holder read service"
+
   web:
     build:
       context: ./src/web
@@ -64,6 +141,10 @@ services:
     depends_on:
       auth-api:
         condition: service_healthy
+      verifier-api:
+        condition: service_started
+      issuer-api:
+        condition: service_started
     networks:
       - sovereign-net
     healthcheck:

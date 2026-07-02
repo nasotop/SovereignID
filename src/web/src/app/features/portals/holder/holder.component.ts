@@ -1,15 +1,41 @@
-import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { HolderCredentialSummary } from '../../../api/issuer/models/holder-credential-summary';
+import {
+  HolderService,
+  HolderUnauthorizedError,
+} from '../../../core/services/holder.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { MOCK_HOLDER_CREDENTIALS } from '../../../core/models/credential.models';
-import type { HolderCredential } from '../../../core/models/credential.models';
+import { toErrorMessage } from '../../../core/utils/error.utils';
+
+type HolderLoadState = 'loading' | 'loaded' | 'empty' | 'error';
+
+const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
+  active: 'Active',
+  revoked: 'Revoked',
+  expired: 'Expired',
+};
+
+const STATUS_BADGE_CLASSES: Record<HolderCredentialSummary['status'], string> = {
+  active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  revoked: 'bg-red-500/15 text-red-400 border-red-500/30',
+  expired: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+};
+
+const STATUS_DOT_CLASSES: Record<HolderCredentialSummary['status'], string> = {
+  active: 'bg-emerald-400',
+  revoked: 'bg-red-400',
+  expired: 'bg-amber-400',
+};
 
 @Component({
   selector: 'app-holder',
+  standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="min-h-screen bg-slate-900">
-      <!-- Navbar -->
       <nav
         class="border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm"
       >
@@ -66,7 +92,6 @@ import type { HolderCredential } from '../../../core/models/credential.models';
         </div>
       </nav>
 
-      <!-- Main Content -->
       <main class="max-w-7xl mx-auto px-6 py-8">
         <div class="mb-8">
           <h2 class="text-2xl font-bold text-white">My Credentials</h2>
@@ -75,125 +100,253 @@ import type { HolderCredential } from '../../../core/models/credential.models';
           </p>
         </div>
 
-        <!-- Credential Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (credential of credentials(); track credential.id) {
-            <div
-              class="bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col hover:border-slate-600 transition-colors"
-            >
-              <div class="flex items-start justify-between mb-5">
-                <div
-                  class="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center"
-                >
-                  @if (credential.icon === 'degree') {
-                    <svg
-                      class="w-7 h-7 text-blue-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                      />
-                    </svg>
-                  } @else {
-                    <svg
-                      class="w-7 h-7 text-blue-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  }
-                </div>
-                <span
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  Active
-                </span>
-              </div>
+        @if (loadState() === 'loading') {
+          <div
+            class="rounded-xl border border-slate-700 bg-slate-800/50 p-10 text-center text-slate-300"
+          >
+            Loading credentials...
+          </div>
+        }
 
-              <h3 class="text-lg font-semibold text-white mb-1">
-                {{ credential.title }}
-              </h3>
-              <p class="text-sm text-slate-400 mb-1">
-                Issued by {{ credential.issuer }}
-              </p>
-              <p class="text-xs text-slate-500 mb-6">
-                {{ credential.issuedDate }}
-              </p>
+        @if (loadState() === 'empty') {
+          <div
+            class="rounded-xl border border-slate-700 bg-slate-800/50 p-10 text-center"
+          >
+            <p class="text-white font-medium mb-2">No credentials yet</p>
+            <p class="text-slate-400 text-sm">
+              You do not have any issued credentials for this account.
+            </p>
+          </div>
+        }
 
-              <div class="flex gap-3 mt-auto">
-                <button
-                  type="button"
-                  class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  Download JSON
-                </button>
-                <button
-                  type="button"
-                  class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                    />
-                  </svg>
-                  Share QR
-                </button>
-              </div>
-            </div>
+        @if (loadState() === 'error') {
+          <div
+            class="rounded-xl border border-red-800/60 bg-red-950/30 p-8 text-center"
+          >
+            <p class="text-red-300 font-semibold mb-2">
+              {{ isUnauthorized() ? 'Session expired' : 'Failed to load credentials' }}
+            </p>
+            <p class="text-slate-300 text-sm mb-4">
+              {{ errorMessage() || 'Please try again' }}
+            </p>
+            @if (isUnauthorized()) {
+              <button
+                type="button"
+                class="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+                (click)="goToLogin()"
+              >
+                Go to login
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+                (click)="loadCredentials()"
+              >
+                Try again
+              </button>
+            }
+          </div>
+        }
+
+        @if (loadState() === 'loaded') {
+          @if (shareFeedback()) {
+            <p class="mb-4 text-sm text-emerald-400" role="status">
+              {{ shareFeedback() }}
+            </p>
           }
-        </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @for (credential of credentials(); track credential.id) {
+              <div
+                class="bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col hover:border-slate-600 transition-colors"
+              >
+                <div class="flex items-start justify-between mb-5">
+                  <div
+                    class="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center"
+                  >
+                    @if (isDegreeType(credential.typeCode)) {
+                      <svg
+                        class="w-7 h-7 text-blue-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
+                        />
+                      </svg>
+                    } @else {
+                      <svg
+                        class="w-7 h-7 text-blue-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    }
+                  </div>
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                    [ngClass]="statusBadgeClass(credential.status)"
+                  >
+                    <span
+                      class="w-1.5 h-1.5 rounded-full"
+                      [ngClass]="statusDotClass(credential.status)"
+                    ></span>
+                    {{ statusLabel(credential.status) }}
+                  </span>
+                </div>
+
+                <h3 class="text-lg font-semibold text-white mb-1">
+                  {{ credential.title }}
+                </h3>
+                <p class="text-sm text-slate-400 mb-1">
+                  Issued by {{ credential.issuerName }}
+                </p>
+                <p class="text-xs text-slate-500 mb-6">
+                  {{ formatIssuedAt(credential.issuedAt) }}
+                </p>
+
+                <div class="flex gap-3 mt-auto">
+                  <button
+                    type="button"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg transition-colors disabled:opacity-50"
+                    [disabled]="actionCredentialId() === credential.id"
+                    (click)="handleDownload(credential.id)"
+                  >
+                    Download JSON
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+                    (click)="handleShare(credential.id)"
+                  >
+                    Share QR
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
       </main>
     </div>
   `,
 })
-export class HolderComponent {
+export class HolderComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly holderService = inject(HolderService);
   private readonly router = inject(Router);
 
-  readonly credentials = signal<ReadonlyArray<HolderCredential>>([
-    ...MOCK_HOLDER_CREDENTIALS,
-  ]);
+  readonly credentials = signal<ReadonlyArray<HolderCredentialSummary>>([]);
+  readonly loadState = signal<HolderLoadState>('loading');
+  readonly errorMessage = signal<string | null>(null);
+  readonly isUnauthorized = signal(false);
+  readonly shareFeedback = signal<string | null>(null);
+  readonly actionCredentialId = signal<string | null>(null);
+
+  ngOnInit(): void {
+    void this.loadCredentials();
+  }
+
+  async loadCredentials(): Promise<void> {
+    this.loadState.set('loading');
+    this.errorMessage.set(null);
+    this.isUnauthorized.set(false);
+    this.shareFeedback.set(null);
+
+    try {
+      const items = await this.holderService.listMyCredentials();
+      this.credentials.set(items);
+
+      if (items.length === 0) {
+        this.loadState.set('empty');
+        return;
+      }
+
+      this.loadState.set('loaded');
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+      this.isUnauthorized.set(error instanceof HolderUnauthorizedError);
+      this.loadState.set('error');
+    }
+  }
+
+  async handleDownload(credentialId: string): Promise<void> {
+    this.actionCredentialId.set(credentialId);
+    this.shareFeedback.set(null);
+
+    try {
+      const detail = await this.holderService.getMyCredential(credentialId);
+      this.holderService.downloadCredentialJson(detail);
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+      this.isUnauthorized.set(error instanceof HolderUnauthorizedError);
+      this.loadState.set('error');
+    } finally {
+      this.actionCredentialId.set(null);
+    }
+  }
+
+  async handleShare(credentialId: string): Promise<void> {
+    this.shareFeedback.set(null);
+
+    try {
+      await this.holderService.shareCredentialId(credentialId);
+      this.shareFeedback.set(`Credential ID copied: ${credentialId}`);
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+      this.loadState.set('error');
+    }
+  }
 
   handleLogout(): void {
     this.authService.logout();
     void this.router.navigate(['/login']);
+  }
+
+  goToLogin(): void {
+    this.authService.logout();
+    void this.router.navigate(['/login']);
+  }
+
+  isDegreeType(typeCode: string): boolean {
+    return this.holderService.isDegreeType(typeCode);
+  }
+
+  statusLabel(status: HolderCredentialSummary['status']): string {
+    return STATUS_LABELS[status];
+  }
+
+  statusBadgeClass(status: HolderCredentialSummary['status']): string {
+    return STATUS_BADGE_CLASSES[status];
+  }
+
+  statusDotClass(status: HolderCredentialSummary['status']): string {
+    return STATUS_DOT_CLASSES[status];
+  }
+
+  formatIssuedAt(issuedAt: string): string {
+    const date = new Date(issuedAt);
+    if (Number.isNaN(date.getTime())) {
+      return issuedAt;
+    }
+
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 }

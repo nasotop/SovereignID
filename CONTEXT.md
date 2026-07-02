@@ -49,7 +49,29 @@ Contratos del servicio auth (dos capas complementarias):
 
 El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`, `expiresAt`, …). El markdown complementa lo que el schema no expresa (p. ej. `nonce_consumed`, TTL del auth challenge).
 
-**Frontend (web):** los tipos TypeScript de request/response se mantienen **alineados manualmente** con el OpenAPI; CI valida alineación con **fixtures JSON** (respuestas de ejemplo) y **snapshot OpenAPI** versionado en `docs/contracts/`; además ejecuta `dotnet test` (AC-01…AC-07). Sin codegen automático. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
+**Frontend (web):** el cliente HTTP (modelos + servicios) se **genera desde el snapshot OpenAPI** con `ng-openapi-gen` (ver [ADR-0004](docs/adr/0004-openapi-client-codegen.md)); el snapshot versionado en `docs/contracts/` sigue siendo la fuente de verdad y CI lo valida (más `dotnet test` AC-01…AC-07). El servicio `auth` aún usa tipos/servicio **manuales** y se migrará al codegen en un cambio posterior. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
+
+## Servicio `verifier`
+
+Verificación pública (anónima) de **Verifiable Credentials** emitidas a estudiantes:
+
+| Endpoint | Propósito |
+|----------|-----------|
+| `POST /verifications` | Verifica una VC por su UUID (`credentials.id`) y devuelve un veredicto (`result`) |
+| `GET /health` | Liveness check |
+
+Contratos del servicio verifier (dos capas, igual que auth):
+
+| Capa | Fuente | Qué define |
+|------|--------|------------|
+| **Contrato HTTP (forma JSON)** | OpenAPI generado por `Verifier.Api` → `docs/contracts/verifier.openapi.json` | Rutas, DTOs, códigos HTTP |
+| **Contrato de dominio (semántica)** | [`docs/verifier-backend-contract.md`](docs/verifier-backend-contract.md) | Reglas de veredicto, precedencia, errores, criterios VER-01… |
+
+**Modelo de respuesta:** un **veredicto de negocio** (credencial revocada, expirada o inexistente) es un resultado legítimo y se devuelve como **`200 OK` con campo `result`** ∈ { `valid`, `revoked`, `expired`, `not_found` }. Problem Details (RFC 7807) se reserva **solo** para errores de entrada/protocolo → `400` con `error = invalid_credential_id`. Esto matiza la sección transversal «Modelo de errores HTTP» para el verifier (ver `docs/verifier-backend-contract.md`).
+
+**Veredicto escalonado v1:** se computan contra la BD los chequeos sin red (`found`, `notRevoked`, `notExpired`); los chequeos con dependencia externa (`hashMatches`, `onChainExists`, `signatureValid`) se devuelven `null` (reservados). La expiración se computa desde `expires_at` vía `TimeProvider` (no se confía solo en `status`). Precedencia: `not_found` > `revoked` > `expired` > `valid`. Cada intento se registra en `verification_logs` (incluido `not_found`, con `credential_id = NULL`).
+
+**Portal web del verifier:** la entrada en v1 es el **UUID** (`credentialId`) introducido en un campo de texto (el escáner QR queda para un cambio posterior; el QR codifica el UUID en crudo, no una URL navegable). El componente habla solo con una **fachada `VerifierService`** que envuelve el cliente HTTP generado (`ng-openapi-gen`) y aplica el seam de Problem Details (`error.utils.ts`). El veredicto se renderiza completo: badge de `result`, lista de `checks` (los `null` como "no evaluado") y bloque `credential` (emisor, fechas, anclas). El front llega al backend vía URL relativa `/verifications` proxeada por nginx hacia `verifier-api`. El campo `result` del contrato se modela como `enum` para que el cliente generado lo tipe como unión.
 
 ## Modelo de errores HTTP (transversal)
 
@@ -117,6 +139,8 @@ docker compose up -d postgres          # levantar solo BD
 
 Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereignid;Username=sovereignid;Password=sovereignid_dev`. Ver `.env.example`.
 
+**Seed de desarrollo (Postgres):** tras `docker compose up -d postgres`, ejecutar `.\scripts\seed-dev.ps1`. Pobla catálogo `credential_types`, institución demo Duoc UC, un estudiante titular con wallet primaria, y credenciales de prueba. Re-ejecutable (upsert por UUID/código). Requiere `issuer-api` y `verifier-api` con `Persistence:Provider=Postgres` para probar `/holder` y `/verifier` contra datos reales.
+
 ## Glosario
 
 | Término | Significado |
@@ -135,6 +159,8 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Adapter de persistencia** | Implementación en Infrastructure de una interfaz de Application; único lugar con EF y mapeo dominio ↔ BD |
 | **Entidad EF** | Clase scaffold en `Persistence/Generated/Entities` (namespace `Generated.Entities`); representa fila de tabla, no modelo de dominio |
 | **Proveedor de persistencia** | `InMemory` o `Postgres`; selecciona el adapter activo sin cambiar casos de uso |
+| **Titular (holder)** | Estudiante con wallet primaria activa en `student_wallets`. SIWE no crea fila en BD; issuer filtra credenciales por claim `did` del JWT contra `credentials.subject_did` (derivado de la wallet en minúsculas). Distinto de `users` (usuarios institucionales). |
+| **Seed de desarrollo** | Datos ficticios idempotentes en `database/seed-dev.sql`, aplicados con `scripts/seed-dev.ps1` contra Postgres local Docker. Refresca fixtures demo a estado canónico; no forma parte del esquema canónico. |
 
 ## Configuración relevante
 
@@ -183,10 +209,15 @@ El microservicio `issuer` concentra la emision y vinculacion de credenciales ver
 |----------|-----------|
 | `POST /issuer/institutions/{institutionId}/wallet` | Vincula wallet/DID emisor de una institucion |
 | `POST /issuer/students/{studentId}/title` | Vincula un titulo emitido a un estudiante |
+| `GET /issuer/holders/me/credentials` | Lista credenciales del titular autenticado (JWT SIWE) |
+| `GET /issuer/holders/me/credentials/{credentialId}` | Detalle de credencial del titular |
+| `GET /issuer/credentials/{credentialId}` | Detalle autenticado (ownership por `subject_did`) |
 
-Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincular un titulo, el estudiante debe tener wallet primaria activa y la institucion debe tener DID emisor. El servicio valida carrera, tipo de credencial, datos IPFS, hash, transaccion y firma EIP-712 antes de registrar la fila en `credentials`.
+Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincular un titulo, el estudiante debe tener wallet primaria activa y la institucion debe tener DID emisor. El servicio valida carrera, tipo de credencial, datos IPFS, hash, transaccion y firma EIP-712 antes de registrar la fila en `credentials`. Las consultas del portal Holder filtran por claim `did` del JWT contra `credentials.subject_did`.
 
-Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
+Contrato HTTP: OpenAPI generado por `Issuer.Api` → `docs/contracts/issuer.openapi.json` (incluye `bearerAuth` en operaciones holder y `status` como `enum` tipado). Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
+
+**Portal web del holder:** `/holder` requiere sesión SIWE (`authGuard`) y carga credenciales reales con `GET /issuer/holders/me/credentials`. El componente habla solo con **`HolderService`**, fachada sobre el cliente generado (`ng-openapi-gen` → `src/app/api/issuer/`). El JWT se adjunta vía interceptor global y la fachada falla temprano si no hay sesión. Estados UI: `loading` / `loaded` / `empty` / `error`; badge de `status` (`active|revoked|expired`); icono por `typeCode` (`TITULO` → degree). Download JSON usa el detalle holder; Share QR v1 copia el UUID al portapapeles. El front llega al backend vía `/issuer/` proxeada por nginx hacia `issuer-api`.
 
 ## CI/CD y despliegue
 

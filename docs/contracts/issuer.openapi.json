@@ -9,12 +9,63 @@
     },
     "version": "v1"
   },
-  "servers": [
-    {
-      "url": "http://127.0.0.1:5197/"
-    }
-  ],
   "paths": {
+    "/issuer/credentials/{credentialId}": {
+      "get": {
+        "tags": [
+          "Credentials"
+        ],
+        "summary": "Devuelve el detalle de una credencial autenticada si pertenece al titular del JWT.",
+        "parameters": [
+          {
+            "name": "credentialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolderCredentialDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -25,10 +76,104 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
+      }
+    },
+    "/issuer/holders/me/credentials": {
+      "get": {
+        "tags": [
+          "HolderCredentials"
+        ],
+        "summary": "Lista las credenciales del titular autenticado (JWT SIWE).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderCredentialSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/issuer/holders/me/credentials/{credentialId}": {
+      "get": {
+        "tags": [
+          "HolderCredentials"
+        ],
+        "summary": "Devuelve el detalle de una credencial del titular autenticado.",
+        "parameters": [
+          {
+            "name": "credentialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolderCredentialDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/issuer/institutions/{institutionId}/wallet": {
@@ -176,6 +321,189 @@
   },
   "components": {
     "schemas": {
+      "HolderCredentialAnchors": {
+        "required": [
+          "ipfsCid",
+          "ipfsGatewayUrl",
+          "contentHash",
+          "transactionHash",
+          "blockNumber",
+          "chainId",
+          "eip712Signature"
+        ],
+        "type": "object",
+        "properties": {
+          "ipfsCid": {
+            "type": "string"
+          },
+          "ipfsGatewayUrl": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "transactionHash": {
+            "type": "string"
+          },
+          "blockNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "chainId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "eip712Signature": {
+            "type": "string"
+          }
+        }
+      },
+      "HolderCredentialDetail": {
+        "required": [
+          "id",
+          "title",
+          "issuerName",
+          "typeCode",
+          "status",
+          "issuedAt",
+          "expiresAt",
+          "revokedAt",
+          "subjectDid",
+          "issuer",
+          "anchors",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "issuerName": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ],
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "subjectDid": {
+            "type": "string"
+          },
+          "issuer": {
+            "$ref": "#/components/schemas/HolderCredentialIssuer"
+          },
+          "anchors": {
+            "$ref": "#/components/schemas/HolderCredentialAnchors"
+          },
+          "metadata": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "HolderCredentialIssuer": {
+        "required": [
+          "did",
+          "displayName",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "HolderCredentialSummary": {
+        "required": [
+          "id",
+          "title",
+          "issuerName",
+          "typeCode",
+          "status",
+          "issuedAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "issuerName": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ],
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "InstitutionIssuerWalletLinked": {
         "required": [
           "institutionId",
@@ -203,7 +531,7 @@
           }
         }
       },
-      "JsonElement": { },
+      "JsonElement": {},
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
@@ -393,11 +721,25 @@
           }
         }
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "JWT SIWE emitido por el servicio auth.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     }
   },
   "tags": [
     {
+      "name": "Credentials"
+    },
+    {
       "name": "Health"
+    },
+    {
+      "name": "HolderCredentials"
     },
     {
       "name": "InstitutionIssuerWallet"

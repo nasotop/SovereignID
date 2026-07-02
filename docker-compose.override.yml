@@ -48,3 +48,15 @@ services:
     depends_on:
       auth-api:
         condition: service_started
+
+  verifier-api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    ports:
+      - "8081:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
