@@ -10,4 +10,15 @@ public interface ITitleIssuerRepository
         LinkStudentTitleCommand command,
         DateTimeOffset now,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<CredentialSummary>> ListInstitutionCredentialsAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken);
+
+    Task<CredentialSummary?> GetCredentialAsync(Guid credentialId, CancellationToken cancellationToken);
+
+    Task<CredentialRevoked?> RevokeCredentialAsync(
+        RevokeCredentialCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
 }

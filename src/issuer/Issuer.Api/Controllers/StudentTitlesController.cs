@@ -39,7 +39,8 @@ public sealed class StudentTitlesController : ControllerBase
                 request.ChainId,
                 request.Eip712Signature,
                 request.ExpiresAt,
-                request.Metadata),
+                request.Metadata,
+                request.CredentialId),
             cancellationToken);
 
         return result switch

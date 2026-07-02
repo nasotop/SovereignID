@@ -85,6 +85,64 @@ public sealed class IssuerService
             : new IssuerSuccess<StudentTitleLinked>(linked);
     }
 
+    public async Task<IssuerResult<IReadOnlyList<CredentialSummary>>> ListInstitutionCredentialsAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        if (institutionId == Guid.Empty)
+        {
+            return Fail<IReadOnlyList<CredentialSummary>>("invalid_institution", 400, "institutionId is required.");
+        }
+
+        var credentials = await _repository.ListInstitutionCredentialsAsync(institutionId, cancellationToken);
+        return new IssuerSuccess<IReadOnlyList<CredentialSummary>>(credentials);
+    }
+
+    public async Task<IssuerResult<CredentialRevoked>> RevokeCredentialAsync(
+        RevokeCredentialCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (command.CredentialId == Guid.Empty)
+        {
+            return Fail<CredentialRevoked>("invalid_credential", 400, "credentialId is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.Reason))
+        {
+            return Fail<CredentialRevoked>("invalid_revocation_reason", 400, "reason is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.RevocationTxHash)
+            || string.IsNullOrWhiteSpace(command.Eip712Signature))
+        {
+            return Fail<CredentialRevoked>("invalid_revocation_payload", 400, "revocationTxHash and eip712Signature are required.");
+        }
+
+        var normalized = command with
+        {
+            Reason = command.Reason.Trim(),
+            RevocationTxHash = command.RevocationTxHash.Trim(),
+            Eip712Signature = command.Eip712Signature.Trim(),
+            ChainId = command.ChainId ?? _options.DefaultChainId
+        };
+
+        var existing = await _repository.GetCredentialAsync(normalized.CredentialId, cancellationToken);
+        if (existing is null)
+        {
+            return Fail<CredentialRevoked>("credential_not_found", 404, "Credential was not found.");
+        }
+
+        if (!string.Equals(existing.Status, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            return Fail<CredentialRevoked>("credential_not_active", 409, "Only active credentials can be revoked.");
+        }
+
+        var revoked = await _repository.RevokeCredentialAsync(normalized, _timeProvider.GetUtcNow(), cancellationToken);
+        return revoked is null
+            ? Fail<CredentialRevoked>("revocation_failed", 409, "Credential could not be revoked.")
+            : new IssuerSuccess<CredentialRevoked>(revoked);
+    }
+
     private static IssuerFailureResult<T> Fail<T>(string errorCode, int statusCode, string detail) =>
         new(new IssuerFailure(errorCode, statusCode, detail));
 
