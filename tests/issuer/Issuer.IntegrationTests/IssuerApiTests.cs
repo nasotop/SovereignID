@@ -103,6 +103,69 @@ public sealed class IssuerApiTests : IClassFixture<IssuerWebApplicationFactory>
     }
 
     [Fact]
+    public async Task ListInstitutionCredentials_WithKnownInstitution_ReturnsCredentials()
+    {
+        await _client.PostAsJsonAsync(
+            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
+            new
+            {
+                careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                credentialTypeCode = "TITULO",
+                ipfsCid = "bafybeigdyrzt",
+                ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt",
+                contentHash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                transactionHash = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                blockNumber = 123456L,
+                eip712Signature = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            });
+
+        var response = await _client.GetAsync(
+            "/issuer/institutions/11111111-1111-1111-1111-111111111111/credentials");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, body.ValueKind);
+        Assert.True(body.GetArrayLength() >= 1);
+    }
+
+    [Fact]
+    public async Task RevokeCredential_WithKnownCredential_ReturnsRevoked()
+    {
+        var issueResponse = await _client.PostAsJsonAsync(
+            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
+            new
+            {
+                careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                credentialTypeCode = "TITULO",
+                ipfsCid = "bafybeigdyrzt2",
+                ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt2",
+                contentHash = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                transactionHash = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                blockNumber = 123457L,
+                eip712Signature = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            });
+
+        var issued = await issueResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var credentialId = issued.GetProperty("credentialId").GetString();
+
+        var response = await _client.PostAsJsonAsync(
+            $"/issuer/credentials/{credentialId}/revoke",
+            new
+            {
+                reason = "Test revocation",
+                revocationTxHash = "0xabababababababababababababababababababababababababababababababab",
+                blockNumber = 123458L,
+                eip712Signature = "0xbababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababa"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("revoked", body.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task ListHolderCredentials_WithoutToken_ReturnsUnauthorized()
     {
         var response = await _client.GetAsync("/issuer/holders/me/credentials");

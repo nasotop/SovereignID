@@ -1,5 +1,7 @@
 using Issuer.Api.Models;
 using Issuer.Application;
+using Issuer.Infrastructure.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Issuer.Api.Controllers;
@@ -7,6 +9,7 @@ namespace Issuer.Api.Controllers;
 [ApiController]
 [Route("issuer/students")]
 [Produces("application/json")]
+[Authorize(Policy = IssuerAuthorizationPolicy.IssuerPolicyName)]
 public sealed class StudentTitlesController : ControllerBase
 {
     private readonly IssuerService _issuerService;
@@ -39,7 +42,8 @@ public sealed class StudentTitlesController : ControllerBase
                 request.ChainId,
                 request.Eip712Signature,
                 request.ExpiresAt,
-                request.Metadata),
+                request.Metadata,
+                request.CredentialId),
             cancellationToken);
 
         return result switch

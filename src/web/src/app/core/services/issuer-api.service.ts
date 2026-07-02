@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { BFF_API_BASE } from '../constants/api.constants';
 import {
   CredentialRevokedResponse,
   CredentialSummaryResponse,
@@ -16,7 +17,7 @@ export class IssuerApiService {
     institutionId: string,
   ): Observable<ReadonlyArray<CredentialSummaryResponse>> {
     return this.http.get<ReadonlyArray<CredentialSummaryResponse>>(
-      `/issuer/institutions/${institutionId}/credentials`,
+      `${BFF_API_BASE}/issuer/institutions/${institutionId}/credentials`,
     );
   }
 
@@ -25,7 +26,7 @@ export class IssuerApiService {
     request: LinkStudentTitleRequest,
   ): Observable<CredentialSummaryResponse> {
     return this.http.post<CredentialSummaryResponse>(
-      `/issuer/students/${studentId}/title`,
+      `${BFF_API_BASE}/issuer/students/${studentId}/title`,
       request,
     );
   }
@@ -41,7 +42,7 @@ export class IssuerApiService {
     },
   ): Observable<CredentialRevokedResponse> {
     return this.http.post<CredentialRevokedResponse>(
-      `/issuer/credentials/${credentialId}/revoke`,
+      `${BFF_API_BASE}/issuer/credentials/${credentialId}/revoke`,
       request,
     );
   }

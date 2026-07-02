@@ -96,6 +96,7 @@ internal static class KiotaWireMappers
     public static KiotaIssuer.LinkStudentTitleRequest ToKiota(LinkStudentTitleRequest request) =>
         new()
         {
+            CredentialId = request.CredentialId,
             CareerId = request.CareerId,
             CredentialTypeCode = request.CredentialTypeCode,
             IpfsCid = request.IpfsCid,
@@ -109,6 +110,49 @@ internal static class KiotaWireMappers
                 ["blockNumber"] = request.BlockNumber,
                 ["chainId"] = request.ChainId ?? 0,
                 ["metadata"] = request.Metadata,
+            },
+        };
+
+    public static CredentialSummary ToWire(KiotaIssuer.CredentialSummary summary) =>
+        new(
+            summary.CredentialId ?? Guid.Empty,
+            summary.InstitutionId ?? Guid.Empty,
+            summary.StudentId ?? Guid.Empty,
+            summary.CareerId,
+            summary.CredentialTypeCode ?? string.Empty,
+            summary.SubjectDid ?? string.Empty,
+            summary.IssuerDid ?? string.Empty,
+            summary.Status ?? string.Empty,
+            summary.IpfsCid ?? string.Empty,
+            summary.IpfsGatewayUrl ?? string.Empty,
+            summary.ContentHash ?? string.Empty,
+            summary.TransactionHash ?? string.Empty,
+            summary.IssuedAt ?? DateTimeOffset.MinValue,
+            summary.RevokedAt,
+            summary.RevocationReason,
+            summary.StudentLabel);
+
+    public static CredentialRevoked ToWire(KiotaIssuer.CredentialRevoked revoked) =>
+        new(
+            revoked.CredentialId ?? Guid.Empty,
+            revoked.InstitutionId ?? Guid.Empty,
+            revoked.StudentId ?? Guid.Empty,
+            revoked.Status ?? string.Empty,
+            revoked.RevokedAt ?? DateTimeOffset.MinValue,
+            revoked.RevocationReason,
+            revoked.RevocationTxHash ?? string.Empty);
+
+    public static KiotaIssuer.RevokeCredentialRequest ToKiota(RevokeCredentialRequest request) =>
+        new()
+        {
+            Reason = request.Reason,
+            RevocationTxHash = request.RevocationTxHash,
+            Eip712Signature = request.Eip712Signature,
+            RevokedByUserId = request.RevokedByUserId,
+            AdditionalData = new Dictionary<string, object?>
+            {
+                ["blockNumber"] = request.BlockNumber,
+                ["chainId"] = request.ChainId ?? 0,
             },
         };
 

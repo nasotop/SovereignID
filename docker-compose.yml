@@ -106,6 +106,9 @@ services:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
       Persistence__Provider: Postgres
       Issuer__DefaultChainId: ${Issuer__DefaultChainId:-11155111}
+      Issuer__CredentialRegistryAddress: ${Issuer__CredentialRegistryAddress:-}
+      Issuer__Blockchain__Enabled: ${Issuer__Blockchain__Enabled:-false}
+      Issuer__Blockchain__RpcUrl: ${Issuer__Blockchain__RpcUrl:-https://ethereum-sepolia-rpc.publicnode.com}
     expose:
       - "8080"
     depends_on:

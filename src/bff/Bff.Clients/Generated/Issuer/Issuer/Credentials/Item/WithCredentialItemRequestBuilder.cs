@@ -3,6 +3,7 @@
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions;
+using SovereignID.Bff.Clients.Issuer.Issuer.Credentials.Item.Revoke;
 using SovereignID.Bff.Clients.Issuer.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,11 @@ namespace SovereignID.Bff.Clients.Issuer.Issuer.Credentials.Item
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class WithCredentialItemRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>The revoke property</summary>
+        public global::SovereignID.Bff.Clients.Issuer.Issuer.Credentials.Item.Revoke.RevokeRequestBuilder Revoke
+        {
+            get => new global::SovereignID.Bff.Clients.Issuer.Issuer.Credentials.Item.Revoke.RevokeRequestBuilder(PathParameters, RequestAdapter);
+        }
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Issuer.Issuer.Credentials.Item.WithCredentialItemRequestBuilder"/> and sets the default values.
         /// </summary>

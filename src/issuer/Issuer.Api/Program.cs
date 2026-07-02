@@ -12,7 +12,6 @@ builder.Services.AddControllers(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IIssuerRequestContext, HttpIssuerRequestContext>();
-builder.Services.AddIssuerJwtAuthentication(builder.Configuration);
 builder.Services.AddIssuerOpenApiDocumentation();
 builder.Services.AddIssuerInfrastructure(builder.Configuration);
 

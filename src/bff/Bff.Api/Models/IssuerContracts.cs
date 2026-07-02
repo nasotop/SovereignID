@@ -50,6 +50,7 @@ public sealed record InstitutionIssuerWalletLinked(
     string Did);
 
 public sealed record LinkStudentTitleRequest(
+    Guid? CredentialId,
     Guid? CareerId,
     string CredentialTypeCode,
     string IpfsCid,
@@ -61,6 +62,41 @@ public sealed record LinkStudentTitleRequest(
     string Eip712Signature,
     DateTimeOffset? ExpiresAt,
     JsonElement? Metadata);
+
+public sealed record RevokeCredentialRequest(
+    string Reason,
+    string RevocationTxHash,
+    long BlockNumber,
+    int? ChainId,
+    string Eip712Signature,
+    Guid? RevokedByUserId);
+
+public sealed record CredentialSummary(
+    Guid CredentialId,
+    Guid InstitutionId,
+    Guid StudentId,
+    Guid? CareerId,
+    string CredentialTypeCode,
+    string SubjectDid,
+    string IssuerDid,
+    string Status,
+    string IpfsCid,
+    string IpfsGatewayUrl,
+    string ContentHash,
+    string TransactionHash,
+    DateTimeOffset IssuedAt,
+    DateTimeOffset? RevokedAt,
+    string? RevocationReason,
+    string? StudentLabel);
+
+public sealed record CredentialRevoked(
+    Guid CredentialId,
+    Guid InstitutionId,
+    Guid StudentId,
+    string Status,
+    DateTimeOffset RevokedAt,
+    string? RevocationReason,
+    string RevocationTxHash);
 
 public sealed record StudentTitleLinked(
     Guid CredentialId,
