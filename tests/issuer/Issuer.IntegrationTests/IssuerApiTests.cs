@@ -101,4 +101,78 @@ public sealed class IssuerApiTests : IClassFixture<IssuerWebApplicationFactory>
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_credential_type", body.GetProperty("error").GetString());
     }
+
+    [Fact]
+    public async Task ListHolderCredentials_WithoutToken_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/issuer/holders/me/credentials");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListHolderCredentials_WithValidToken_ReturnsCredentials()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/issuer/holders/me/credentials");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, body.ValueKind);
+        Assert.Equal(2, body.GetArrayLength());
+        Assert.Equal("Titulo Universitario", body[0].GetProperty("title").GetString());
+        Assert.Equal("active", body[0].GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task GetHolderCredential_WithValidToken_ReturnsDetail()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/holders/me/credentials/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", body.GetProperty("id").GetString());
+        Assert.Equal(JwtTestHelper.HolderSubjectDid, body.GetProperty("subjectDid").GetString());
+        Assert.Equal("bafybeigdyrzt", body.GetProperty("anchors").GetProperty("ipfsCid").GetString());
+    }
+
+    [Fact]
+    public async Task GetCredential_ById_WithValidToken_ReturnsDetail()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/credentials/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Certificado de Notas", body.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task GetHolderCredential_ForForeignCredential_ReturnsNotFound()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/holders/me/credentials/99999999-9999-9999-9999-999999999999");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("credential_not_found", body.GetProperty("error").GetString());
+    }
 }

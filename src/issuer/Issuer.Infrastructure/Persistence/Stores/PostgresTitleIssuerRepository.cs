@@ -1,5 +1,6 @@
 using Issuer.Application;
-using Issuer.Infrastructure.Persistence.Entities;
+using Issuer.Infrastructure.Persistence.Generated;
+using Issuer.Infrastructure.Persistence.Generated.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Issuer.Infrastructure.Persistence.Stores;
@@ -27,7 +28,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
 
         institution.IssuerWalletAddress = command.WalletAddress;
         institution.Did = command.Did;
-        institution.PublicKey = command.PublicKey;
+        institution.PublicKey = command.PublicKey ?? institution.PublicKey;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -56,7 +57,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(i => i.Id == student.InstitutionId && i.IsActive, cancellationToken);
 
-        if (institution?.Did is null)
+        if (institution?.Did is null or "")
         {
             return null;
         }
@@ -77,7 +78,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             .SingleOrDefaultAsync(w =>
                 w.StudentId == student.Id
                 && w.IsPrimary
-                && w.Status == WalletStatus.active,
+                && w.Status == WalletStatus.Active,
                 cancellationToken);
 
         var credentialType = await _dbContext.CredentialTypes
@@ -89,7 +90,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             return null;
         }
 
-        var entity = new CredentialEntity
+        var entity = new Credential
         {
             Id = Guid.NewGuid(),
             InstitutionId = student.InstitutionId,
@@ -106,7 +107,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             BlockNumber = command.BlockNumber,
             ChainId = command.ChainId!.Value,
             Eip712Signature = command.Eip712Signature,
-            Status = CredentialStatus.active,
+            Status = CredentialStatus.Active,
             IssuedAt = UtcDateTime(now),
             ExpiresAt = command.ExpiresAt is null ? null : UtcDateTime(command.ExpiresAt.Value),
             CreatedAt = UtcDateTime(now),
@@ -124,7 +125,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             entity.IssuedToWalletId,
             entity.SubjectDid,
             entity.IssuerDid,
-            entity.Status.ToString(),
+            "active",
             ToDateTimeOffset(entity.IssuedAt));
     }
 
