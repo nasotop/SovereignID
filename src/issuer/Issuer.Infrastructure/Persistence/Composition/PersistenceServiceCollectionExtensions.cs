@@ -34,16 +34,6 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<ITitleIssuerRepository, PostgresTitleIssuerRepository>();
         services.AddScoped<ICredentialReadStore, EfCredentialReadStore>();
 
-        services.AddDbContext<IssuerDbContext>(options =>
-        {
-            options.UseNpgsql(connectionString, npgsql =>
-            {
-                npgsql.MapEnum<WalletStatus>("wallet_status");
-                npgsql.MapEnum<CredentialStatus>("credential_status");
-            });
-        });
-        services.AddScoped<ITitleIssuerRepository, PostgresTitleIssuerRepository>();
-
         return services;
     }
 
