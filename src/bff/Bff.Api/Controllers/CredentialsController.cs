@@ -19,4 +19,18 @@ public sealed class CredentialsController(IssuerApiClient issuer) : ControllerBa
         DownstreamResults.OkMappedAsync(
             () => issuer.Issuer.Credentials[credentialId].GetAsync(cancellationToken: cancellationToken),
             KiotaWireMappers.ToWire);
+
+    [HttpPost("{credentialId:guid}/revoke")]
+    [ProducesResponseType(typeof(CredentialRevoked), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(KiotaIssuer.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(KiotaIssuer.ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(KiotaIssuer.ProblemDetails), StatusCodes.Status409Conflict)]
+    public Task<IActionResult> RevokeCredential(
+        Guid credentialId,
+        [FromBody] RevokeCredentialRequest request,
+        CancellationToken cancellationToken) =>
+        DownstreamResults.OkMappedAsync(
+            () => issuer.Issuer.Credentials[credentialId].Revoke
+                .PostAsync(KiotaWireMappers.ToKiota(request), cancellationToken: cancellationToken),
+            KiotaWireMappers.ToWire);
 }

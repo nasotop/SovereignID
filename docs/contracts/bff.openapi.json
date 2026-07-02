@@ -448,6 +448,86 @@
         }
       }
     },
+    "/issuer/credentials/{credentialId}/revoke": {
+      "post": {
+        "tags": [
+          "Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "credentialId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeCredentialRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeCredentialRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialRevoked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -531,6 +611,49 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/issuer/institutions/{institutionId}/credentials": {
+      "get": {
+        "tags": [
+          "InstitutionCredentials"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CredentialSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -1019,6 +1142,137 @@
           }
         }
       },
+      "CredentialRevoked": {
+        "required": [
+          "credentialId",
+          "institutionId",
+          "studentId",
+          "status",
+          "revokedAt",
+          "revocationReason",
+          "revocationTxHash"
+        ],
+        "type": "object",
+        "properties": {
+          "credentialId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "institutionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "revokedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revocationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "revocationTxHash": {
+            "type": "string"
+          }
+        }
+      },
+      "CredentialSummary": {
+        "required": [
+          "credentialId",
+          "institutionId",
+          "studentId",
+          "careerId",
+          "credentialTypeCode",
+          "subjectDid",
+          "issuerDid",
+          "status",
+          "ipfsCid",
+          "ipfsGatewayUrl",
+          "contentHash",
+          "transactionHash",
+          "issuedAt",
+          "revokedAt",
+          "revocationReason",
+          "studentLabel"
+        ],
+        "type": "object",
+        "properties": {
+          "credentialId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "institutionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "careerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "credentialTypeCode": {
+            "type": "string"
+          },
+          "subjectDid": {
+            "type": "string"
+          },
+          "issuerDid": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ipfsCid": {
+            "type": "string"
+          },
+          "ipfsGatewayUrl": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "transactionHash": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revocationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "studentLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "Exception": {
         "type": "object",
         "properties": {
@@ -1487,7 +1741,7 @@
           }
         }
       },
-      "JsonElement": { },
+      "JsonElement": {},
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
@@ -1512,6 +1766,7 @@
       },
       "LinkStudentTitleRequest": {
         "required": [
+          "credentialId",
           "careerId",
           "credentialTypeCode",
           "ipfsCid",
@@ -1526,6 +1781,13 @@
         ],
         "type": "object",
         "properties": {
+          "credentialId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
           "careerId": {
             "type": [
               "null",
@@ -1587,7 +1849,7 @@
           }
         }
       },
-      "MethodBase": { },
+      "MethodBase": {},
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -1691,6 +1953,52 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "RevokeCredentialRequest": {
+        "required": [
+          "reason",
+          "revocationTxHash",
+          "blockNumber",
+          "chainId",
+          "eip712Signature",
+          "revokedByUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "revocationTxHash": {
+            "type": "string"
+          },
+          "blockNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "chainId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "eip712Signature": {
+            "type": "string"
+          },
+          "revokedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -1934,6 +2242,9 @@
     },
     {
       "name": "HolderCredentials"
+    },
+    {
+      "name": "InstitutionCredentials"
     },
     {
       "name": "InstitutionIssuerWallet"

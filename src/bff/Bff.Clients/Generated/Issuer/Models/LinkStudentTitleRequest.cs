@@ -40,6 +40,8 @@ namespace SovereignID.Bff.Clients.Issuer.Models
 #else
         public string ContentHash { get; set; }
 #endif
+        /// <summary>The credentialId property</summary>
+        public Guid? CredentialId { get; set; }
         /// <summary>The credentialTypeCode property</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -119,6 +121,7 @@ namespace SovereignID.Bff.Clients.Issuer.Models
                 { "careerId", n => { CareerId = n.GetGuidValue(); } },
                 { "chainId", n => { ChainId = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
                 { "contentHash", n => { ContentHash = n.GetStringValue(); } },
+                { "credentialId", n => { CredentialId = n.GetGuidValue(); } },
                 { "credentialTypeCode", n => { CredentialTypeCode = n.GetStringValue(); } },
                 { "eip712Signature", n => { Eip712Signature = n.GetStringValue(); } },
                 { "expiresAt", n => { ExpiresAt = n.GetDateTimeOffsetValue(); } },
@@ -139,6 +142,7 @@ namespace SovereignID.Bff.Clients.Issuer.Models
             writer.WriteGuidValue("careerId", CareerId);
             writer.WriteObjectValue<UntypedNode>("chainId", ChainId);
             writer.WriteStringValue("contentHash", ContentHash);
+            writer.WriteGuidValue("credentialId", CredentialId);
             writer.WriteStringValue("credentialTypeCode", CredentialTypeCode);
             writer.WriteStringValue("eip712Signature", Eip712Signature);
             writer.WriteDateTimeOffsetValue("expiresAt", ExpiresAt);
