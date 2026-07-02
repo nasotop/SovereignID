@@ -36,6 +36,21 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'platform',
+    loadComponent: () =>
+      import('./features/portals/platform/platform.component').then(
+        (m) => m.PlatformComponent
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'institution-invitations/accept',
+    loadComponent: () =>
+      import('./features/invitations/accept-invitation.component').then(
+        (m) => m.AcceptInvitationComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'login',
   },
