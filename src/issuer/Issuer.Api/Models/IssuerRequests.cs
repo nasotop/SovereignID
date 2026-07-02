@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Issuer.Api.Models;
 
 namespace Issuer.Api.Models;
 
@@ -9,7 +8,6 @@ public sealed record LinkInstitutionIssuerWalletRequest(
     string? PublicKey);
 
 public sealed record LinkStudentTitleRequest(
-    Guid? CredentialId,
     Guid? CareerId,
     string CredentialTypeCode,
     string IpfsCid,
@@ -21,11 +19,3 @@ public sealed record LinkStudentTitleRequest(
     string Eip712Signature,
     DateTimeOffset? ExpiresAt,
     JsonElement? Metadata);
-
-public sealed record RevokeCredentialRequest(
-    string Reason,
-    string RevocationTxHash,
-    long BlockNumber,
-    int? ChainId,
-    string Eip712Signature,
-    Guid? RevokedByUserId);

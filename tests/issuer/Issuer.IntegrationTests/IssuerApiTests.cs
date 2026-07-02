@@ -103,66 +103,76 @@ public sealed class IssuerApiTests : IClassFixture<IssuerWebApplicationFactory>
     }
 
     [Fact]
-    public async Task ListInstitutionCredentials_AfterIssue_ReturnsCredential()
+    public async Task ListHolderCredentials_WithoutToken_ReturnsUnauthorized()
     {
-        var issueRequest = new
-        {
-            careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-            credentialTypeCode = "titulo",
-            ipfsCid = "bafybeigdyrzt-list",
-            ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt-list",
-            contentHash = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-            transactionHash = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-            blockNumber = 123457L,
-            eip712Signature = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-        };
-
-        await _client.PostAsJsonAsync(
-            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
-            issueRequest);
-
-        var response = await _client.GetAsync(
-            "/issuer/institutions/11111111-1111-1111-1111-111111111111/credentials");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(body.GetArrayLength() >= 1);
+        var response = await _client.GetAsync("/issuer/holders/me/credentials");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task RevokeCredential_AfterIssue_ReturnsRevoked()
+    public async Task ListHolderCredentials_WithValidToken_ReturnsCredentials()
     {
-        var issueRequest = new
-        {
-            careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-            credentialTypeCode = "titulo",
-            ipfsCid = "bafybeigdyrzt-revoke",
-            ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt-revoke",
-            contentHash = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-            transactionHash = "0x1010101010101010101010101010101010101010101010101010101010101010",
-            blockNumber = 123458L,
-            eip712Signature = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-        };
+        var request = new HttpRequestMessage(HttpMethod.Get, "/issuer/holders/me/credentials");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
 
-        var issueResponse = await _client.PostAsJsonAsync(
-            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
-            issueRequest);
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var issueBody = await issueResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var credentialId = issueBody.GetProperty("credentialId").GetGuid();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, body.ValueKind);
+        Assert.Equal(2, body.GetArrayLength());
+        Assert.Equal("Titulo Universitario", body[0].GetProperty("title").GetString());
+        Assert.Equal("active", body[0].GetProperty("status").GetString());
+    }
 
-        var revokeResponse = await _client.PostAsJsonAsync(
-            $"/issuer/credentials/{credentialId}/revoke",
-            new
-            {
-                reason = "Academic fraud detected",
-                revocationTxHash = "0x2020202020202020202020202020202020202020202020202020202020202020",
-                blockNumber = 123459L,
-                eip712Signature = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-            });
+    [Fact]
+    public async Task GetHolderCredential_WithValidToken_ReturnsDetail()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/holders/me/credentials/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
 
-        Assert.Equal(HttpStatusCode.OK, revokeResponse.StatusCode);
-        var revokeBody = await revokeResponse.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("revoked", revokeBody.GetProperty("status").GetString());
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", body.GetProperty("id").GetString());
+        Assert.Equal(JwtTestHelper.HolderSubjectDid, body.GetProperty("subjectDid").GetString());
+        Assert.Equal("bafybeigdyrzt", body.GetProperty("anchors").GetProperty("ipfsCid").GetString());
+    }
+
+    [Fact]
+    public async Task GetCredential_ById_WithValidToken_ReturnsDetail()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/credentials/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Certificado de Notas", body.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task GetHolderCredential_ForForeignCredential_ReturnsNotFound()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/issuer/holders/me/credentials/99999999-9999-9999-9999-999999999999");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", JwtTestHelper.CreateHolderToken());
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("credential_not_found", body.GetProperty("error").GetString());
     }
 }

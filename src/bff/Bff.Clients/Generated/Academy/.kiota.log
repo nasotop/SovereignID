@@ -1,0 +1,3 @@
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/CreateStudentRequest/properties/enrollmentYear - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/ProblemDetails/properties/status - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
+Warning: KiotaBuilder OpenAPI warning: #/components/schemas/StudentSummary/properties/enrollmentYear - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.

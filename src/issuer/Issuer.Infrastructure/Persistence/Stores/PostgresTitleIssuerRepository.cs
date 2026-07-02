@@ -1,5 +1,6 @@
 using Issuer.Application;
-using Issuer.Infrastructure.Persistence.Entities;
+using Issuer.Infrastructure.Persistence.Generated;
+using Issuer.Infrastructure.Persistence.Generated.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Issuer.Infrastructure.Persistence.Stores;
@@ -27,7 +28,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
 
         institution.IssuerWalletAddress = command.WalletAddress;
         institution.Did = command.Did;
-        institution.PublicKey = command.PublicKey;
+        institution.PublicKey = command.PublicKey ?? institution.PublicKey;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -56,7 +57,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(i => i.Id == student.InstitutionId && i.IsActive, cancellationToken);
 
-        if (institution?.Did is null)
+        if (institution?.Did is null or "")
         {
             return null;
         }
@@ -77,7 +78,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             .SingleOrDefaultAsync(w =>
                 w.StudentId == student.Id
                 && w.IsPrimary
-                && w.Status == WalletStatus.active,
+                && w.Status == WalletStatus.Active,
                 cancellationToken);
 
         var credentialType = await _dbContext.CredentialTypes
@@ -89,9 +90,9 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             return null;
         }
 
-        var entity = new CredentialEntity
+        var entity = new Credential
         {
-            Id = command.CredentialId ?? Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             InstitutionId = student.InstitutionId,
             CredentialTypeId = credentialType.Id,
             StudentId = student.Id,
@@ -106,7 +107,7 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             BlockNumber = command.BlockNumber,
             ChainId = command.ChainId!.Value,
             Eip712Signature = command.Eip712Signature,
-            Status = CredentialStatus.active,
+            Status = CredentialStatus.Active,
             IssuedAt = UtcDateTime(now),
             ExpiresAt = command.ExpiresAt is null ? null : UtcDateTime(command.ExpiresAt.Value),
             CreatedAt = UtcDateTime(now),
@@ -124,122 +125,9 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             entity.IssuedToWalletId,
             entity.SubjectDid,
             entity.IssuerDid,
-            entity.Status.ToString(),
+            "active",
             ToDateTimeOffset(entity.IssuedAt));
     }
-
-    public async Task<IReadOnlyList<CredentialSummary>> ListInstitutionCredentialsAsync(
-        Guid institutionId,
-        CancellationToken cancellationToken)
-    {
-        var credentials = await (
-            from credential in _dbContext.Credentials.AsNoTracking()
-            join type in _dbContext.CredentialTypes.AsNoTracking() on credential.CredentialTypeId equals type.Id
-            join student in _dbContext.Students.AsNoTracking() on credential.StudentId equals student.Id
-            where credential.InstitutionId == institutionId
-            orderby credential.IssuedAt descending
-            select new { credential, type, student }
-        ).ToListAsync(cancellationToken);
-
-        return credentials
-            .Select(item => MapSummary(item.credential, item.type.Code, item.student.ExternalReference))
-            .ToList();
-    }
-
-    public async Task<CredentialSummary?> GetCredentialAsync(Guid credentialId, CancellationToken cancellationToken)
-    {
-        var item = await (
-            from credential in _dbContext.Credentials.AsNoTracking()
-            join type in _dbContext.CredentialTypes.AsNoTracking() on credential.CredentialTypeId equals type.Id
-            join student in _dbContext.Students.AsNoTracking() on credential.StudentId equals student.Id
-            where credential.Id == credentialId
-            select new { credential, type, student }
-        ).SingleOrDefaultAsync(cancellationToken);
-
-        return item is null
-            ? null
-            : MapSummary(item.credential, item.type.Code, item.student.ExternalReference);
-    }
-
-    public async Task<CredentialRevoked?> RevokeCredentialAsync(
-        RevokeCredentialCommand command,
-        DateTimeOffset now,
-        CancellationToken cancellationToken)
-    {
-        var entity = await _dbContext.Credentials
-            .SingleOrDefaultAsync(c => c.Id == command.CredentialId, cancellationToken);
-
-        if (entity is null || entity.Status != CredentialStatus.active)
-        {
-            return null;
-        }
-
-        entity.Status = CredentialStatus.revoked;
-        entity.RevokedAt = UtcDateTime(now);
-        entity.RevocationReason = command.Reason;
-        entity.RevocationTxHash = command.RevocationTxHash;
-        entity.RevokedByUserId = command.RevokedByUserId;
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return new CredentialRevoked(
-            entity.Id,
-            entity.InstitutionId,
-            entity.StudentId,
-            entity.Status.ToString(),
-            now,
-            entity.RevocationReason,
-            entity.RevocationTxHash!);
-    }
-
-    public async Task<string?> GetInstitutionIssuerWalletAsync(
-        Guid institutionId,
-        CancellationToken cancellationToken)
-    {
-        var institution = await _dbContext.Institutions
-            .AsNoTracking()
-            .SingleOrDefaultAsync(i => i.Id == institutionId && i.IsActive, cancellationToken);
-
-        return institution?.IssuerWalletAddress;
-    }
-
-    public async Task<string?> GetInstitutionIssuerWalletForStudentAsync(
-        Guid studentId,
-        CancellationToken cancellationToken)
-    {
-        var student = await _dbContext.Students
-            .AsNoTracking()
-            .SingleOrDefaultAsync(s => s.Id == studentId && s.IsActive, cancellationToken);
-
-        if (student is null)
-        {
-            return null;
-        }
-
-        return await GetInstitutionIssuerWalletAsync(student.InstitutionId, cancellationToken);
-    }
-
-    private static CredentialSummary MapSummary(
-        CredentialEntity entity,
-        string credentialTypeCode,
-        string? studentExternalReference) =>
-        new(
-            entity.Id,
-            entity.InstitutionId,
-            entity.StudentId,
-            entity.CareerId,
-            credentialTypeCode,
-            entity.SubjectDid,
-            entity.IssuerDid,
-            entity.Status.ToString(),
-            entity.IpfsCid,
-            entity.IpfsGatewayUrl,
-            entity.ContentHash,
-            entity.TransactionHash,
-            ToDateTimeOffset(entity.IssuedAt),
-            entity.RevokedAt is null ? null : ToDateTimeOffset(entity.RevokedAt.Value),
-            entity.RevocationReason,
-            studentExternalReference);
 
     private static DateTime UtcDateTime(DateTimeOffset value) => value.UtcDateTime;
 

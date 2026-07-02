@@ -15,7 +15,7 @@
         "tags": [
           "Credentials"
         ],
-        "summary": "Gets a credential by identifier.",
+        "summary": "Devuelve el detalle de una credencial autenticada si pertenece al titular del JWT.",
         "parameters": [
           {
             "name": "credentialId",
@@ -33,7 +33,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CredentialSummary"
+                  "$ref": "#/components/schemas/HolderCredentialDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -48,88 +58,12 @@
               }
             }
           }
-        }
-      }
-    },
-    "/issuer/credentials/{credentialId}/revoke": {
-      "post": {
-        "tags": [
-          "Credentials"
-        ],
-        "summary": "Revokes an active credential after on-chain revocation.",
-        "parameters": [
-          {
-            "name": "credentialId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RevokeCredentialRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RevokeCredentialRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/RevokeCredentialRequest"
-              }
-            }
-          },
-          "required": true
         },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CredentialRevoked"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
+        "security": [
+          {
+            "bearerAuth": []
           }
-        }
+        ]
       }
     },
     "/health": {
@@ -148,15 +82,53 @@
         }
       }
     },
-    "/issuer/institutions/{institutionId}/credentials": {
+    "/issuer/holders/me/credentials": {
       "get": {
         "tags": [
-          "InstitutionCredentials"
+          "HolderCredentials"
         ],
-        "summary": "Lists credentials issued by an institution.",
+        "summary": "Lista las credenciales del titular autenticado (JWT SIWE).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolderCredentialSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/issuer/holders/me/credentials/{credentialId}": {
+      "get": {
+        "tags": [
+          "HolderCredentials"
+        ],
+        "summary": "Devuelve el detalle de una credencial del titular autenticado.",
         "parameters": [
           {
-            "name": "institutionId",
+            "name": "credentialId",
             "in": "path",
             "required": true,
             "schema": {
@@ -171,16 +143,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CredentialSummary"
-                  }
+                  "$ref": "#/components/schemas/HolderCredentialDetail"
                 }
               }
             }
           },
-          "400": {
-            "description": "Bad Request",
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -189,7 +168,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/issuer/institutions/{institutionId}/wallet": {
@@ -337,100 +321,18 @@
   },
   "components": {
     "schemas": {
-      "CredentialRevoked": {
+      "HolderCredentialAnchors": {
         "required": [
-          "credentialId",
-          "institutionId",
-          "studentId",
-          "status",
-          "revokedAt",
-          "revocationReason",
-          "revocationTxHash"
-        ],
-        "type": "object",
-        "properties": {
-          "credentialId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "institutionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "studentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "type": "string"
-          },
-          "revokedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "revocationReason": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "revocationTxHash": {
-            "type": "string"
-          }
-        }
-      },
-      "CredentialSummary": {
-        "required": [
-          "credentialId",
-          "institutionId",
-          "studentId",
-          "careerId",
-          "credentialTypeCode",
-          "subjectDid",
-          "issuerDid",
-          "status",
           "ipfsCid",
           "ipfsGatewayUrl",
           "contentHash",
           "transactionHash",
-          "issuedAt",
-          "revokedAt",
-          "revocationReason",
-          "studentLabel"
+          "blockNumber",
+          "chainId",
+          "eip712Signature"
         ],
         "type": "object",
         "properties": {
-          "credentialId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "institutionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "studentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "careerId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "credentialTypeCode": {
-            "type": "string"
-          },
-          "subjectDid": {
-            "type": "string"
-          },
-          "issuerDid": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
           "ipfsCid": {
             "type": "string"
           },
@@ -443,8 +345,74 @@
           "transactionHash": {
             "type": "string"
           },
+          "blockNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "chainId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "eip712Signature": {
+            "type": "string"
+          }
+        }
+      },
+      "HolderCredentialDetail": {
+        "required": [
+          "id",
+          "title",
+          "issuerName",
+          "typeCode",
+          "status",
+          "issuedAt",
+          "expiresAt",
+          "revokedAt",
+          "subjectDid",
+          "issuer",
+          "anchors",
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "issuerName": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ],
+            "type": "string"
+          },
           "issuedAt": {
             "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           },
           "revokedAt": {
@@ -454,17 +422,85 @@
             ],
             "format": "date-time"
           },
-          "revocationReason": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "subjectDid": {
+            "type": "string"
           },
-          "studentLabel": {
+          "issuer": {
+            "$ref": "#/components/schemas/HolderCredentialIssuer"
+          },
+          "anchors": {
+            "$ref": "#/components/schemas/HolderCredentialAnchors"
+          },
+          "metadata": {
             "type": [
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "HolderCredentialIssuer": {
+        "required": [
+          "did",
+          "displayName",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "did": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "HolderCredentialSummary": {
+        "required": [
+          "id",
+          "title",
+          "issuerName",
+          "typeCode",
+          "status",
+          "issuedAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "issuerName": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "revoked",
+              "expired"
+            ],
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -520,7 +556,6 @@
       },
       "LinkStudentTitleRequest": {
         "required": [
-          "credentialId",
           "careerId",
           "credentialTypeCode",
           "ipfsCid",
@@ -535,13 +570,6 @@
         ],
         "type": "object",
         "properties": {
-          "credentialId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
           "careerId": {
             "type": [
               "null",
@@ -641,52 +669,6 @@
           }
         }
       },
-      "RevokeCredentialRequest": {
-        "required": [
-          "reason",
-          "revocationTxHash",
-          "blockNumber",
-          "chainId",
-          "eip712Signature",
-          "revokedByUserId"
-        ],
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "revocationTxHash": {
-            "type": "string"
-          },
-          "blockNumber": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int64"
-          },
-          "chainId": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "eip712Signature": {
-            "type": "string"
-          },
-          "revokedByUserId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          }
-        }
-      },
       "StudentTitleLinked": {
         "required": [
           "credentialId",
@@ -739,6 +721,14 @@
           }
         }
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "JWT SIWE emitido por el servicio auth.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     }
   },
   "tags": [
@@ -749,7 +739,7 @@
       "name": "Health"
     },
     {
-      "name": "InstitutionCredentials"
+      "name": "HolderCredentials"
     },
     {
       "name": "InstitutionIssuerWallet"
