@@ -101,4 +101,68 @@ public sealed class IssuerApiTests : IClassFixture<IssuerWebApplicationFactory>
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("invalid_credential_type", body.GetProperty("error").GetString());
     }
+
+    [Fact]
+    public async Task ListInstitutionCredentials_AfterIssue_ReturnsCredential()
+    {
+        var issueRequest = new
+        {
+            careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            credentialTypeCode = "titulo",
+            ipfsCid = "bafybeigdyrzt-list",
+            ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt-list",
+            contentHash = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            transactionHash = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            blockNumber = 123457L,
+            eip712Signature = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        };
+
+        await _client.PostAsJsonAsync(
+            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
+            issueRequest);
+
+        var response = await _client.GetAsync(
+            "/issuer/institutions/11111111-1111-1111-1111-111111111111/credentials");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetArrayLength() >= 1);
+    }
+
+    [Fact]
+    public async Task RevokeCredential_AfterIssue_ReturnsRevoked()
+    {
+        var issueRequest = new
+        {
+            careerId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            credentialTypeCode = "titulo",
+            ipfsCid = "bafybeigdyrzt-revoke",
+            ipfsGatewayUrl = "https://ipfs.io/ipfs/bafybeigdyrzt-revoke",
+            contentHash = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            transactionHash = "0x1010101010101010101010101010101010101010101010101010101010101010",
+            blockNumber = 123458L,
+            eip712Signature = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        };
+
+        var issueResponse = await _client.PostAsJsonAsync(
+            "/issuer/students/22222222-2222-2222-2222-222222222222/title",
+            issueRequest);
+
+        var issueBody = await issueResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var credentialId = issueBody.GetProperty("credentialId").GetGuid();
+
+        var revokeResponse = await _client.PostAsJsonAsync(
+            $"/issuer/credentials/{credentialId}/revoke",
+            new
+            {
+                reason = "Academic fraud detected",
+                revocationTxHash = "0x2020202020202020202020202020202020202020202020202020202020202020",
+                blockNumber = 123459L,
+                eip712Signature = "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, revokeResponse.StatusCode);
+        var revokeBody = await revokeResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("revoked", revokeBody.GetProperty("status").GetString());
+    }
 }
