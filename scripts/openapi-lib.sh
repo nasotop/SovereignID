@@ -10,6 +10,7 @@ OPENAPI_SERVICES=(
   "academy|src/academy/Academy.Api|5195|docs/contracts/academy.openapi.json"
   "issuer|src/issuer/Issuer.Api|5197|docs/contracts/issuer.openapi.json"
   "verifier|src/verifier/Verifier.Api|5196|docs/contracts/verifier.openapi.json"
+  "bff|src/bff/Bff.Api|5194|docs/contracts/bff.openapi.json"
 )
 
 OPENAPI_SERVER_PID=""

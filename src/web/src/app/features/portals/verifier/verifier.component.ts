@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { VerificationChecksResponse } from '../../../api/verifier/models/verification-checks-response';
-import { VerificationResponse } from '../../../api/verifier/models/verification-response';
+import { VerificationChecksResponse } from '../../../api/bff/models/verification-checks-response';
+import { VerificationResponse } from '../../../api/bff/models/verification-response';
 import { VerifierService } from '../../../core/services/verifier.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
 

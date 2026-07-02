@@ -1,11 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { Api } from '../../api/issuer/api';
-import { issuerHoldersMeCredentialsCredentialIdGet } from '../../api/issuer/fn/holder-credentials/issuer-holders-me-credentials-credential-id-get';
-import { issuerHoldersMeCredentialsGet } from '../../api/issuer/fn/holder-credentials/issuer-holders-me-credentials-get';
-import { HolderCredentialDetail } from '../../api/issuer/models/holder-credential-detail';
-import { HolderCredentialSummary } from '../../api/issuer/models/holder-credential-summary';
+import { Api } from '../../api/bff/api';
+import { issuerHoldersMeCredentialsCredentialIdGet } from '../../api/bff/fn/holder-credentials/issuer-holders-me-credentials-credential-id-get';
+import { issuerHoldersMeCredentialsGet } from '../../api/bff/fn/holder-credentials/issuer-holders-me-credentials-get';
+import { HolderCredentialDetail } from '../../api/bff/models/holder-credential-detail';
+import { HolderCredentialSummary } from '../../api/bff/models/holder-credential-summary';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
 import { AuthService } from './auth.service';
 

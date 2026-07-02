@@ -73,7 +73,7 @@ services:
     networks:
       - sovereign-net
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -114,7 +114,7 @@ services:
     networks:
       - sovereign-net
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -129,6 +129,121 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Verifiable Credential issuance and holder read service"
 
+  academy-api:
+    build:
+      context: .
+      dockerfile: src/academy/Academy.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-academy:latest
+    container_name: sovereignid-academy
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+      Persistence__Provider: ${Academy__Persistence__Provider:-InMemory}
+      Academy__InvitationBaseUrl: ${Academy__InvitationBaseUrl:-http://localhost:4333/institution-invitations/accept}
+      Academy__InvitationTtlHours: ${Academy__InvitationTtlHours:-72}
+    expose:
+      - "8080"
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: academy-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Academic domain service (institutions, students, invitations)"
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/identity/Identity.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-identity:latest
+    container_name: sovereignid-identity
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+      Persistence__Provider: ${Identity__Persistence__Provider:-InMemory}
+    expose:
+      - "8080"
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: identity-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Identity service (health scaffold; business endpoints TBD)"
+
+  bff-api:
+    build:
+      context: .
+      dockerfile: src/bff/Bff.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-bff:latest
+    container_name: sovereignid-bff
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      Downstream__Verifier: http://verifier-api:8080
+      Downstream__Issuer: http://issuer-api:8080
+      Downstream__Academy: http://academy-api:8080
+      Downstream__Identity: http://identity-api:8080
+    expose:
+      - "8080"
+    depends_on:
+      verifier-api:
+        condition: service_started
+      issuer-api:
+        condition: service_started
+      academy-api:
+        condition: service_started
+      identity-api:
+        condition: service_started
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: bff-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Backend-for-Frontend with Kiota downstream clients"
+
   web:
     build:
       context: ./src/web
@@ -140,6 +255,8 @@ services:
       - "${WEB_HOST_PORT:-4333}:80"
     depends_on:
       auth-api:
+        condition: service_healthy
+      bff-api:
         condition: service_healthy
       verifier-api:
         condition: service_started
@@ -161,7 +278,7 @@ services:
     labels:
       com.sovereignid.service: web
       com.sovereignid.version: "1.0"
-      com.sovereignid.description: "Angular Frontend + Nginx Reverse Proxy"
+      com.sovereignid.description: "Angular Frontend + Nginx (auth directo + BFF /api/)"
     security_opt:
       - no-new-privileges:true
 

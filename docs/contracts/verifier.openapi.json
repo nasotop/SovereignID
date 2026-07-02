@@ -32,7 +32,7 @@
           "Verifications"
         ],
         "summary": "Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).",
-        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo\r\n`result`. El único error de protocolo es `invalid_credential_id` (`400`, RFC 7807 Problem Details\r\ncon extensión `error`) cuando `credentialId` está ausente o no es un UUID válido.",
+        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`. El único error de protocolo es `invalid_credential_id` (`400`, RFC 7807 Problem Details con extensión `error`) cuando `credentialId` está ausente o no es un UUID válido.",
         "requestBody": {
           "content": {
             "application/json": {

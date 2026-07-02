@@ -7,8 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "gen:api:verifier": "ng-openapi-gen -c ng-openapi-gen.json",
-    "gen:api:issuer": "ng-openapi-gen -c ng-openapi-gen.issuer.json"
+    "gen:api:bff": "ng-openapi-gen -c ng-openapi-gen.bff.json",
+    "gen:api:auth": "ng-openapi-gen -c ng-openapi-gen.auth.json"
   },
   "private": true,
   "engines": {

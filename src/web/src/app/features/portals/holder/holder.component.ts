@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { HolderCredentialSummary } from '../../../api/issuer/models/holder-credential-summary';
+import { HolderCredentialSummary } from '../../../api/bff/models/holder-credential-summary';
 import {
   HolderService,
   HolderUnauthorizedError,

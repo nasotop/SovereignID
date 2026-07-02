@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 
-import { Api } from '../../api/verifier/api';
-import { verificationsPost } from '../../api/verifier/fn/verifications/verifications-post';
-import { VerificationResponse } from '../../api/verifier/models/verification-response';
+import { Api } from '../../api/bff/api';
+import { verificationsPost } from '../../api/bff/fn/verifications/verifications-post';
+import { VerificationResponse } from '../../api/bff/models/verification-response';
 import { toThrownError } from '../utils/error.utils';
 
 const UUID_PATTERN =

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aceptado — 2026-06-25
+Aceptado — 2026-06-25 · **Actualizado** 2026-07-02 (cliente único BFF, ver [ADR-0005](0005-bff-kiota.md))
 
 **Revierte** la decisión "**alineación manual, sin codegen automático**" registrada en [`CONTEXT.md`](../../CONTEXT.md) (sección web del servicio `auth`). El resto de esa sección (seam único de errores en `error.utils.ts`, los componentes no leen el cuerpo HTTP directamente, snapshot OpenAPI versionado como fuente de verdad) sigue vigente y se refuerza.
 
@@ -25,17 +25,17 @@ El cliente HTTP del frontend (modelos + servicios) se **genera desde el snapshot
 
 ### Reglas concretas
 
-- **Input:** el snapshot versionado `docs/contracts/<servicio>.openapi.json` (host-independiente). No se genera desde el servicio vivo.
-- **Output por servicio:** `src/web/src/app/api/<servicio>/` (p. ej. `api/verifier/`). Cada microservicio genera su propio cliente; no se comparten tipos.
-- **`rootUrl` vacío:** las llamadas salen como URLs relativas (`/verifications`), proxeadas por nginx hacia el `*-api` correspondiente — mismo modelo de gateway que `auth`.
-- **Código generado commiteado:** espejo de la filosofía "snapshot commiteado + CI lo verifica". CI puede regenerar y diffear para detectar drift; el build no depende del codegen.
-- **Seam de errores intacto:** una **fachada escrita a mano** (`VerifierService`) envuelve el servicio generado y aplica `error.utils.ts` (Problem Details). Los componentes hablan solo con la fachada, nunca con `HttpErrorResponse` crudo del servicio generado.
+- **Input:** `docs/contracts/bff.openapi.json` para portales web; `docs/contracts/auth.openapi.json` para SIWE (directo a `auth-api`, sin BFF).
+- **Output:** `src/app/api/bff/` (portales) y `src/app/api/auth/` (SIWE).
+- **`rootUrl`:** `/api` para BFF; vacío para auth (rutas `/auth/*` en el contrato).
+- **Generación:** `npm run gen:api:bff` y `npm run gen:api:auth`; **código generado commiteado**.
+- **Seam de errores intacto:** fachadas escritas a mano (`VerifierService`, `HolderService`, `AuthApiService`) envuelven el cliente generado y aplican `error.utils.ts` (Problem Details). Los componentes hablan solo con la fachada, nunca con `HttpErrorResponse` crudo del servicio generado.
 - **Enums en el contrato:** para que el cliente generado tenga tipos útiles, los valores estables del dominio se modelan como `enum` en el OpenAPI (p. ej. `result` ∈ `valid|revoked|expired|not_found`), no como `string` libre.
 
 ### Alcance y migración
 
-- **`verifier`:** adopta el cliente generado desde su primera integración web.
-- **`auth`:** permanece con tipos/servicio **manuales** por ahora; se migrará a `ng-openapi-gen` en un cambio posterior. Durante la transición conviven los dos estilos de forma deliberada.
+- **`verifier` / `holder`:** cliente generado desde contrato BFF (desde 2026-07-02).
+- **`auth`:** cliente generado desde `docs/contracts/auth.openapi.json` → `src/app/api/auth/` (desde 2026-07-02). Sigue yendo **directo** a `auth-api` (`/auth/*`), no pasa por el BFF.
 
 ## Consecuencias
 
@@ -47,7 +47,7 @@ El cliente HTTP del frontend (modelos + servicios) se **genera desde el snapshot
 ### Negativas
 
 - Nueva dependencia de tooling (`ng-openapi-gen`) y un paso de generación a documentar/automatizar.
-- Conviven temporalmente dos estilos (auth manual, verifier generado) hasta completar la migración de auth.
+- Conviven dos clientes generados (`bff`, `auth`) con distintos `rootUrl`; cada uno tiene fachada manual para errores.
 - El cliente generado no aplica por sí mismo el seam de Problem Details: requiere la fachada a mano para no romper la regla de [ADR-0001](0001-problem-details-errors.md).
 
 ## Referencias

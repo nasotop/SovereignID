@@ -16,11 +16,7 @@ public sealed class VerificationsController : ControllerBase
         _verifyCredentialUseCase = verifyCredentialUseCase;
 
     /// <summary>Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).</summary>
-    /// <remarks>
-    /// Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con <c>200</c> y el campo
-    /// <c>result</c>. El único error de protocolo es <c>invalid_credential_id</c> (<c>400</c>, RFC 7807 Problem Details
-    /// con extensión <c>error</c>) cuando <c>credentialId</c> está ausente o no es un UUID válido.
-    /// </remarks>
+    /// <remarks>Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con <c>200</c> y el campo <c>result</c>. El único error de protocolo es <c>invalid_credential_id</c> (<c>400</c>, RFC 7807 Problem Details con extensión <c>error</c>) cuando <c>credentialId</c> está ausente o no es un UUID válido.</remarks>
     [HttpPost]
     [ProducesResponseType(typeof(VerificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
