@@ -30,6 +30,4 @@ RUN apt-get update \
 USER app
 WORKDIR /app
 COPY --from=publish /app/publish .
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --quiet --tries=1 -O /dev/null http://localhost:8080/health || exit 1
 ENTRYPOINT ["dotnet", "Issuer.Api.dll"]
