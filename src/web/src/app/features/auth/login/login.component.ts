@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { Web3Service } from '../../../core/services/web3.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
@@ -9,7 +10,7 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-gray-900 px-4">
       <div class="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8">
@@ -151,9 +152,17 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
         }
 
         <!-- Footer -->
-        <p class="text-center text-gray-500 text-xs mt-6">
-          You will be asked to sign a message to verify your identity
-        </p>
+        <div class="text-center mt-6 space-y-3">
+          <p class="text-gray-500 text-xs">
+            You will be asked to sign a message to verify your identity
+          </p>
+          <a
+            routerLink="/platform"
+            class="inline-block text-sm text-blue-400 hover:text-blue-300 transition"
+          >
+            Ir al portal de plataforma
+          </a>
+        </div>
       </div>
     </div>
   `,
@@ -161,6 +170,8 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
 export class LoginComponent {
   readonly authService = inject(AuthService);
   readonly web3Service = inject(Web3Service);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly state = signal<LoginState>('idle');
   readonly errorMessage = signal<string | null>(null);
@@ -174,6 +185,10 @@ export class LoginComponent {
     try {
       await this.authService.login();
       this.state.set('success');
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      const destination =
+        returnUrl && returnUrl.startsWith('/') ? returnUrl : '/holder';
+      await this.router.navigateByUrl(destination);
     } catch (error: unknown) {
       this.state.set('error');
       this.errorMessage.set(toErrorMessage(error));
