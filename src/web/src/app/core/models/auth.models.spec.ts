@@ -19,6 +19,9 @@ function assertVerifyResponse(value: unknown): asserts value is VerifyResponse {
   expect(response.jwt).toBeTruthy();
   expect(response.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
   expect(response.expiresAt).toBeTruthy();
+  expect(typeof response.platformAdmin).toBe('boolean');
+  expect(typeof response.holder).toBe('boolean');
+  expect(Array.isArray(response.memberships)).toBe(true);
 }
 
 describe('auth contract fixtures', () => {

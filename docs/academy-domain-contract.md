@@ -21,14 +21,16 @@ El servicio `academy` concentra el alcance academico del MVP:
 
 ## Endpoints
 
-| Endpoint | Proposito |
-|----------|-----------|
-| `POST /academy/institutions` | Crea institucion y genera invitacion admin |
-| `GET /academy/institutions/{institutionId}` | Consulta institucion |
-| `POST /academy/institutions/{institutionId}/careers` | Crea carrera |
-| `POST /academy/institutions/{institutionId}/students` | Crea estudiante, con wallet opcional |
-| `POST /academy/institutions/{institutionId}/invitations` | Invita otro usuario institucional |
-| `POST /academy/invitations/accept` | Acepta invitacion y vincula wallet MetaMask existente |
+Todos los endpoints mutables requieren `Authorization: Bearer {jwt}` emitido por `auth`, salvo `POST /academy/invitations/accept` (token de invitacion).
+
+| Endpoint | Politica | Proposito |
+|----------|----------|-----------|
+| `POST /academy/institutions` | `PlatformAdmin` | Crea institucion y genera invitacion admin |
+| `GET /academy/institutions/{institutionId}` | `PlatformOrInstitutionMember` | Consulta institucion |
+| `POST /academy/institutions/{institutionId}/careers` | `InstitutionAdmin` | Crea carrera |
+| `POST /academy/institutions/{institutionId}/students` | `InstitutionAdmin` | Crea estudiante, con wallet opcional |
+| `POST /academy/institutions/{institutionId}/invitations` | `InstitutionAdmin` | Invita otro usuario institucional |
+| `POST /academy/invitations/accept` | Publico | Acepta invitacion y vincula wallet MetaMask existente |
 
 ## Errores
 
@@ -38,6 +40,8 @@ Codigos principales:
 
 | Codigo | HTTP | Caso |
 |--------|------|------|
+| (sin JWT / token invalido) | 401 | Falta autenticacion en endpoints protegidos |
+| (sin permiso) | 403 | JWT valido pero sin rol requerido |
 | `invalid_institution` | 400 | Faltan campos obligatorios de institucion |
 | `invalid_invitation_email` | 400 | Email de invitacion invalido |
 | `institution_code_exists` | 409 | Codigo de institucion duplicado |

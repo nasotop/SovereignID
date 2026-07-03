@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Academy.Application\Academy.Application.csproj" />
     <ProjectReference Include="..\Academy.Infrastructure\Academy.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\common\SovereignID.Authorization\SovereignID.Authorization.csproj" />
   </ItemGroup>
 
 </Project>

@@ -156,12 +156,14 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
           <p class="text-gray-500 text-xs">
             You will be asked to sign a message to verify your identity
           </p>
-          <a
-            routerLink="/platform"
-            class="inline-block text-sm text-blue-400 hover:text-blue-300 transition"
-          >
-            Ir al portal de plataforma
-          </a>
+          @if (authService.hasPlatformAdmin()) {
+            <a
+              routerLink="/platform"
+              class="inline-block text-sm text-blue-400 hover:text-blue-300 transition"
+            >
+              Ir al portal de plataforma
+            </a>
+          }
         </div>
       </div>
     </div>
@@ -186,8 +188,7 @@ export class LoginComponent {
       await this.authService.login();
       this.state.set('success');
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-      const destination =
-        returnUrl && returnUrl.startsWith('/') ? returnUrl : '/holder';
+      const destination = this.authService.resolvePostLoginUrl(returnUrl);
       await this.router.navigateByUrl(destination);
     } catch (error: unknown) {
       this.state.set('error');

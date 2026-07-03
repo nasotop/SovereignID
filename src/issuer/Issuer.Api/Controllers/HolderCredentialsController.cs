@@ -1,12 +1,14 @@
 using Issuer.Application;
+using Issuer.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SovereignID.Authorization;
 
 namespace Issuer.Api.Controllers;
 
 [ApiController]
 [Route("issuer/holders/me/credentials")]
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.HolderAuthenticated)]
 [Produces("application/json")]
 public sealed class HolderCredentialsController : ControllerBase
 {

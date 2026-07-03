@@ -20,11 +20,14 @@ El servicio `issuer` concentra la emision, consulta y gobernanza de credenciales
 | `GET` | `/issuer/holders/me/credentials/{credentialId}` | Detalle de una credencial del titular autenticado |
 | `GET` | `/issuer/credentials/{credentialId}` | Detalle autenticado si la credencial pertenece al titular del JWT |
 
-## Autenticacion (consultas holder)
+## Autenticacion y autorizacion
 
-- Los endpoints `GET` de holder requieren `Authorization: Bearer {jwt}` emitido por el servicio `auth`.
+- Los endpoints holder requieren JWT SIWE con politica `HolderAuthenticated` (`holder=true` o claim `did`).
 - El filtro de titularidad usa el claim `did` del JWT contra `credentials.subject_did`.
 - Las credenciales emitidas a wallets rotadas siguen siendo visibles porque el filtro no depende de la wallet primaria actual.
+- Los endpoints institucionales (`POST /issuer/institutions/{id}/wallet`, `POST /issuer/students/{id}/title`, `GET /issuer/institutions/{id}/credentials`, `POST /issuer/credentials/{id}/revoke`) requieren politica `InstitutionIssuer`: membership `{institutionId}` con rol `admin` o `issuer` en el JWT (o `platform_admin`).
+- Revoke sin JWT devuelve `401`; JWT sin membership devuelve `403`.
+- Issuer valida JWT localmente con la misma clave/`iss`/`aud` que Auth (`Auth:JwtSigningKey`, `Auth:JwtIssuer`, `Auth:JwtAudience`).
 
 ## Contrato OpenAPI (HTTP)
 
@@ -65,6 +68,7 @@ El portal web holder consume estos endpoints via cliente Angular generado (`ng-o
 | `invalid_title_payload` | 400 | Payload incompleto para emitir/vincular titulo |
 | `title_link_failed` | 409 | No existe estudiante, wallet, DID emisor, carrera o tipo de credencial valido |
 | `unauthenticated` | 401 | Falta JWT o token invalido |
+| `forbidden` | 403 | JWT valido pero sin membership/rol requerido |
 | `credential_not_found` | 404 | Credencial inexistente o no pertenece al titular autenticado |
 
 ## Persistencia

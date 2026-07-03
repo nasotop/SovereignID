@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Auth.Application\Auth.Application.csproj" />
     <ProjectReference Include="..\Auth.Domain\Auth.Domain.csproj" />
+    <ProjectReference Include="..\..\common\SovereignID.Authorization\SovereignID.Authorization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

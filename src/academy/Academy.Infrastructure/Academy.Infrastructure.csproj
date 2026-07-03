@@ -3,9 +3,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Academy.Application\Academy.Application.csproj" />
     <ProjectReference Include="..\Academy.Domain\Academy.Domain.csproj" />
+    <ProjectReference Include="..\..\common\SovereignID.Authorization\SovereignID.Authorization.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

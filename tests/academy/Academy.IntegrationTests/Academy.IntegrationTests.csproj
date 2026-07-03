@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\academy\Academy.Api\Academy.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\common\SovereignID.Authorization\SovereignID.Authorization.csproj" />
   </ItemGroup>
 
 </Project>

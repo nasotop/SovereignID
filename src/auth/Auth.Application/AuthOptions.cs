@@ -10,4 +10,5 @@ public sealed class AuthOptions
     public string JwtIssuer { get; set; } = "sovereignid-auth";
     public string JwtAudience { get; set; } = "sovereignid-clients";
     public string JwtSigningKey { get; set; } = string.Empty;
+    public string[] PlatformAdminAddresses { get; set; } = [];
 }

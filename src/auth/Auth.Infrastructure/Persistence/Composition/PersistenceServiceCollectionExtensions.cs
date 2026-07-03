@@ -1,4 +1,5 @@
 using Auth.Infrastructure.Persistence.Generated;
+using Auth.Infrastructure.Persistence.Generated.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,8 @@ public static class PersistenceServiceCollectionExtensions
         }
 
         services.AddDbContext<SovereignIdDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString, npgsql =>
+                npgsql.MapEnum<UserRole>("user_role")));
 
         return services;
     }

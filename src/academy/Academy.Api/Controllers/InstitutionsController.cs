@@ -1,6 +1,8 @@
 ﻿using Academy.Api.Models;
 using Academy.Application;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SovereignID.Authorization;
 
 namespace Academy.Api.Controllers;
 
@@ -18,6 +20,7 @@ public sealed class InstitutionsController : ControllerBase
 
     /// <summary>Crea una institucion y envia una invitacion para vincular una wallet MetaMask existente.</summary>
     [HttpPost]
+    [Authorize(Policy = AuthorizationPolicies.PlatformAdmin)]
     [ProducesResponseType(typeof(InstitutionCreated), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -40,6 +43,7 @@ public sealed class InstitutionsController : ControllerBase
 
     /// <summary>Consulta una institucion por identificador.</summary>
     [HttpGet("{institutionId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
     [ProducesResponseType(typeof(InstitutionSummary), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InstitutionSummary>> GetInstitution(
@@ -52,6 +56,7 @@ public sealed class InstitutionsController : ControllerBase
 
     /// <summary>Crea una carrera dentro de una institucion.</summary>
     [HttpPost("{institutionId:guid}/careers")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
     [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -70,6 +75,7 @@ public sealed class InstitutionsController : ControllerBase
 
     /// <summary>Crea un estudiante y, si se informa, vincula su wallet MetaMask existente como primaria.</summary>
     [HttpPost("{institutionId:guid}/students")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
     [ProducesResponseType(typeof(StudentSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -88,6 +94,7 @@ public sealed class InstitutionsController : ControllerBase
 
     /// <summary>Crea una invitacion para que un usuario de institucion vincule una wallet MetaMask existente.</summary>
     [HttpPost("{institutionId:guid}/invitations")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
     [ProducesResponseType(typeof(InstitutionInvitationCreated), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -96,8 +103,9 @@ public sealed class InstitutionsController : ControllerBase
         [FromBody] CreateInstitutionInvitationRequest request,
         CancellationToken cancellationToken)
     {
+        var createdByUserId = User.GetUserId() ?? request.CreatedByUserId;
         var result = await _academyService.CreateInvitationAsync(
-            new CreateInstitutionInvitationCommand(institutionId, request.Email, request.Role, request.CreatedByUserId),
+            new CreateInstitutionInvitationCommand(institutionId, request.Email, request.Role, createdByUserId),
             cancellationToken);
 
         return FromResult(result, success => Created($"/academy/institutions/{institutionId}/invitations/{success.Id}", success));

@@ -101,6 +101,51 @@ ON CONFLICT (id) DO UPDATE SET
   is_active = EXCLUDED.is_active,
   deactivated_at = NULL;
 
+-- Usuario emisor demo (wallet institucion Duoc UC)
+INSERT INTO users (
+  id,
+  wallet_address,
+  did,
+  email,
+  display_name,
+  is_active
+)
+VALUES (
+  '55555555-5555-5555-5555-555555555555',
+  '0x1111111111111111111111111111111111111111',
+  'did:ethr:sepolia:0x1111111111111111111111111111111111111111',
+  'issuer@demo.test',
+  'Issuer Demo',
+  true
+)
+ON CONFLICT (wallet_address) DO UPDATE SET
+  did = EXCLUDED.did,
+  email = EXCLUDED.email,
+  display_name = EXCLUDED.display_name,
+  is_active = EXCLUDED.is_active;
+
+-- Membresia issuer en institucion demo
+INSERT INTO institution_users (
+  id,
+  institution_id,
+  user_id,
+  role,
+  granted_at
+)
+VALUES (
+  '66666666-6666-6666-6666-666666666666',
+  '11111111-1111-1111-1111-111111111111',
+  '55555555-5555-5555-5555-555555555555',
+  'issuer',
+  TIMESTAMPTZ '2024-03-01 12:00:00+00'
+)
+ON CONFLICT (id) DO UPDATE SET
+  institution_id = EXCLUDED.institution_id,
+  user_id = EXCLUDED.user_id,
+  role = EXCLUDED.role,
+  granted_at = EXCLUDED.granted_at,
+  revoked_at = NULL;
+
 -- Carrera demo
 INSERT INTO careers (
   id,
