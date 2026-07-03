@@ -148,23 +148,16 @@ public sealed class IssuerApiTests : IClassFixture<IssuerWebApplicationFactory>
 
         var issued = await issueResponse.Content.ReadFromJsonAsync<JsonElement>();
         var credentialId = issued.GetProperty("credentialId").GetString();
-        var revokeRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"/issuer/credentials/{credentialId}/revoke")
-        {
-            Content = JsonContent.Create(new
+
+        var response = await _client.PostAsJsonAsync(
+            $"/issuer/credentials/{credentialId}/revoke",
+            new
             {
                 reason = "Test revocation",
                 revocationTxHash = "0xabababababababababababababababababababababababababababababababab",
                 blockNumber = 123458L,
                 eip712Signature = "0xbababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababababa"
-            })
-        };
-        revokeRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-            "Bearer",
-            JwtTestHelper.CreateIssuerToken(Guid.Parse("11111111-1111-1111-1111-111111111111")));
-
-        var response = await _client.SendAsync(revokeRequest);
+            });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
