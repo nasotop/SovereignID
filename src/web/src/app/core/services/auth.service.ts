@@ -2,14 +2,30 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAddress } from 'ethers';
 import { SiweMessage } from 'siwe';
 
+import { VerifyResponse } from '../../api/auth/models/verify-response';
 import {
   SEPOLIA_CHAIN_ID,
   SEPOLIA_NETWORK_PARAMS,
 } from '../constants/auth.constants';
-import { AuthState, StorageType } from '../models/auth.models';
+import {
+  AuthState,
+  InstitutionMembership,
+  StorageType,
+} from '../models/auth.models';
 import { toThrownError } from '../utils/error.utils';
 import { AuthApiService } from './auth-api.service';
 import { Web3Service } from './web3.service';
+
+const EMPTY_AUTH_STATE: AuthState = {
+  isAuthenticated: false,
+  jwt: null,
+  address: null,
+  expiresAt: null,
+  userId: null,
+  platformAdmin: false,
+  holder: false,
+  memberships: [],
+};
 
 @Injectable({
   providedIn: 'root',
@@ -18,12 +34,7 @@ export class AuthService {
   private readonly authApi = inject(AuthApiService);
   private readonly web3Service = inject(Web3Service);
 
-  private readonly authState = signal<AuthState>({
-    isAuthenticated: false,
-    jwt: null,
-    address: null,
-    expiresAt: null,
-  });
+  private readonly authState = signal<AuthState>(EMPTY_AUTH_STATE);
 
   readonly authState$ = this.authState.asReadonly();
 
@@ -51,13 +62,7 @@ export class AuthService {
         signature,
       });
 
-      this.setAuthState({
-        isAuthenticated: true,
-        jwt: verifyResponse.jwt,
-        address: getAddress(verifyResponse.address),
-        expiresAt: verifyResponse.expiresAt,
-      });
-
+      this.applyVerifyResponse(verifyResponse);
       this.saveAuthState();
     } catch (error: unknown) {
       console.error('Login failed:', error);
@@ -69,12 +74,7 @@ export class AuthService {
   /** Logs out the user and clears auth state */
   logout(): void {
     this.web3Service.disconnectWallet();
-    this.setAuthState({
-      isAuthenticated: false,
-      jwt: null,
-      address: null,
-      expiresAt: null,
-    });
+    this.setAuthState(EMPTY_AUTH_STATE);
     this.clearAuthState();
   }
 
@@ -92,6 +92,71 @@ export class AuthService {
 
   getAddress(): string | null {
     return this.authState().address;
+  }
+
+  hasPlatformAdmin(): boolean {
+    return this.authState().platformAdmin;
+  }
+
+  isHolder(): boolean {
+    return this.authState().holder;
+  }
+
+  getMemberships(): readonly InstitutionMembership[] {
+    return this.authState().memberships;
+  }
+
+  hasInstitutionRole(institutionId: string, roles: readonly string[]): boolean {
+    const normalizedRoles = new Set(roles.map((role) => role.toLowerCase()));
+    return this.getMemberships().some(
+      (membership) =>
+        membership.institutionId === institutionId &&
+        normalizedRoles.has(membership.role.toLowerCase()),
+    );
+  }
+
+  getDefaultPortalUrl(): string {
+    if (this.hasPlatformAdmin()) {
+      return '/platform';
+    }
+
+    if (
+      this.getMemberships().some((membership) =>
+        ['issuer', 'admin'].includes(membership.role.toLowerCase()),
+      )
+    ) {
+      return '/issuer';
+    }
+
+    if (this.isHolder()) {
+      return '/holder';
+    }
+
+    return '/holder';
+  }
+
+  resolvePostLoginUrl(returnUrl: string | null): string {
+    if (returnUrl && returnUrl.startsWith('/')) {
+      return returnUrl;
+    }
+
+    return this.getDefaultPortalUrl();
+  }
+
+  private applyVerifyResponse(verifyResponse: VerifyResponse): void {
+    this.setAuthState({
+      isAuthenticated: true,
+      jwt: verifyResponse.jwt,
+      address: getAddress(verifyResponse.address),
+      expiresAt: verifyResponse.expiresAt,
+      userId: verifyResponse.userId ?? null,
+      platformAdmin: verifyResponse.platformAdmin,
+      holder: verifyResponse.holder,
+      memberships: verifyResponse.memberships.map((membership) => ({
+        institutionId: membership.institutionId,
+        role: membership.role,
+      })),
+    });
   }
 
   /**
@@ -166,6 +231,13 @@ export class AuthService {
       storage.setItem('auth_address', state.address);
       storage.setItem('auth_expires_at', state.expiresAt);
       storage.setItem('auth_authenticated', 'true');
+      storage.setItem('auth_user_id', state.userId ?? '');
+      storage.setItem('auth_platform_admin', String(state.platformAdmin));
+      storage.setItem('auth_holder', String(state.holder));
+      storage.setItem(
+        'auth_memberships',
+        JSON.stringify(state.memberships),
+      );
     }
   }
 
@@ -185,12 +257,31 @@ export class AuthService {
       return;
     }
 
+    const memberships = this.parseMemberships(storage.getItem('auth_memberships'));
+
     this.setAuthState({
       isAuthenticated: true,
       jwt,
       address: getAddress(address),
       expiresAt,
+      userId: storage.getItem('auth_user_id') || null,
+      platformAdmin: storage.getItem('auth_platform_admin') === 'true',
+      holder: storage.getItem('auth_holder') === 'true',
+      memberships,
     });
+  }
+
+  private parseMemberships(raw: string | null): InstitutionMembership[] {
+    if (!raw) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as InstitutionMembership[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 
   private isSessionExpired(expiresAt: string): boolean {
@@ -205,6 +296,10 @@ export class AuthService {
     storage.removeItem('auth_expires_at');
     storage.removeItem('auth_authenticated');
     storage.removeItem('auth_token');
+    storage.removeItem('auth_user_id');
+    storage.removeItem('auth_platform_admin');
+    storage.removeItem('auth_holder');
+    storage.removeItem('auth_memberships');
   }
 
   private getStorage(): Storage {
