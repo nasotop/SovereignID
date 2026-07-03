@@ -41,6 +41,17 @@ The JWT MUST include claims:
 | `iss` | Configured issuer |
 | `aud` | Configured audience |
 
+Optional authorization claims (when `Persistence:Provider=Postgres` or platform allowlist is configured):
+
+| Claim | Content |
+|-------|---------|
+| `user_id` | UUID of `users` row when wallet is a registered institution user |
+| `platform_admin` | `"true"` when wallet is in `Auth__PlatformAdminAddresses` allowlist |
+| `holder` | `"true"` when wallet has an active primary `student_wallets` row |
+| `membership` | Repeatable `{institutionId}:{role}` (`admin`, `issuer`) |
+
+The verify response SHOULD mirror authorization profile fields: `userId`, `platformAdmin`, `holder`, `memberships[]` so clients need not decode the JWT.
+
 #### Scenario: sub claim matches signer lowercase (AC-01)
 
 - **WHEN** verify succeeds for a wallet address

@@ -9,6 +9,7 @@ public sealed class VerifySiweUseCase
     private readonly IChallengeStore _challengeStore;
     private readonly ISignatureVerifier _signatureVerifier;
     private readonly IJwtTokenIssuer _jwtTokenIssuer;
+    private readonly IUserAuthorizationResolver _authorizationResolver;
     private readonly TimeProvider _timeProvider;
     private readonly AuthOptions _options;
 
@@ -17,6 +18,7 @@ public sealed class VerifySiweUseCase
         IChallengeStore challengeStore,
         ISignatureVerifier signatureVerifier,
         IJwtTokenIssuer jwtTokenIssuer,
+        IUserAuthorizationResolver authorizationResolver,
         TimeProvider timeProvider,
         IOptions<AuthOptions> options)
     {
@@ -24,11 +26,15 @@ public sealed class VerifySiweUseCase
         _challengeStore = challengeStore;
         _signatureVerifier = signatureVerifier;
         _jwtTokenIssuer = jwtTokenIssuer;
+        _authorizationResolver = authorizationResolver;
         _timeProvider = timeProvider;
         _options = options.Value;
     }
 
-    public VerifySiweResult Execute(string message, string signature)
+    public async Task<VerifySiweResult> ExecuteAsync(
+        string message,
+        string signature,
+        CancellationToken cancellationToken = default)
     {
         var parseResult = _parser.TryParse(message);
         if (!parseResult.IsSuccess)
@@ -76,8 +82,16 @@ public sealed class VerifySiweUseCase
             return Fail(AuthErrorCodes.NonceConsumed, 401, "Auth challenge was already consumed.");
         }
 
-        var token = _jwtTokenIssuer.Issue(recoveredAddress);
-        return new VerifySiweSuccess(token.Token, recoveredAddress, token.ExpiresAt);
+        var authorizationProfile = await _authorizationResolver.ResolveAsync(recoveredAddress, cancellationToken);
+        var token = _jwtTokenIssuer.Issue(recoveredAddress, authorizationProfile);
+        return new VerifySiweSuccess(
+            token.Token,
+            recoveredAddress,
+            token.ExpiresAt,
+            authorizationProfile.UserId,
+            authorizationProfile.IsPlatformAdmin,
+            authorizationProfile.IsHolder,
+            authorizationProfile.Memberships);
     }
 
     private static bool AddressesMatch(string declared, string recovered) =>

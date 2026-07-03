@@ -34,16 +34,26 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(VerifyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public ActionResult<VerifyResponse> Verify([FromBody] VerifyRequest request)
+    public async Task<ActionResult<VerifyResponse>> Verify(
+        [FromBody] VerifyRequest request,
+        CancellationToken cancellationToken)
     {
-        var result = _verifySiweUseCase.Execute(request.Message, request.Signature);
+        var result = await _verifySiweUseCase.ExecuteAsync(request.Message, request.Signature, cancellationToken);
 
         return result switch
         {
             VerifySiweSuccess success => Ok(new VerifyResponse(
                 success.Jwt,
                 success.Address,
-                success.ExpiresAt)),
+                success.ExpiresAt,
+                success.UserId,
+                success.PlatformAdmin,
+                success.Holder,
+                success.Memberships
+                    .Select(membership => new MembershipResponse(
+                        membership.InstitutionId.ToString("D"),
+                        membership.Role))
+                    .ToList())),
             VerifySiweFailure failure => throw new AuthFailureException(failure.Failure),
             _ => throw new InvalidOperationException("Unexpected verify result.")
         };

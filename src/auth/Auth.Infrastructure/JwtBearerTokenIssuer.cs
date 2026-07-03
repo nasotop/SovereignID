@@ -4,6 +4,7 @@ using System.Text;
 using Auth.Application;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SovereignID.Authorization;
 
 namespace Auth.Infrastructure;
 
@@ -18,7 +19,7 @@ public sealed class JwtBearerTokenIssuer : IJwtTokenIssuer
         _options = options.Value;
     }
 
-    public JwtToken Issue(string address)
+    public JwtToken Issue(string address, UserAuthorizationProfile authorizationProfile)
     {
         var normalizedAddress = address.ToLowerInvariant();
         var issuedAt = _timeProvider.GetUtcNow();
@@ -26,12 +27,34 @@ public sealed class JwtBearerTokenIssuer : IJwtTokenIssuer
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.JwtSigningKey));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, normalizedAddress),
-            new Claim("address", normalizedAddress),
-            new Claim("did", $"did:ethr:sepolia:{normalizedAddress}"),
+            new(JwtRegisteredClaimNames.Sub, normalizedAddress),
+            new("address", normalizedAddress),
+            new("did", $"did:ethr:sepolia:{normalizedAddress}"),
         };
+
+        if (authorizationProfile.UserId is Guid userId)
+        {
+            claims.Add(new Claim(SovereignIdClaimTypes.UserId, userId.ToString("D")));
+        }
+
+        if (authorizationProfile.IsPlatformAdmin)
+        {
+            claims.Add(new Claim(SovereignIdClaimTypes.PlatformAdmin, "true"));
+        }
+
+        if (authorizationProfile.IsHolder)
+        {
+            claims.Add(new Claim(SovereignIdClaimTypes.Holder, "true"));
+        }
+
+        foreach (var membership in authorizationProfile.Memberships)
+        {
+            claims.Add(new Claim(
+                SovereignIdClaimTypes.Membership,
+                MembershipClaimValue.Format(membership.InstitutionId, membership.Role)));
+        }
 
         var token = new JwtSecurityToken(
             issuer: _options.JwtIssuer,

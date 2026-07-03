@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Auth.Api.Models;
+using Auth.Infrastructure.Persistence.Composition;
 using Nethereum.Signer;
 using Xunit;
 

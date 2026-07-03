@@ -1,4 +1,5 @@
 using Auth.Application;
+using Auth.Infrastructure.Authorization;
 using Auth.Infrastructure.Persistence.Stores.ChallengeStore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,10 +18,12 @@ public static class AuthPersistenceServiceCollectionExtensions
         {
             services.AddAuthPostgresPersistence(configuration);
             services.AddScoped<IChallengeStore, PostgresChallengeStore>();
+            services.AddScoped<IUserAuthorizationResolver, PostgresUserAuthorizationResolver>();
         }
         else
         {
             services.AddSingleton<IChallengeStore, InMemoryChallengeStore>();
+            services.AddSingleton<IUserAuthorizationResolver, InMemoryUserAuthorizationResolver>();
         }
 
         return services;
