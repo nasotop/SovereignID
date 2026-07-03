@@ -15,7 +15,10 @@ public sealed class AcademyWebApplicationFactory : WebApplicationFactory<Program
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProviders.InMemory
+                [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProviders.InMemory,
+                ["Auth:JwtIssuer"] = JwtTestHelper.TestIssuer,
+                ["Auth:JwtAudience"] = JwtTestHelper.TestAudience,
+                ["Auth:JwtSigningKey"] = JwtTestHelper.TestSigningKey
             });
         });
     }

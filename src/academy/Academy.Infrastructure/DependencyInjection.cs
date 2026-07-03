@@ -5,6 +5,7 @@ using Academy.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Academy.Infrastructure;
 
@@ -18,6 +19,8 @@ public static class DependencyInjection
         services.AddSingleton<IInstitutionInvitationEmailSender, LoggingInstitutionInvitationEmailSender>();
         services.AddScoped<AcademyService>();
         services.AddAcademyPersistence(configuration);
+        services.AddAcademyJwtAuthentication(configuration);
+        services.AddAcademyAuthorization();
 
         return services;
     }
