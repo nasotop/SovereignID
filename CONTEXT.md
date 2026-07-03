@@ -48,7 +48,17 @@ Contratos del servicio auth (dos capas complementarias):
 | **Contrato HTTP (forma JSON)** | OpenAPI generado por `Auth.Api` | Rutas, DTOs de request/response, códigos HTTP |
 | **Contrato de dominio (semántica)** | [`docs/siwe-backend-contract.md`](docs/siwe-backend-contract.md) | Reglas SIWE, chain policy, catálogo de errores, AC-01…AC-07 |
 
-El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`, `expiresAt`, …). El markdown complementa lo que el schema no expresa (p. ej. `nonce_consumed`, TTL del auth challenge).
+El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`, `expiresAt`, `platformAdmin`, `holder`, `memberships`, …). El markdown complementa lo que el schema no expresa (p. ej. `nonce_consumed`, TTL del auth challenge).
+
+**RBAC en JWT:** tras verify exitoso, `auth-api` enriquece el JWT (y la respuesta HTTP) con `user_id`, `platform_admin`, `holder` y claims repetibles `membership` (`{institutionId}:{role}`). La allowlist de platform admin vive en `Auth__PlatformAdminAddresses`. Los roles institucionales se resuelven desde Postgres (`users`, `institution_users`); el holder desde `student_wallets` primaria activa. **Enforcement downstream:** `academy-api` e `issuer-api` validan JWT + politicas; el BFF solo reenvia `Authorization` (ADR-0005). El portal Angular usa `roleGuard` en `/platform`, `/issuer` y `/holder`.
+
+**Roles demo (seed-dev):**
+
+| Rol | Wallet ejemplo | Acceso |
+|-----|----------------|--------|
+| Platform admin | wallets en `Auth__PlatformAdminAddresses` | Crear instituciones (`/platform`) |
+| Issuer institucional | `0x1111…1111` (usuario seed Duoc UC) | Portal emisor |
+| Holder | `0xf6461f392288b5732a7703e8b83f64cab134eada` | Portal titular |
 
 **Frontend (web) — auth:** el cliente HTTP se **genera desde `docs/contracts/auth.openapi.json`** con `ng-openapi-gen` → `src/app/api/auth/` (`npm run gen:api:auth`, `rootUrl` vacío — rutas `/auth/*` directas a `auth-api`). `AuthApiService` envuelve el cliente generado y aplica `error.utils.ts`. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
 

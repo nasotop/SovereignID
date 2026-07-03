@@ -32,6 +32,9 @@ services:
       Auth__JwtAudience: ${Auth__JwtAudience:-sovereignid-clients}
       Auth__ChallengeTtlSeconds: ${Auth__ChallengeTtlSeconds:-600}
       Auth__JwtTtlHours: ${Auth__JwtTtlHours:-24}
+      Auth__PlatformAdminAddresses: ${Auth__PlatformAdminAddresses:-}
+      Persistence__Provider: ${Persistence__Provider:-InMemory}
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:-}
     expose:
       - "8080"
     networks:
