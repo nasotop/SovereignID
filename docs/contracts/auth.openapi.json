@@ -95,6 +95,21 @@
   },
   "components": {
     "schemas": {
+      "MembershipResponse": {
+        "required": [
+          "institutionId",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "institutionId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "NonceResponse": {
         "required": [
           "nonce",
@@ -168,7 +183,11 @@
         "required": [
           "jwt",
           "address",
-          "expiresAt"
+          "expiresAt",
+          "userId",
+          "platformAdmin",
+          "holder",
+          "memberships"
         ],
         "type": "object",
         "properties": {
@@ -181,6 +200,25 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "platformAdmin": {
+            "type": "boolean"
+          },
+          "holder": {
+            "type": "boolean"
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipResponse"
+            }
           }
         }
       }
