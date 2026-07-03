@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IBlockchainAnchorVerifier, ConfigurableBlockchainAnchorVerifier>();
 
         services.AddIssuerJwtAuthentication(configuration);
+        services.AddIssuerAuthorizationHandlers();
         services.AddSingleton<IConfigureOptions<AuthorizationOptions>>(sp =>
         {
             var environment = sp.GetRequiredService<IHostEnvironment>();

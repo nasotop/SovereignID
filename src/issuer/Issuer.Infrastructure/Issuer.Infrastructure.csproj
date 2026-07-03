@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Issuer.Application\Issuer.Application.csproj" />
     <ProjectReference Include="..\Issuer.Domain\Issuer.Domain.csproj" />
+    <ProjectReference Include="..\..\common\SovereignID.Authorization\SovereignID.Authorization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

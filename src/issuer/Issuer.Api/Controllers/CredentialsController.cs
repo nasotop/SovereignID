@@ -1,7 +1,9 @@
 using Issuer.Api.Models;
 using Issuer.Application;
+using Issuer.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SovereignID.Authorization;
 
 namespace Issuer.Api.Controllers;
 
@@ -23,7 +25,7 @@ public sealed class CredentialsController : ControllerBase
 
     /// <summary>Devuelve el detalle de una credencial autenticada si pertenece al titular del JWT.</summary>
     [HttpGet("{credentialId:guid}")]
-    [Authorize]
+    [Authorize(Policy = AuthorizationPolicies.HolderAuthenticated)]
     [ProducesResponseType(typeof(HolderCredentialDetail), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -42,6 +44,7 @@ public sealed class CredentialsController : ControllerBase
 
     /// <summary>Revokes an active credential after on-chain revocation.</summary>
     [HttpPost("{credentialId:guid}/revoke")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionIssuer)]
     [ProducesResponseType(typeof(CredentialRevoked), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
