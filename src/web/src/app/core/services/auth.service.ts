@@ -158,9 +158,9 @@ export class AuthService {
       address: getAddress(verifyResponse.address),
       expiresAt: verifyResponse.expiresAt,
       userId: verifyResponse.userId ?? null,
-      platformAdmin: verifyResponse.platformAdmin,
-      holder: verifyResponse.holder,
-      memberships: verifyResponse.memberships.map((membership) => ({
+      platformAdmin: verifyResponse.platformAdmin ?? false,
+      holder: verifyResponse.holder ?? false,
+      memberships: (verifyResponse.memberships ?? []).map((membership) => ({
         institutionId: membership.institutionId,
         role: membership.role,
       })),

@@ -1,0 +1,6 @@
+﻿@Reports.Api_HostAddress = http://localhost:5136
+
+GET {{Reports.Api_HostAddress}}/health
+Accept: application/json
+
+###

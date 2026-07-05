@@ -6,6 +6,7 @@ using Microsoft.Kiota.Abstractions;
 using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers;
 using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Invitations;
 using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students;
+using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Users;
 using SovereignID.Bff.Clients.Academy.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -34,6 +35,11 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item
         public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.StudentsRequestBuilder Students
         {
             get => new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.StudentsRequestBuilder(PathParameters, RequestAdapter);
+        }
+        /// <summary>The users property</summary>
+        public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Users.UsersRequestBuilder Users
+        {
+            get => new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Users.UsersRequestBuilder(PathParameters, RequestAdapter);
         }
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.WithInstitutionItemRequestBuilder"/> and sets the default values.

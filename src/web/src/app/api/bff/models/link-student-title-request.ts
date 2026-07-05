@@ -7,6 +7,7 @@ export interface LinkStudentTitleRequest {
   careerId: (string | null);
   chainId: (number | string | null);
   contentHash: string;
+  credentialId: (string | null);
   credentialTypeCode: string;
   eip712Signature: string;
   expiresAt: (string | null);

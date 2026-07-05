@@ -1,0 +1,77 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SovereignID.Authorization;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+
+namespace Reports.Infrastructure.Security;
+
+public static class ReportsAuthorizationPolicy
+{
+    public static void Configure(AuthorizationOptions options)
+    {
+        options.AddSovereignIdAuthorizationPolicies();
+    }
+}
+
+public static class ReportsAuthorizationServiceCollectionExtensions
+{
+    public static IServiceCollection AddReportsAuthorization(this IServiceCollection services)
+    {
+        services.AddSovereignIdAuthorizationHandlers();
+        services.AddSingleton<IConfigureOptions<AuthorizationOptions>>(_ =>
+            new ConfigureNamedOptions<AuthorizationOptions>(null, ReportsAuthorizationPolicy.Configure));
+        return services;
+    }
+}
+
+public static class JwtAuthenticationExtensions
+{
+    public static IServiceCollection AddReportsJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var jwtIssuer = configuration["Auth:JwtIssuer"] ?? "sovereignid-auth";
+        var jwtAudience = configuration["Auth:JwtAudience"] ?? "sovereignid-clients";
+        var signingKey = ResolveSigningKey(configuration);
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+                    ClockSkew = TimeSpan.FromMinutes(1),
+                };
+            });
+
+        services.AddAuthorization();
+        return services;
+    }
+
+    private static string ResolveSigningKey(IConfiguration configuration)
+    {
+        var envKey = configuration["AUTH_JWT_SIGNING_KEY"];
+        if (!string.IsNullOrWhiteSpace(envKey))
+        {
+            return envKey;
+        }
+
+        var rootAuthKey = configuration["Auth:JwtSigningKey"];
+        if (!string.IsNullOrWhiteSpace(rootAuthKey))
+        {
+            return rootAuthKey;
+        }
+
+        return "development-only-signing-key-32-bytes!";
+    }
+}

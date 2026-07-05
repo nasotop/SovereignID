@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlatformComponent } from './platform.component';
 import { AcademyService } from '../../../core/services/academy.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ReportsService } from '../../../core/services/reports.service';
 
 describe('PlatformComponent', () => {
   let fixture: ComponentFixture<PlatformComponent>;
@@ -19,9 +20,22 @@ describe('PlatformComponent', () => {
           useValue: {
             createInstitution: vi.fn(),
             getInstitution: vi.fn(),
-            createInvitation: vi.fn(),
             inviteInstitutionUser: vi.fn(),
             listInstitutions: vi.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: ReportsService,
+          useValue: {
+            getPlatformCredentialsByInstitution: vi.fn().mockResolvedValue({
+              period: { from: '2026-06-06', to: '2026-07-05' },
+              source: 'live',
+              items: [],
+            }),
+            getPlatformStudentsByInstitution: vi.fn().mockResolvedValue({
+              asOf: '2026-07-05',
+              items: [],
+            }),
           },
         },
         {
@@ -43,11 +57,24 @@ describe('PlatformComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render institution actions without an inline create form', () => {
+  it('should render platform tabs', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Instituciones');
+    expect(compiled.textContent).toContain('Reportes');
+  });
+
+  it('should show institutions tab by default', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Crear institucion');
-    expect(compiled.textContent).toContain('Vista general');
-    expect(compiled.querySelector('dialog[open] #code')).toBeFalsy();
-    expect(compiled.querySelector('dialog[open] #contactEmail')).toBeFalsy();
+    expect(compiled.querySelector('app-platform-reports-tab')).toBeFalsy();
+  });
+
+  it('should mount reports tab when selected', () => {
+    fixture.componentInstance.setActiveTab('reports');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-platform-reports-tab')).toBeTruthy();
+    expect(compiled.querySelector('app-platform-institutions-tab')).toBeFalsy();
   });
 });

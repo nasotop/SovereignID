@@ -69,6 +69,7 @@ services:
       - Downstream__Issuer=http://issuer-api:8080
       - Downstream__Academy=http://academy-api:8080
       - Downstream__Identity=http://identity-api:8080
+      - Downstream__Reports=http://reports-api:8080
     ports:
       - "8082:8080"
     logging:
