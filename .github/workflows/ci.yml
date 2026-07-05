@@ -87,6 +87,9 @@ jobs:
       - name: Run Auth integration tests
         run: dotnet test tests/auth/Auth.IntegrationTests --configuration Release --no-restore
 
+      - name: Run Reports integration tests
+        run: dotnet test tests/reports/Reports.IntegrationTests --configuration Release --no-restore
+
   verify-openapi:
     name: Verify OpenAPI snapshots
     runs-on: ubuntu-latest

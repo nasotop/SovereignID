@@ -3,6 +3,7 @@
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions;
+using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item;
 using SovereignID.Bff.Clients.Academy.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,31 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class StudentsRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>Gets an item from the SovereignID.Bff.Clients.Academy.academy.institutions.item.students.item collection</summary>
+        /// <param name="position">Unique identifier of the item</param>
+        /// <returns>A <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder"/></returns>
+        public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder this[Guid position]
+        {
+            get
+            {
+                var urlTplParams = new Dictionary<string, object>(PathParameters);
+                urlTplParams.Add("studentId", position);
+                return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder(urlTplParams, RequestAdapter);
+            }
+        }
+        /// <summary>Gets an item from the SovereignID.Bff.Clients.Academy.academy.institutions.item.students.item collection</summary>
+        /// <param name="position">Unique identifier of the item</param>
+        /// <returns>A <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder"/></returns>
+        [Obsolete("This indexer is deprecated and will be removed in the next major version. Use the one with the typed parameter instead.")]
+        public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder this[string position]
+        {
+            get
+            {
+                var urlTplParams = new Dictionary<string, object>(PathParameters);
+                if (!string.IsNullOrWhiteSpace(position)) urlTplParams.Add("studentId", position);
+                return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.Item.WithStudentItemRequestBuilder(urlTplParams, RequestAdapter);
+            }
+        }
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.StudentsRequestBuilder"/> and sets the default values.
         /// </summary>
@@ -32,6 +58,30 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
         public StudentsRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/academy/institutions/{institutionId}/students", rawUrl)
         {
+        }
+        /// <summary>
+        /// Lista estudiantes de una institucion.
+        /// </summary>
+        /// <returns>A List&lt;global::SovereignID.Bff.Clients.Academy.Models.StudentSummary&gt;</returns>
+        /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+        /// <exception cref="global::SovereignID.Bff.Clients.Academy.Models.ProblemDetails">When receiving a 404 status code</exception>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public async Task<List<global::SovereignID.Bff.Clients.Academy.Models.StudentSummary>?> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#nullable restore
+#else
+        public async Task<List<global::SovereignID.Bff.Clients.Academy.Models.StudentSummary>> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#endif
+            var requestInfo = ToGetRequestInformation(requestConfiguration);
+            var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>
+            {
+                { "404", global::SovereignID.Bff.Clients.Academy.Models.ProblemDetails.CreateFromDiscriminatorValue },
+            };
+            var collectionResult = await RequestAdapter.SendCollectionAsync<global::SovereignID.Bff.Clients.Academy.Models.StudentSummary>(requestInfo, global::SovereignID.Bff.Clients.Academy.Models.StudentSummary.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
+            return collectionResult?.AsList();
         }
         /// <summary>
         /// Crea un estudiante y, si se informa, vincula su wallet MetaMask existente como primaria.
@@ -63,6 +113,25 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students
             return await RequestAdapter.SendAsync<global::SovereignID.Bff.Clients.Academy.Models.StudentSummary>(requestInfo, global::SovereignID.Bff.Clients.Academy.Models.StudentSummary.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
+        /// Lista estudiantes de una institucion.
+        /// </summary>
+        /// <returns>A <see cref="RequestInformation"/></returns>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default)
+        {
+#nullable restore
+#else
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default)
+        {
+#endif
+            var requestInfo = new RequestInformation(Method.GET, UrlTemplate, PathParameters);
+            requestInfo.Configure(requestConfiguration);
+            requestInfo.Headers.TryAdd("Accept", "application/json");
+            return requestInfo;
+        }
+        /// <summary>
         /// Crea un estudiante y, si se informa, vincula su wallet MetaMask existente como primaria.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
@@ -92,6 +161,14 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students
         public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.StudentsRequestBuilder WithUrl(string rawUrl)
         {
             return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Students.StudentsRequestBuilder(rawUrl, RequestAdapter);
+        }
+        /// <summary>
+        /// Configuration for the request such as headers, query parameters, and middleware options.
+        /// </summary>
+        [Obsolete("This class is deprecated. Please use the generic RequestConfiguration class generated by the generator.")]
+        [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
+        public partial class StudentsRequestBuilderGetRequestConfiguration : RequestConfiguration<DefaultQueryParameters>
+        {
         }
         /// <summary>
         /// Configuration for the request such as headers, query parameters, and middleware options.

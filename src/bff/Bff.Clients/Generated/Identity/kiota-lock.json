@@ -2,7 +2,7 @@
   "descriptionHash": "4878BF0D6A4FCD1EE935C80A10ECAEB34718F1A6D253E59DC163FC4BB0E0F5CAF5EC318361D5F29E9513586481A99D4E5DE6BD8C329DB9CD7BAA704CAC5740F6",
   "descriptionLocation": "../../../../../docs/contracts/identity.openapi.json",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.32.4",
+  "kiotaVersion": "1.32.5",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
   "clientNamespaceName": "SovereignID.Bff.Clients.Identity",
@@ -30,5 +30,6 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": []
+  "disabledValidationRules": [],
+  "allowedExternalOrigins": []
 }

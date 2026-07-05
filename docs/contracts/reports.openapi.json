@@ -1,0 +1,220 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "SovereignID · Reports API",
+    "description": "Servicio de reportería de solo lectura de la plataforma SovereignID. Expone KPIs institution-scoped (admin, issuer, viewer) y platform-scoped (platform_admin). Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error` (p. ej. `invalid_report_period`, `institution_not_found`).",
+    "contact": {
+      "name": "SovereignID",
+      "url": "https://github.com/nasotop/SovereignID"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Comprueba que el servicio está operativo (liveness check).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": {} }
+          }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credentials-issued": {
+      "get": {
+        "tags": ["InstitutionReports"],
+        "summary": "Credenciales emitidas en el período (R-I1).",
+        "parameters": [
+          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TimeSeriesReportResponse" } } } },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProblemDetails" } } } }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credential-reads": {
+      "get": {
+        "tags": ["InstitutionReports"],
+        "summary": "Credenciales leídas (verificaciones) en el período (R-I2).",
+        "parameters": [
+          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TimeSeriesReportResponse" } } } }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credentials-per-student": {
+      "get": {
+        "tags": ["InstitutionReports"],
+        "summary": "Promedio de credenciales por alumno activo registrado (R-I3).",
+        "parameters": [
+          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "asOf", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CredentialsPerStudentReportResponse" } } } }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credentials-revoked": {
+      "get": {
+        "tags": ["InstitutionReports"],
+        "summary": "Credenciales revocadas en el período (R-I4).",
+        "parameters": [
+          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TimeSeriesReportResponse" } } } }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/verification-outcomes": {
+      "get": {
+        "tags": ["InstitutionReports"],
+        "summary": "Verificaciones válidas vs inválidas en el período (R-I5).",
+        "parameters": [
+          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationOutcomesReportResponse" } } } }
+        }
+      }
+    },
+    "/reports/platform/credentials-by-institution": {
+      "get": {
+        "tags": ["PlatformReports"],
+        "summary": "Credenciales emitidas por institución en el período (R-P1).",
+        "parameters": [
+          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
+          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlatformCredentialsByInstitutionResponse" } } } },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    },
+    "/reports/platform/students-by-institution": {
+      "get": {
+        "tags": ["PlatformReports"],
+        "summary": "Alumnos activos por institución a una fecha (R-P2).",
+        "parameters": [
+          { "name": "asOf", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlatformStudentsByInstitutionResponse" } } } },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "nullable": true },
+          "title": { "type": "string", "nullable": true },
+          "status": { "type": "integer", "format": "int32", "nullable": true },
+          "detail": { "type": "string", "nullable": true },
+          "error": { "type": "string", "nullable": true }
+        }
+      },
+      "ReportPeriodResponse": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" }
+        }
+      },
+      "TimeSeriesPointResponse": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string" },
+          "value": { "type": "integer", "format": "int32" }
+        }
+      },
+      "TimeSeriesReportResponse": {
+        "type": "object",
+        "properties": {
+          "period": { "$ref": "#/components/schemas/ReportPeriodResponse" },
+          "source": { "type": "string", "description": "snapshot | live | hybrid" },
+          "total": { "type": "integer", "format": "int32" },
+          "series": { "type": "array", "items": { "$ref": "#/components/schemas/TimeSeriesPointResponse" } }
+        }
+      },
+      "VerificationOutcomePointResponse": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string" },
+          "valid": { "type": "integer", "format": "int32" },
+          "invalid": { "type": "integer", "format": "int32" }
+        }
+      },
+      "VerificationOutcomesReportResponse": {
+        "type": "object",
+        "properties": {
+          "period": { "$ref": "#/components/schemas/ReportPeriodResponse" },
+          "source": { "type": "string" },
+          "validTotal": { "type": "integer", "format": "int32" },
+          "invalidTotal": { "type": "integer", "format": "int32" },
+          "series": { "type": "array", "items": { "$ref": "#/components/schemas/VerificationOutcomePointResponse" } }
+        }
+      },
+      "CredentialsPerStudentReportResponse": {
+        "type": "object",
+        "properties": {
+          "asOf": { "type": "string" },
+          "totalStudents": { "type": "integer", "format": "int32" },
+          "totalCredentials": { "type": "integer", "format": "int32" },
+          "averageCredentialsPerStudent": { "type": "number", "format": "double" }
+        }
+      },
+      "PlatformRankingItemResponse": {
+        "type": "object",
+        "properties": {
+          "institutionId": { "type": "string", "format": "uuid" },
+          "displayName": { "type": "string" },
+          "total": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PlatformCredentialsByInstitutionResponse": {
+        "type": "object",
+        "properties": {
+          "period": { "$ref": "#/components/schemas/ReportPeriodResponse" },
+          "source": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PlatformRankingItemResponse" } }
+        }
+      },
+      "PlatformStudentsItemResponse": {
+        "type": "object",
+        "properties": {
+          "institutionId": { "type": "string", "format": "uuid" },
+          "displayName": { "type": "string" },
+          "totalStudents": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PlatformStudentsByInstitutionResponse": {
+        "type": "object",
+        "properties": {
+          "asOf": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PlatformStudentsItemResponse" } }
+        }
+      }
+    }
+  }
+}
