@@ -21,7 +21,7 @@ internal static class ReportsOpenApiExtensions
                         "Servicio de reportería de solo lectura de la plataforma SovereignID. "
                         + "Expone KPIs institution-scoped (admin, issuer, viewer) y platform-scoped (platform_admin). "
                         + "Los errores de negocio se devuelven como RFC 7807 Problem Details con un código estable "
-                        + "en la extensión ``error`` (p. ej. ``invalid_report_period``, ``institution_not_found``).",
+                        + "en la extensión `error` (p. ej. `invalid_report_period`, `institution_not_found`).",
                     Contact = new OpenApiContact
                     {
                         Name = "SovereignID",

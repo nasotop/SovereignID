@@ -1231,6 +1231,266 @@
         }
       }
     },
+    "/reports/institutions/{institutionId}/credentials-issued": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credential-reads": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credentials-per-student": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/credentials-revoked": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/institutions/{institutionId}/verification-outcomes": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/platform/credentials-by-institution": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/reports/platform/students-by-institution": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "asOf",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
     "/issuer/students/{studentId}/title": {
       "post": {
         "tags": [
@@ -1348,79 +1608,6 @@
             }
           }
         }
-      }
-    },
-    "/reports/institutions/{institutionId}/credentials-issued": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/institutions/{institutionId}/credential-reads": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/institutions/{institutionId}/credentials-per-student": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "asOf", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/institutions/{institutionId}/credentials-revoked": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/institutions/{institutionId}/verification-outcomes": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "institutionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
-          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/platform/credentials-by-institution": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "from", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
-      }
-    },
-    "/reports/platform/students-by-institution": {
-      "get": {
-        "tags": ["Reports"],
-        "parameters": [
-          { "name": "asOf", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": {} } } }
       }
     }
   },
@@ -2875,6 +3062,9 @@
     },
     {
       "name": "InstitutionIssuerWallet"
+    },
+    {
+      "name": "Reports"
     },
     {
       "name": "StudentTitles"

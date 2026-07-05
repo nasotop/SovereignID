@@ -103,7 +103,11 @@ describe('ReportsService', () => {
       new HttpErrorResponse({
         status: 403,
         statusText: 'Forbidden',
-        error: { detail: 'Sin permisos para reportes' },
+        error: {
+          title: 'Forbidden',
+          status: 403,
+          detail: 'Sin permisos para reportes',
+        },
       }),
     );
 
