@@ -16,10 +16,10 @@ import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.com
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-badge.component';
-
+import { IssuerTabComponent } from '../issuer/issuer-tab.component';
 import { AcademyReportsTabComponent } from './academy-reports-tab.component';
 
-type AcademyTab = 'students' | 'users' | 'reports';
+type AcademyTab = 'students' | 'users' | 'reports' | 'issuer';
 type AcademyInfoPanelTab = 'summary' | 'institution';
 
 const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewer'];
@@ -39,6 +39,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
     StatusBadgeComponent,
     CopyValueComponent,
     AcademyReportsTabComponent,
+    IssuerTabComponent,
   ],
   template: `
     <app-portal-shell
@@ -46,6 +47,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       title="Gestion academica"
       subtitle="Instituciones, estudiantes, usuarios y wallets segun tu rol"
       layoutWidth="full"
+      [hideHeader]="true"
       (logout)="handleLogout()"
     >
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -61,17 +63,24 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       }
 
       @if (selectedInstitution()) {
-        <div class="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] gap-6 overflow-hidden">
-          <section class="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] gap-4 overflow-hidden">
+          <section class="grid shrink-0 gap-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4 lg:grid-cols-[minmax(260px,0.9fr)_minmax(320px,1.1fr)_auto] lg:items-center">
           <div class="min-w-0">
-            <p class="text-xs font-medium uppercase text-blue-300">Institucion activa</p>
-            <h3 class="mt-1 truncate text-2xl font-bold text-white">
-              {{ selectedInstitution()!.displayName }}
-            </h3>
-            <p class="text-sm text-slate-400">{{ selectedInstitution()!.legalName }}</p>
+            <h2 class="text-2xl font-bold text-white">Gestion academica</h2>
+            <p class="mt-1 text-sm text-slate-400">
+              Instituciones, estudiantes, usuarios y wallets segun tu rol
+            </p>
           </div>
 
-          <div class="flex flex-wrap gap-3">
+          <div class="min-w-0 border-slate-700 lg:border-l lg:pl-5">
+            <p class="text-xs font-medium uppercase text-blue-300">Institucion activa</p>
+            <h3 class="mt-1 truncate text-xl font-bold text-white">
+              {{ selectedInstitution()!.displayName }}
+            </h3>
+            <p class="truncate text-sm text-slate-400">{{ selectedInstitution()!.legalName }}</p>
+          </div>
+
+          <div class="flex flex-wrap justify-start gap-3 lg:justify-end">
             @if (authService.hasPlatformAdmin()) {
               <a
                 class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
@@ -110,16 +119,18 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
         </section>
 
         <div class="flex shrink-0 gap-2 border-b border-slate-700">
-          <button
-            type="button"
-            class="border-b-2 px-4 py-3 text-sm font-medium"
-            [ngClass]="activeTab() === 'students'
-              ? 'border-blue-500 text-blue-300'
-              : 'border-transparent text-slate-400 hover:text-white'"
-            (click)="setActiveTab('students')"
-          >
-            Estudiantes
-          </button>
+          @if (canViewAcademyManagement()) {
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-medium"
+              [ngClass]="activeTab() === 'students'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-white'"
+              (click)="setActiveTab('students')"
+            >
+              Estudiantes
+            </button>
+          }
           @if (canManageInstitution()) {
             <button
               type="button"
@@ -132,19 +143,33 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               Usuarios
             </button>
           }
-          <button
-            type="button"
-            class="border-b-2 px-4 py-3 text-sm font-medium"
-            [ngClass]="activeTab() === 'reports'
-              ? 'border-blue-500 text-blue-300'
-              : 'border-transparent text-slate-400 hover:text-white'"
-            (click)="setActiveTab('reports')"
-          >
-            Reportes
-          </button>
+          @if (canViewAcademyManagement()) {
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-medium"
+              [ngClass]="activeTab() === 'reports'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-white'"
+              (click)="setActiveTab('reports')"
+            >
+              Reportes
+            </button>
+          }
+          @if (canUseIssuerTab()) {
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-medium"
+              [ngClass]="activeTab() === 'issuer'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-white'"
+              (click)="setActiveTab('issuer')"
+            >
+              Emision
+            </button>
+          }
         </div>
 
-        @if (activeTab() === 'reports') {
+        @if (activeTab() === 'reports' && canViewAcademyManagement()) {
           <section class="min-h-0 overflow-y-auto overscroll-y-contain">
             <app-academy-reports-tab [institutionId]="selectedInstitutionId()" />
           </section>
@@ -426,6 +451,19 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               }
             </aside>
           }
+
+          @if (activeTab() === 'issuer' && canUseIssuerTab()) {
+            <div class="flex min-h-0 flex-col xl:col-span-2">
+              <app-issuer-tab
+                [institutionId]="selectedInstitutionId()"
+                [institution]="selectedInstitution()"
+                [students]="students()"
+                [canIssue]="canIssueCredentials()"
+                [canRevoke]="canIssueCredentials()"
+                [showHeader]="false"
+              />
+            </div>
+          }
         </section>
         }
         </div>
@@ -649,6 +687,7 @@ export class AcademyComponent implements OnInit {
       queryInstitutionId ?? this.authService.getMemberships()[0]?.institutionId ?? '';
 
     this.selectedInstitutionId.set(defaultInstitutionId);
+    this.activeTab.set(this.defaultTab());
     void this.bootstrap();
   }
 
@@ -681,6 +720,22 @@ export class AcademyComponent implements OnInit {
   }
 
   setActiveTab(tab: AcademyTab): void {
+    if (tab === 'students' && !this.canViewAcademyManagement()) {
+      return;
+    }
+
+    if (tab === 'users' && !this.canManageInstitution()) {
+      return;
+    }
+
+    if (tab === 'reports' && !this.canViewAcademyManagement()) {
+      return;
+    }
+
+    if (tab === 'issuer' && !this.canUseIssuerTab()) {
+      return;
+    }
+
     this.activeTab.set(tab);
     this.selectedStudent.set(null);
     this.selectedUser.set(null);
@@ -752,6 +807,7 @@ export class AcademyComponent implements OnInit {
     try {
       const institution = await this.academyService.getInstitution(institutionId);
       this.selectedInstitution.set(institution as InstitutionSummary);
+      this.ensureActiveTabAllowed();
       this.students.set(await this.academyService.listStudents(institutionId));
 
       if (this.canManageInstitution()) {
@@ -779,6 +835,20 @@ export class AcademyComponent implements OnInit {
   canManageInstitution(): boolean {
     return this.authService.hasPlatformAdmin()
       || this.currentInstitutionRole() === 'admin';
+  }
+
+  canViewAcademyManagement(): boolean {
+    return this.authService.hasPlatformAdmin()
+      || ['admin', 'viewer'].includes(this.currentInstitutionRole() ?? '');
+  }
+
+  canUseIssuerTab(): boolean {
+    return this.authService.hasPlatformAdmin()
+      || ['admin', 'issuer'].includes(this.currentInstitutionRole() ?? '');
+  }
+
+  canIssueCredentials(): boolean {
+    return this.canUseIssuerTab();
   }
 
   async handleCreateStudent(event: Event): Promise<void> {
@@ -946,5 +1016,31 @@ export class AcademyComponent implements OnInit {
     return INSTITUTION_ROLES.includes(role as InstitutionRole)
       ? role as InstitutionRole
       : null;
+  }
+
+  private defaultTab(): AcademyTab {
+    if (this.canViewAcademyManagement()) {
+      return 'students';
+    }
+
+    if (this.canUseIssuerTab()) {
+      return 'issuer';
+    }
+
+    return 'students';
+  }
+
+  private ensureActiveTabAllowed(): void {
+    const tab = this.activeTab();
+    const isAllowed = (tab === 'students' && this.canViewAcademyManagement())
+      || (tab === 'users' && this.canManageInstitution())
+      || (tab === 'reports' && this.canViewAcademyManagement())
+      || (tab === 'issuer' && this.canUseIssuerTab());
+
+    if (!isAllowed) {
+      this.activeTab.set(this.defaultTab());
+      this.selectedStudent.set(null);
+      this.selectedUser.set(null);
+    }
   }
 }

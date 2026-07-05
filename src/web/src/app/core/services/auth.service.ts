@@ -123,18 +123,10 @@ export class AuthService {
 
     if (
       this.getMemberships().some((membership) =>
-        ['admin', 'viewer'].includes(membership.role.toLowerCase()),
+        ['admin', 'issuer', 'viewer'].includes(membership.role.toLowerCase()),
       )
     ) {
       return '/academy';
-    }
-
-    if (
-      this.getMemberships().some((membership) =>
-        membership.role.toLowerCase() === 'issuer',
-      )
-    ) {
-      return '/issuer';
     }
 
     if (this.isHolder()) {

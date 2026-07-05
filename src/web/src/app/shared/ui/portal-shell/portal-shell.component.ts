@@ -57,12 +57,14 @@ type PortalLayoutWidth = 'contained' | 'full';
       </nav>
 
       <main class="mx-auto" [ngClass]="mainClass()">
-        <header class="shrink-0" [ngClass]="headerClass()">
-          <h2 class="text-2xl font-bold text-white">{{ title() }}</h2>
-          @if (subtitle()) {
-            <p class="text-slate-400 mt-1">{{ subtitle() }}</p>
-          }
-        </header>
+        @if (!hideHeader()) {
+          <header class="shrink-0" [ngClass]="headerClass()">
+            <h2 class="text-2xl font-bold text-white">{{ title() }}</h2>
+            @if (subtitle()) {
+              <p class="text-slate-400 mt-1">{{ subtitle() }}</p>
+            }
+          </header>
+        }
 
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ng-content />
@@ -77,6 +79,7 @@ export class PortalShellComponent {
   readonly subtitle = input<string>('');
   readonly accent = input<PortalAccent>('blue');
   readonly layoutWidth = input<PortalLayoutWidth>('contained');
+  readonly hideHeader = input(false);
   readonly logout = output<void>();
 
   accentClass(): string {
