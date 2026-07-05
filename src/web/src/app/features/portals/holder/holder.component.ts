@@ -1,280 +1,389 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { HolderCredentialSummary } from '../../../api/bff/models/holder-credential-summary';
+import { HolderInstitutionSummary, HolderProfile } from '../../../core/models/holder.models';
 import {
   HolderService,
   HolderUnauthorizedError,
 } from '../../../core/services/holder.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { ModalComponent } from '../../../shared/ui/modal/modal.component';
+import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 
-type HolderLoadState = 'loading' | 'loaded' | 'empty' | 'error';
+type HolderLoadState = 'loading' | 'loaded' | 'error';
 
 const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
-  active: 'Active',
-  revoked: 'Revoked',
-  expired: 'Expired',
-};
-
-const STATUS_BADGE_CLASSES: Record<HolderCredentialSummary['status'], string> = {
-  active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  revoked: 'bg-red-500/15 text-red-400 border-red-500/30',
-  expired: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-};
-
-const STATUS_DOT_CLASSES: Record<HolderCredentialSummary['status'], string> = {
-  active: 'bg-emerald-400',
-  revoked: 'bg-red-400',
-  expired: 'bg-amber-400',
+  active: 'Activa',
+  revoked: 'Revocada',
+  expired: 'Expirada',
 };
 
 @Component({
   selector: 'app-holder',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ModalComponent, PortalShellComponent, ReactiveFormsModule],
   template: `
-    <div class="min-h-screen bg-slate-900">
-      <nav
-        class="border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm"
-      >
-        <div
-          class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"
-            >
-              <svg
-                class="w-5 h-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-lg font-bold text-white tracking-tight">
-                SovereignID
-              </h1>
-              <p class="text-xs text-slate-400">Holder Portal</p>
-            </div>
-          </div>
+    <app-portal-shell
+      portalLabel="Holder Portal"
+      title="Mi identidad"
+      subtitle="Perfil personal, instituciones vinculadas y credenciales verificables."
+      accent="blue"
+      layoutWidth="full"
+      (logout)="handleLogout()"
+    >
+      @if (loadState() === 'loading') {
+        <section class="rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
+          Cargando informacion del holder...
+        </section>
+      }
+
+      @if (loadState() === 'error') {
+        <section class="rounded-lg border border-red-800/60 bg-red-950/30 p-8">
+          <h3 class="text-lg font-semibold text-red-200">
+            {{ isUnauthorized() ? 'Sesion no autorizada' : 'No se pudo cargar el portal' }}
+          </h3>
+          <p class="mt-2 text-sm text-slate-300">{{ errorMessage() }}</p>
           <button
             type="button"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
-            (click)="handleLogout()"
+            class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            (click)="isUnauthorized() ? goToLogin() : loadHolder()"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            Logout
+            {{ isUnauthorized() ? 'Ir al login' : 'Reintentar' }}
           </button>
-        </div>
-      </nav>
+        </section>
+      }
 
-      <main class="max-w-7xl mx-auto px-6 py-8">
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-white">My Credentials</h2>
-          <p class="text-slate-400 mt-1">
-            Your verifiable digital credentials issued by trusted institutions
+      @if (loadState() === 'loaded' && profile()) {
+        @if (feedback()) {
+          <p
+            class="mb-4 rounded-lg border px-4 py-3 text-sm"
+            [ngClass]="feedbackType() === 'success'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+              : 'border-red-500/30 bg-red-500/10 text-red-200'"
+            role="status"
+          >
+            {{ feedback() }}
           </p>
-        </div>
-
-        @if (loadState() === 'loading') {
-          <div
-            class="rounded-xl border border-slate-700 bg-slate-800/50 p-10 text-center text-slate-300"
-          >
-            Loading credentials...
-          </div>
         }
 
-        @if (loadState() === 'empty') {
-          <div
-            class="rounded-xl border border-slate-700 bg-slate-800/50 p-10 text-center"
-          >
-            <p class="text-white font-medium mb-2">No credentials yet</p>
-            <p class="text-slate-400 text-sm">
-              You do not have any issued credentials for this account.
-            </p>
-          </div>
-        }
-
-        @if (loadState() === 'error') {
-          <div
-            class="rounded-xl border border-red-800/60 bg-red-950/30 p-8 text-center"
-          >
-            <p class="text-red-300 font-semibold mb-2">
-              {{ isUnauthorized() ? 'Session expired' : 'Failed to load credentials' }}
-            </p>
-            <p class="text-slate-300 text-sm mb-4">
-              {{ errorMessage() || 'Please try again' }}
-            </p>
-            @if (isUnauthorized()) {
-              <button
-                type="button"
-                class="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-                (click)="goToLogin()"
-              >
-                Go to login
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-                (click)="loadCredentials()"
-              >
-                Try again
-              </button>
-            }
-          </div>
-        }
-
-        @if (loadState() === 'loaded') {
-          @if (shareFeedback()) {
-            <p class="mb-4 text-sm text-emerald-400" role="status">
-              {{ shareFeedback() }}
-            </p>
-          }
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @for (credential of credentials(); track credential.id) {
-              <div
-                class="bg-slate-800 border border-slate-700 rounded-xl p-6 flex flex-col hover:border-slate-600 transition-colors"
-              >
-                <div class="flex items-start justify-between mb-5">
-                  <div
-                    class="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center"
-                  >
-                    @if (isDegreeType(credential.typeCode)) {
-                      <svg
-                        class="w-7 h-7 text-blue-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                        />
-                      </svg>
-                    } @else {
-                      <svg
-                        class="w-7 h-7 text-blue-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                    }
-                  </div>
-                  <span
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
-                    [ngClass]="statusBadgeClass(credential.status)"
-                  >
-                    <span
-                      class="w-1.5 h-1.5 rounded-full"
-                      [ngClass]="statusDotClass(credential.status)"
-                    ></span>
-                    {{ statusLabel(credential.status) }}
-                  </span>
-                </div>
-
-                <h3 class="text-lg font-semibold text-white mb-1">
-                  {{ credential.title }}
-                </h3>
-                <p class="text-sm text-slate-400 mb-1">
-                  Issued by {{ credential.issuerName }}
+        <section class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_24rem] gap-6 overflow-hidden">
+          <div class="min-h-0 overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+              <div>
+                <h3 class="text-lg font-semibold text-white">Perfil holder</h3>
+                <p class="text-sm text-slate-400">
+                  Datos personales off-chain asociados a tu wallet.
                 </p>
-                <p class="text-xs text-slate-500 mb-6">
-                  {{ formatIssuedAt(credential.issuedAt) }}
-                </p>
-
-                <div class="flex gap-3 mt-auto">
-                  <button
-                    type="button"
-                    class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg transition-colors disabled:opacity-50"
-                    [disabled]="actionCredentialId() === credential.id"
-                    (click)="handleDownload(credential.id)"
-                  >
-                    Download JSON
-                  </button>
-                  <button
-                    type="button"
-                    class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-                    (click)="handleShare(credential.id)"
-                  >
-                    Share QR
-                  </button>
-                </div>
               </div>
-            }
+              <button
+                type="button"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                (click)="openProfileModal()"
+              >
+                Editar perfil
+              </button>
+            </div>
+
+            <div class="grid gap-5 p-5 lg:grid-cols-2">
+              <article class="rounded-lg border border-slate-700 bg-slate-900/50 p-5">
+                <p class="text-xs font-semibold uppercase text-blue-300">Identidad</p>
+                <h4 class="mt-2 text-xl font-semibold text-white">
+                  {{ displayName() || 'Holder sin nombre visible' }}
+                </h4>
+                <dl class="mt-5 space-y-4 text-sm">
+                  <div>
+                    <dt class="text-slate-500">Wallet</dt>
+                    <dd class="mt-1 break-all font-mono text-slate-200">{{ profile()!.walletAddress }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">DID</dt>
+                    <dd class="mt-1 break-all font-mono text-slate-200">{{ profile()!.did }}</dd>
+                  </div>
+                </dl>
+              </article>
+
+              <article class="rounded-lg border border-slate-700 bg-slate-900/50 p-5">
+                <p class="text-xs font-semibold uppercase text-blue-300">Datos personales</p>
+                <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt class="text-slate-500">Nombre completo</dt>
+                    <dd class="mt-1 text-slate-100">{{ profile()!.fullName || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">Fecha nacimiento</dt>
+                    <dd class="mt-1 text-slate-100">{{ formatDate(profile()!.birthDate) }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">Email contacto</dt>
+                    <dd class="mt-1 break-all text-slate-100">{{ profile()!.contactEmail || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">Pais</dt>
+                    <dd class="mt-1 text-slate-100">{{ profile()!.countryCode || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">Telefono</dt>
+                    <dd class="mt-1 text-slate-100">{{ profile()!.phoneNumber || '-' }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-slate-500">Actualizado</dt>
+                    <dd class="mt-1 text-slate-100">{{ formatDateTime(profile()!.updatedAt) }}</dd>
+                  </div>
+                </dl>
+              </article>
+            </div>
+
+            <div class="grid min-h-0 gap-5 px-5 pb-5 lg:grid-cols-2">
+              <article class="min-h-0 rounded-lg border border-slate-700 bg-slate-900/50">
+                <div class="border-b border-slate-700 px-4 py-3">
+                  <h4 class="font-semibold text-white">Instituciones vinculadas</h4>
+                  <p class="text-sm text-slate-400">
+                    {{ institutions().length }} relacion(es) encontradas por wallet.
+                  </p>
+                </div>
+                <div class="max-h-72 overflow-auto">
+                  @if (institutions().length === 0) {
+                    <p class="p-4 text-sm text-slate-400">
+                      Esta wallet aun no esta vinculada a estudiantes institucionales.
+                    </p>
+                  }
+
+                  @for (institution of institutions(); track institution.studentId) {
+                    <div class="border-b border-slate-700 px-4 py-4 last:border-b-0">
+                      <div class="flex items-start justify-between gap-4">
+                        <div>
+                          <p class="font-semibold text-white">{{ institution.institutionName }}</p>
+                          <p class="text-xs text-slate-500">{{ institution.institutionId }}</p>
+                        </div>
+                        <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
+                          {{ institution.isPrimary ? 'Wallet primaria' : 'Wallet asociada' }}
+                        </span>
+                      </div>
+                      <dl class="mt-3 grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <dt class="text-slate-500">Codigo</dt>
+                          <dd class="text-slate-200">{{ institution.institutionCode }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-slate-500">Matricula</dt>
+                          <dd class="text-slate-200">{{ institution.enrollmentYear || '-' }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-slate-500">Referencia</dt>
+                          <dd class="text-slate-200">{{ institution.externalReference || '-' }}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-slate-500">Vinculada</dt>
+                          <dd class="text-slate-200">{{ formatDateTime(institution.linkedAt) }}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  }
+                </div>
+              </article>
+
+              <article class="min-h-0 rounded-lg border border-slate-700 bg-slate-900/50">
+                <div class="border-b border-slate-700 px-4 py-3">
+                  <h4 class="font-semibold text-white">Credenciales</h4>
+                  <p class="text-sm text-slate-400">
+                    Titulos y certificados emitidos hacia tu DID/wallet.
+                  </p>
+                </div>
+                <div class="max-h-72 overflow-auto">
+                  @if (credentials().length === 0) {
+                    <p class="p-4 text-sm text-slate-400">
+                      Aun no tienes credenciales emitidas para esta cuenta.
+                    </p>
+                  }
+
+                  @for (credential of credentials(); track credential.id) {
+                    <div class="border-b border-slate-700 px-4 py-4 last:border-b-0">
+                      <div class="flex items-start justify-between gap-4">
+                        <div>
+                          <p class="font-semibold text-white">{{ credential.title }}</p>
+                          <p class="text-sm text-slate-400">{{ credential.issuerName }}</p>
+                        </div>
+                        <span class="rounded-full border px-2 py-1 text-xs" [ngClass]="statusClass(credential.status)">
+                          {{ statusLabel(credential.status) }}
+                        </span>
+                      </div>
+                      <div class="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800 disabled:opacity-50"
+                          [disabled]="actionCredentialId() === credential.id"
+                          (click)="handleDownload(credential.id)"
+                        >
+                          Descargar JSON
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
+                          (click)="handleShare(credential.id)"
+                        >
+                          Copiar ID
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </article>
+            </div>
           </div>
-        }
-      </main>
-    </div>
+
+          <aside class="min-h-0 overflow-hidden rounded-lg border border-slate-700 bg-slate-800 p-5">
+            <p class="text-xs font-semibold uppercase text-blue-300">Resumen</p>
+            <h3 class="mt-2 text-xl font-semibold text-white">Estado del holder</h3>
+            <div class="mt-5 grid grid-cols-2 gap-3">
+              <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                <p class="text-sm text-slate-500">Instituciones</p>
+                <p class="mt-2 text-2xl font-bold text-white">{{ institutions().length }}</p>
+              </div>
+              <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                <p class="text-sm text-slate-500">Credenciales</p>
+                <p class="mt-2 text-2xl font-bold text-white">{{ credentials().length }}</p>
+              </div>
+              <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                <p class="text-sm text-slate-500">Activas</p>
+                <p class="mt-2 text-2xl font-bold text-emerald-300">{{ activeCredentials() }}</p>
+              </div>
+              <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                <p class="text-sm text-slate-500">Perfil</p>
+                <p class="mt-2 text-lg font-bold" [ngClass]="isProfileComplete() ? 'text-emerald-300' : 'text-amber-300'">
+                  {{ isProfileComplete() ? 'Completo' : 'Pendiente' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-5 rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm">
+              <h4 class="font-semibold text-white">Alcance</h4>
+              <p class="mt-2 text-slate-400">
+                Estos datos personales quedan off-chain. Las credenciales emitidas por una institucion se verifican por DID, hash, estado y anclas registradas por Issuer.
+              </p>
+            </div>
+          </aside>
+        </section>
+      }
+
+      <app-modal
+        [isOpen]="isProfileModalOpen()"
+        title="Editar perfil holder"
+        description="Actualiza datos personales off-chain visibles en tu portal."
+        size="lg"
+        (closed)="closeProfileModal()"
+      >
+        <form class="grid gap-4" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="block text-sm text-slate-200">
+              Nombre visible
+              <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="displayName" />
+            </label>
+            <label class="block text-sm text-slate-200">
+              Nombre completo
+              <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="fullName" />
+            </label>
+            <label class="block text-sm text-slate-200">
+              Fecha nacimiento
+              <input type="date" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="birthDate" />
+            </label>
+            <label class="block text-sm text-slate-200">
+              Pais
+              <input maxlength="2" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 uppercase text-white outline-none focus:border-blue-500" formControlName="countryCode" />
+            </label>
+            <label class="block text-sm text-slate-200">
+              Email contacto
+              <input type="email" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="contactEmail" />
+            </label>
+            <label class="block text-sm text-slate-200">
+              Telefono
+              <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="phoneNumber" />
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700"
+              (click)="closeProfileModal()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+              [disabled]="isSavingProfile()"
+            >
+              {{ isSavingProfile() ? 'Guardando...' : 'Guardar perfil' }}
+            </button>
+          </div>
+        </form>
+      </app-modal>
+    </app-portal-shell>
   `,
 })
 export class HolderComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly holderService = inject(HolderService);
   private readonly router = inject(Router);
 
   readonly credentials = signal<ReadonlyArray<HolderCredentialSummary>>([]);
+  readonly institutions = signal<ReadonlyArray<HolderInstitutionSummary>>([]);
+  readonly profile = signal<HolderProfile | null>(null);
   readonly loadState = signal<HolderLoadState>('loading');
   readonly errorMessage = signal<string | null>(null);
   readonly isUnauthorized = signal(false);
-  readonly shareFeedback = signal<string | null>(null);
+  readonly feedback = signal<string | null>(null);
+  readonly feedbackType = signal<'success' | 'error'>('success');
+  readonly isProfileModalOpen = signal(false);
+  readonly isSavingProfile = signal(false);
   readonly actionCredentialId = signal<string | null>(null);
 
+  readonly profileForm = this.formBuilder.nonNullable.group({
+    displayName: [''],
+    fullName: [''],
+    birthDate: [''],
+    contactEmail: [''],
+    countryCode: ['CL'],
+    phoneNumber: [''],
+  });
+
+  readonly activeCredentials = computed(
+    () => this.credentials().filter((credential) => credential.status === 'active').length,
+  );
+
+  readonly isProfileComplete = computed(() => {
+    const profile = this.profile();
+    return Boolean(profile?.fullName && profile?.birthDate && profile?.contactEmail);
+  });
+
+  readonly displayName = computed(() => {
+    const profile = this.profile();
+    return profile?.displayName || profile?.fullName || null;
+  });
+
   ngOnInit(): void {
-    void this.loadCredentials();
+    void this.loadHolder();
   }
 
-  async loadCredentials(): Promise<void> {
+  async loadHolder(): Promise<void> {
     this.loadState.set('loading');
     this.errorMessage.set(null);
     this.isUnauthorized.set(false);
-    this.shareFeedback.set(null);
+    this.feedback.set(null);
 
     try {
-      const items = await this.holderService.listMyCredentials();
-      this.credentials.set(items);
-
-      if (items.length === 0) {
-        this.loadState.set('empty');
-        return;
-      }
-
+      const [dashboard, credentials] = await Promise.all([
+        this.holderService.getMyDashboard(),
+        this.holderService.listMyCredentials(),
+      ]);
+      this.profile.set(dashboard.profile);
+      this.institutions.set(dashboard.institutions);
+      this.credentials.set(credentials);
       this.loadState.set('loaded');
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
@@ -283,31 +392,70 @@ export class HolderComponent implements OnInit {
     }
   }
 
+  openProfileModal(): void {
+    const profile = this.profile();
+    this.profileForm.reset({
+      displayName: profile?.displayName ?? '',
+      fullName: profile?.fullName ?? '',
+      birthDate: profile?.birthDate ?? '',
+      contactEmail: profile?.contactEmail ?? '',
+      countryCode: profile?.countryCode ?? 'CL',
+      phoneNumber: profile?.phoneNumber ?? '',
+    });
+    this.isProfileModalOpen.set(true);
+  }
+
+  closeProfileModal(): void {
+    if (!this.isSavingProfile()) {
+      this.isProfileModalOpen.set(false);
+    }
+  }
+
+  async saveProfile(): Promise<void> {
+    this.isSavingProfile.set(true);
+    this.feedback.set(null);
+
+    try {
+      const value = this.profileForm.getRawValue();
+      const updated = await this.holderService.updateMyProfile({
+        displayName: this.blankToNull(value.displayName),
+        fullName: this.blankToNull(value.fullName),
+        birthDate: this.blankToNull(value.birthDate),
+        contactEmail: this.blankToNull(value.contactEmail),
+        countryCode: this.blankToNull(value.countryCode)?.toUpperCase() ?? null,
+        phoneNumber: this.blankToNull(value.phoneNumber),
+      });
+      this.profile.set(updated);
+      this.isProfileModalOpen.set(false);
+      this.showFeedback('Perfil actualizado correctamente.', 'success');
+    } catch (error: unknown) {
+      this.showFeedback(toErrorMessage(error), 'error');
+    } finally {
+      this.isSavingProfile.set(false);
+    }
+  }
+
   async handleDownload(credentialId: string): Promise<void> {
     this.actionCredentialId.set(credentialId);
-    this.shareFeedback.set(null);
+    this.feedback.set(null);
 
     try {
       const detail = await this.holderService.getMyCredential(credentialId);
       this.holderService.downloadCredentialJson(detail);
+      this.showFeedback('Credencial descargada.', 'success');
     } catch (error: unknown) {
-      this.errorMessage.set(toErrorMessage(error));
-      this.isUnauthorized.set(error instanceof HolderUnauthorizedError);
-      this.loadState.set('error');
+      this.showFeedback(toErrorMessage(error), 'error');
     } finally {
       this.actionCredentialId.set(null);
     }
   }
 
   async handleShare(credentialId: string): Promise<void> {
-    this.shareFeedback.set(null);
-
     try {
       await this.holderService.shareCredentialId(credentialId);
-      this.shareFeedback.set(`Credential ID copied: ${credentialId}`);
+      this.showFeedback(`Credential ID copiado: ${credentialId}`, 'success');
     } catch (error: unknown) {
-      this.errorMessage.set(toErrorMessage(error));
-      this.loadState.set('error');
+      this.showFeedback(toErrorMessage(error), 'error');
     }
   }
 
@@ -321,32 +469,45 @@ export class HolderComponent implements OnInit {
     void this.router.navigate(['/login']);
   }
 
-  isDegreeType(typeCode: string): boolean {
-    return this.holderService.isDegreeType(typeCode);
-  }
-
   statusLabel(status: HolderCredentialSummary['status']): string {
     return STATUS_LABELS[status];
   }
 
-  statusBadgeClass(status: HolderCredentialSummary['status']): string {
-    return STATUS_BADGE_CLASSES[status];
+  statusClass(status: HolderCredentialSummary['status']): string {
+    switch (status) {
+      case 'active':
+        return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+      case 'revoked':
+        return 'border-red-500/30 bg-red-500/10 text-red-300';
+      default:
+        return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+    }
   }
 
-  statusDotClass(status: HolderCredentialSummary['status']): string {
-    return STATUS_DOT_CLASSES[status];
-  }
-
-  formatIssuedAt(issuedAt: string): string {
-    const date = new Date(issuedAt);
-    if (Number.isNaN(date.getTime())) {
-      return issuedAt;
+  formatDate(value?: string | null): string {
+    if (!value) {
+      return '-';
     }
 
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return value;
+  }
+
+  formatDateTime(value?: string | null): string {
+    if (!value) {
+      return '-';
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  }
+
+  private blankToNull(value: string): string | null {
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  }
+
+  private showFeedback(message: string, type: 'success' | 'error'): void {
+    this.feedback.set(message);
+    this.feedbackType.set(type);
   }
 }

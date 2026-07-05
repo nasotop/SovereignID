@@ -147,6 +147,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      Auth__JwtSigningKey: ${AUTH_JWT_SIGNING_KEY:?AUTH_JWT_SIGNING_KEY is required}
+      Auth__JwtIssuer: ${Auth__JwtIssuer:-sovereignid-auth}
+      Auth__JwtAudience: ${Auth__JwtAudience:-sovereignid-clients}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
       Persistence__Provider: ${Academy__Persistence__Provider:-InMemory}
       Academy__InvitationBaseUrl: ${Academy__InvitationBaseUrl:-http://localhost:4333/institution-invitations/accept}

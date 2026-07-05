@@ -47,6 +47,21 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'academy',
+    loadComponent: () =>
+      import('./features/portals/academy/academy.component').then(
+        (m) => m.AcademyComponent,
+      ),
+    canActivate: [
+      authGuard,
+      roleGuard({
+        platformAdmin: true,
+        institutionRoles: ['admin', 'issuer', 'viewer'],
+        mode: 'any',
+      }),
+    ],
+  },
+  {
     path: 'platform',
     loadComponent: () =>
       import('./features/portals/platform/platform.component').then(
@@ -59,21 +74,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/invitations/accept-invitation.component').then(
         (m) => m.AcceptInvitationComponent,
-      ),
-  },
-  {
-    path: 'platform',
-    loadComponent: () =>
-      import('./features/portals/platform/platform.component').then(
-        (m) => m.PlatformComponent
-      ),
-    canActivate: [authGuard],
-  },
-  {
-    path: 'institution-invitations/accept',
-    loadComponent: () =>
-      import('./features/invitations/accept-invitation.component').then(
-        (m) => m.AcceptInvitationComponent
       ),
   },
   {

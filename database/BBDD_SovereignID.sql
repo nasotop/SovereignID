@@ -1,7 +1,12 @@
 CREATE TYPE "user_role" AS ENUM (
   'admin',
   'issuer',
-  'student'
+  'student',
+  'viewer'
+);
+
+CREATE TYPE "global_user_role" AS ENUM (
+  'platform_admin'
 );
 
 CREATE TYPE "credential_status" AS ENUM (
@@ -62,6 +67,25 @@ CREATE TABLE "users" (
   "is_active" boolean NOT NULL DEFAULT true,
   "created_at" timestamp NOT NULL DEFAULT (now()),
   "last_login_at" timestamp
+);
+
+CREATE TABLE "holder_profiles" (
+  "user_id" uuid PRIMARY KEY,
+  "full_name" varchar(180),
+  "birth_date" date,
+  "contact_email" varchar(200),
+  "country_code" varchar(2),
+  "phone_number" varchar(40),
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "user_global_roles" (
+  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "user_id" uuid NOT NULL,
+  "role" global_user_role NOT NULL,
+  "granted_at" timestamp NOT NULL DEFAULT (now()),
+  "revoked_at" timestamp
 );
 
 CREATE TABLE "institution_users" (
@@ -219,6 +243,12 @@ CREATE INDEX ON "users" ("did");
 
 CREATE INDEX ON "users" ("is_active");
 
+CREATE UNIQUE INDEX "uq_user_global_role" ON "user_global_roles" ("user_id", "role");
+
+CREATE INDEX ON "user_global_roles" ("user_id");
+
+CREATE INDEX ON "user_global_roles" ("role");
+
 CREATE UNIQUE INDEX "uq_inst_user_role" ON "institution_users" ("institution_id", "user_id", "role");
 
 CREATE INDEX ON "institution_users" ("institution_id");
@@ -336,6 +366,18 @@ COMMENT ON COLUMN "users"."did" IS 'did:ethr:sepolia:0x...';
 COMMENT ON COLUMN "users"."email" IS 'Opcional. Solo para notificaciones administrativas, no para login';
 
 COMMENT ON COLUMN "users"."display_name" IS 'Opcional. Solo para UI';
+
+COMMENT ON TABLE "holder_profiles" IS 'Datos personales off-chain controlados por el titular/holder para UI y contacto.';
+
+COMMENT ON COLUMN "holder_profiles"."full_name" IS 'Nombre completo editable por el holder; no se ancla directamente en blockchain.';
+
+COMMENT ON COLUMN "holder_profiles"."birth_date" IS 'Fecha de nacimiento editable por el holder; dato personal off-chain.';
+
+COMMENT ON TABLE "user_global_roles" IS 'Roles globales de plataforma. Para MVP se usa platform_admin seeded por wallet.';
+
+COMMENT ON COLUMN "user_global_roles"."role" IS 'Rol global, ej: platform_admin';
+
+COMMENT ON COLUMN "user_global_roles"."revoked_at" IS 'Si tiene valor, el rol global esta inactivo';
 
 COMMENT ON TABLE "institution_users" IS 'Relación N:M entre usuarios e instituciones con rol específico';
 
@@ -462,6 +504,10 @@ COMMENT ON COLUMN "auth_challenges"."wallet_address" IS 'Nullable hasta que se c
 COMMENT ON COLUMN "auth_challenges"."consumed_at" IS 'Nullable. Si tiene valor, el nonce fue usado';
 
 ALTER TABLE "institution_users" ADD FOREIGN KEY ("institution_id") REFERENCES "institutions" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "holder_profiles" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "user_global_roles" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "institution_users" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 

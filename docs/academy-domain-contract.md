@@ -4,8 +4,10 @@ El servicio `academy` concentra el alcance academico del MVP:
 
 - Crear instituciones como tenants.
 - Invitar usuarios institucionales por email para que vinculen una wallet MetaMask existente.
+- Administrar usuarios institucionales dentro del tenant.
 - Crear carreras por institucion.
 - Crear estudiantes por institucion y, opcionalmente, vincular una wallet existente del estudiante.
+- Vincular manualmente una wallet existente a un estudiante.
 - La wallet/DID emisor de la institucion se vincula en el servicio `issuer`.
 
 ## Reglas principales
@@ -18,6 +20,8 @@ El servicio `academy` concentra el alcance academico del MVP:
 6. La emision o vinculacion de titulos no pertenece a `academy`; la coordina el servicio `issuer`.
 7. Las consultas de solo lectura en Infrastructure usan LINQ con `AsNoTracking`.
 8. La API no inyecta `DbContext`; Application usa `IAcademyRepository` y el adapter EF vive en Infrastructure.
+9. `platform_admin` crea instituciones; `admin` gestiona su institucion; `viewer` solo lee.
+10. El rol historico `student` no se usa para nuevas invitaciones institucionales.
 
 ## Endpoints
 
@@ -26,10 +30,18 @@ Todos los endpoints mutables requieren `Authorization: Bearer {jwt}` emitido por
 | Endpoint | Politica | Proposito |
 |----------|----------|-----------|
 | `POST /academy/institutions` | `PlatformAdmin` | Crea institucion y genera invitacion admin |
+| `GET /academy/institutions` | `PlatformAdmin` | Lista instituciones para administracion de plataforma |
 | `GET /academy/institutions/{institutionId}` | `PlatformOrInstitutionMember` | Consulta institucion |
 | `POST /academy/institutions/{institutionId}/careers` | `InstitutionAdmin` | Crea carrera |
 | `POST /academy/institutions/{institutionId}/students` | `InstitutionAdmin` | Crea estudiante, con wallet opcional |
+| `GET /academy/institutions/{institutionId}/students` | `PlatformOrInstitutionMember` | Lista estudiantes de la institucion |
+| `GET /academy/institutions/{institutionId}/students/{studentId}` | `PlatformOrInstitutionMember` | Consulta estudiante |
+| `POST /academy/institutions/{institutionId}/students/{studentId}/wallets` | `InstitutionAdmin` | Vincula wallet manual a estudiante |
 | `POST /academy/institutions/{institutionId}/invitations` | `InstitutionAdmin` | Invita otro usuario institucional |
+| `POST /academy/institutions/{institutionId}/users/invitations` | `InstitutionAdmin` | Alias para invitar usuario institucional |
+| `GET /academy/institutions/{institutionId}/users` | `InstitutionAdmin` | Lista usuarios institucionales |
+| `PATCH /academy/institutions/{institutionId}/users/{userId}/role` | `InstitutionAdmin` | Cambia rol institucional |
+| `DELETE /academy/institutions/{institutionId}/users/{userId}` | `InstitutionAdmin` | Revoca acceso institucional |
 | `POST /academy/invitations/accept` | Publico | Acepta invitacion y vincula wallet MetaMask existente |
 
 ## Errores
@@ -49,8 +61,14 @@ Codigos principales:
 | `invalid_career` | 400 | Carrera sin codigo o nombre |
 | `career_code_exists` | 409 | Codigo de carrera duplicado en la institucion |
 | `student_external_reference_exists` | 409 | Referencia externa duplicada en la institucion |
+| `student_not_found` | 404 | Estudiante inexistente para la institucion |
 | `invalid_wallet_address` | 400 | Wallet no tiene formato Ethereum `0x` + 40 hex |
 | `invalid_institution_role` | 400 | Rol no soportado |
+| `institution_user_not_found` | 404 | Usuario institucional inexistente o revocado |
 | `invalid_invitation_token` | 400 | Token faltante |
 | `invitation_not_usable` | 404 | Token inexistente, expirado o ya aceptado |
+
+## Autorizacion
+
+Detalle transversal: [`docs/authorization-domain-contract.md`](authorization-domain-contract.md).
 

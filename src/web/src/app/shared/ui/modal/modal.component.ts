@@ -1,5 +1,7 @@
 import { Component, effect, ElementRef, input, output, viewChild } from '@angular/core';
 
+type ModalSize = 'sm' | 'md' | 'lg';
+
 /**
  * Accessible modal built on the native HTML <dialog> element.
  * Reusable for maintainer forms and other overlay interactions.
@@ -14,11 +16,16 @@ import { Component, effect, ElementRef, input, output, viewChild } from '@angula
       (cancel)="onCancel($event)"
       (click)="onBackdropClick($event)"
     >
-      <div class="modal-panel">
+      <div class="modal-panel {{ panelSizeClass() }}">
         <header class="flex items-center justify-between mb-6">
-          <h2 [id]="titleId" class="text-xl font-semibold text-white">
-            {{ title() }}
-          </h2>
+          <div>
+            <h2 [id]="titleId" class="text-xl font-semibold text-white">
+              {{ title() }}
+            </h2>
+            @if (description()) {
+              <p class="mt-1 text-sm text-slate-400">{{ description() }}</p>
+            }
+          </div>
           <button
             type="button"
             class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors"
@@ -64,18 +71,31 @@ import { Component, effect, ElementRef, input, output, viewChild } from '@angula
 
     .modal-panel {
       width: 100%;
-      max-width: 32rem;
       background-color: rgb(30 41 59);
       border: 1px solid rgb(51 65 85);
       border-radius: 0.75rem;
       padding: 1.5rem;
       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
     }
+
+    .modal-panel-sm {
+      max-width: 24rem;
+    }
+
+    .modal-panel-md {
+      max-width: 32rem;
+    }
+
+    .modal-panel-lg {
+      max-width: 42rem;
+    }
   `,
 })
 export class ModalComponent {
   readonly isOpen = input.required<boolean>();
   readonly title = input.required<string>();
+  readonly description = input('');
+  readonly size = input<ModalSize>('md');
   readonly closed = output<void>();
 
   readonly titleId = `modal-title-${crypto.randomUUID()}`;
@@ -114,6 +134,17 @@ export class ModalComponent {
 
     if (event.target === dialog) {
       this.close();
+    }
+  }
+
+  panelSizeClass(): string {
+    switch (this.size()) {
+      case 'sm':
+        return 'modal-panel-sm';
+      case 'lg':
+        return 'modal-panel-lg';
+      default:
+        return 'modal-panel-md';
     }
   }
 }

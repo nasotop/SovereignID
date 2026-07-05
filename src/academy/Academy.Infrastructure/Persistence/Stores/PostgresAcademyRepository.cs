@@ -18,6 +18,16 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             .AsNoTracking()
             .AnyAsync(i => i.Code == code, cancellationToken);
 
+    public async Task<IReadOnlyList<InstitutionSummary>> ListInstitutionsAsync(CancellationToken cancellationToken)
+    {
+        var entities = await _dbContext.Institutions
+            .AsNoTracking()
+            .OrderBy(i => i.Code)
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(ToSummary).ToList();
+    }
+
     public async Task<InstitutionSummary?> GetInstitutionAsync(Guid institutionId, CancellationToken cancellationToken)
     {
         var entity = await _dbContext.Institutions
@@ -82,6 +92,40 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             .AsNoTracking()
             .AnyAsync(s => s.InstitutionId == institutionId && s.ExternalReference == externalReference, cancellationToken);
 
+    public async Task<IReadOnlyList<StudentSummary>> ListStudentsAsync(Guid institutionId, CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from student in _dbContext.Students.AsNoTracking()
+            where student.InstitutionId == institutionId
+            join wallet in _dbContext.StudentWallets.AsNoTracking().Where(wallet =>
+                    wallet.IsPrimary && wallet.Status == WalletStatus.active)
+                on student.Id equals wallet.StudentId into wallets
+            from primaryWallet in wallets.DefaultIfEmpty()
+            orderby student.CreatedAt
+            select new { student, primaryWallet })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(row => ToStudentSummary(row.student, row.primaryWallet)).ToList();
+    }
+
+    public async Task<StudentSummary?> GetStudentAsync(
+        Guid institutionId,
+        Guid studentId,
+        CancellationToken cancellationToken)
+    {
+        var row = await (
+            from student in _dbContext.Students.AsNoTracking()
+            where student.Id == studentId && student.InstitutionId == institutionId
+            join wallet in _dbContext.StudentWallets.AsNoTracking().Where(wallet =>
+                    wallet.IsPrimary && wallet.Status == WalletStatus.active)
+                on student.Id equals wallet.StudentId into wallets
+            from primaryWallet in wallets.DefaultIfEmpty()
+            select new { student, primaryWallet })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return row is null ? null : ToStudentSummary(row.student, row.primaryWallet);
+    }
+
     public async Task<StudentSummary> CreateStudentAsync(
         CreateStudentCommand command,
         string? walletDid,
@@ -121,16 +165,158 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new StudentSummary(
-            student.Id,
-            student.InstitutionId,
-            student.ExternalReference,
-            student.EnrollmentYear,
-            wallet?.Id,
-            wallet?.WalletAddress,
-            wallet?.Did,
-            student.IsActive,
-            ToDateTimeOffset(student.CreatedAt));
+        return ToStudentSummary(student, wallet);
+    }
+
+    public async Task<StudentWalletSummary?> AddStudentWalletAsync(
+        AddStudentWalletCommand command,
+        string did,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var studentExists = await _dbContext.Students
+            .AsNoTracking()
+            .AnyAsync(s =>
+                s.Id == command.StudentId
+                && s.InstitutionId == command.InstitutionId
+                && s.IsActive,
+                cancellationToken);
+
+        if (!studentExists)
+        {
+            return null;
+        }
+
+        if (command.MakePrimary)
+        {
+            await _dbContext.StudentWallets
+                .Where(wallet =>
+                    wallet.StudentId == command.StudentId
+                    && wallet.IsPrimary
+                    && wallet.Status == WalletStatus.active)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(wallet => wallet.IsPrimary, false),
+                    cancellationToken);
+        }
+
+        var wallet = new StudentWalletEntity
+        {
+            Id = Guid.NewGuid(),
+            StudentId = command.StudentId,
+            WalletAddress = command.WalletAddress,
+            Did = did,
+            Status = WalletStatus.active,
+            IsPrimary = command.MakePrimary,
+            ActivatedAt = UtcDateTime(now)
+        };
+
+        _dbContext.StudentWallets.Add(wallet);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return ToSummary(wallet);
+    }
+
+    public async Task<HolderDashboard> GetHolderDashboardAsync(
+        string walletAddress,
+        string did,
+        CancellationToken cancellationToken)
+    {
+        var userRow = await (
+            from user in _dbContext.Users.AsNoTracking()
+            where user.WalletAddress == walletAddress
+            join holderProfileEntity in _dbContext.HolderProfiles.AsNoTracking()
+                on user.Id equals holderProfileEntity.UserId into profiles
+            from holderProfile in profiles.DefaultIfEmpty()
+            select new { user, holderProfile })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        var profile = userRow is null
+            ? new HolderProfile(walletAddress, did, null, null, null, null, null, null, null)
+            : ToHolderProfile(userRow.user, userRow.holderProfile);
+
+        var institutionRows = await (
+            from wallet in _dbContext.StudentWallets.AsNoTracking()
+            where wallet.WalletAddress == walletAddress && wallet.Status == WalletStatus.active
+            join student in _dbContext.Students.AsNoTracking()
+                on wallet.StudentId equals student.Id
+            join institution in _dbContext.Institutions.AsNoTracking()
+                on student.InstitutionId equals institution.Id
+            where student.IsActive && institution.IsActive
+            orderby institution.DisplayName, student.CreatedAt
+            select new { institution, student, wallet })
+            .ToListAsync(cancellationToken);
+
+        var institutions = institutionRows
+            .Select(row => new HolderInstitutionSummary(
+                row.institution.Id,
+                row.institution.Code,
+                row.institution.DisplayName,
+                row.student.Id,
+                row.student.ExternalReference,
+                row.student.EnrollmentYear,
+                row.wallet.WalletAddress,
+                row.wallet.Did,
+                row.wallet.IsPrimary,
+                ToDateTimeOffset(row.wallet.ActivatedAt)))
+            .ToList();
+
+        return new HolderDashboard(profile, institutions);
+    }
+
+    public async Task<HolderProfile> UpdateHolderProfileAsync(
+        UpdateHolderProfileCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var nowDateTime = UtcDateTime(now);
+        var user = await _dbContext.Users
+            .SingleOrDefaultAsync(u => u.WalletAddress == command.WalletAddress, cancellationToken);
+
+        if (user is null)
+        {
+            user = new UserEntity
+            {
+                Id = Guid.NewGuid(),
+                WalletAddress = command.WalletAddress,
+                Did = command.Did,
+                DisplayName = command.DisplayName,
+                IsActive = true,
+                CreatedAt = nowDateTime
+            };
+            _dbContext.Users.Add(user);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            user.Did = command.Did;
+            user.DisplayName = command.DisplayName;
+            user.IsActive = true;
+        }
+
+        var profile = await _dbContext.HolderProfiles
+            .SingleOrDefaultAsync(p => p.UserId == user.Id, cancellationToken);
+
+        if (profile is null)
+        {
+            profile = new HolderProfileEntity
+            {
+                UserId = user.Id,
+                CreatedAt = nowDateTime
+            };
+            _dbContext.HolderProfiles.Add(profile);
+        }
+
+        profile.FullName = command.FullName;
+        profile.BirthDate = command.BirthDate;
+        profile.ContactEmail = command.ContactEmail;
+        profile.CountryCode = command.CountryCode;
+        profile.PhoneNumber = command.PhoneNumber;
+        profile.UpdatedAt = nowDateTime;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToHolderProfile(user, profile);
     }
 
     public async Task<InstitutionInvitationCreated> CreateInvitationAsync(
@@ -238,6 +424,71 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             invitation.Role.ToString());
     }
 
+    public async Task<IReadOnlyList<InstitutionUserSummary>> ListInstitutionUsersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from institutionUser in _dbContext.InstitutionUsers.AsNoTracking()
+            join user in _dbContext.Users.AsNoTracking()
+                on institutionUser.UserId equals user.Id
+            where institutionUser.InstitutionId == institutionId
+                && institutionUser.RevokedAt == null
+            orderby user.Email, user.WalletAddress
+            select new { institutionUser, user })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(row => ToSummary(row.institutionUser, row.user)).ToList();
+    }
+
+    public async Task<InstitutionUserSummary?> UpdateInstitutionUserRoleAsync(
+        Guid institutionId,
+        Guid userId,
+        string role,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var parsedRole = ParseRole(role);
+        var institutionUser = await _dbContext.InstitutionUsers
+            .SingleOrDefaultAsync(iu =>
+                iu.InstitutionId == institutionId
+                && iu.UserId == userId
+                && iu.RevokedAt == null,
+                cancellationToken);
+
+        if (institutionUser is null)
+        {
+            return null;
+        }
+
+        institutionUser.Role = parsedRole;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .SingleAsync(u => u.Id == userId, cancellationToken);
+
+        return ToSummary(institutionUser, user);
+    }
+
+    public async Task<bool> RevokeInstitutionUserAsync(
+        Guid institutionId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var affected = await _dbContext.InstitutionUsers
+            .Where(iu =>
+                iu.InstitutionId == institutionId
+                && iu.UserId == userId
+                && iu.RevokedAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(iu => iu.RevokedAt, UtcDateTime(now)),
+                cancellationToken);
+
+        return affected > 0;
+    }
+
     private static InstitutionSummary ToSummary(InstitutionEntity entity) =>
         new(
             entity.Id,
@@ -260,6 +511,53 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             entity.IsActive,
             ToDateTimeOffset(entity.CreatedAt));
 
+    private static StudentSummary ToStudentSummary(StudentEntity student, StudentWalletEntity? wallet) =>
+        new(
+            student.Id,
+            student.InstitutionId,
+            student.ExternalReference,
+            student.EnrollmentYear,
+            wallet?.Id,
+            wallet?.WalletAddress,
+            wallet?.Did,
+            student.IsActive,
+            ToDateTimeOffset(student.CreatedAt));
+
+    private static StudentWalletSummary ToSummary(StudentWalletEntity wallet) =>
+        new(
+            wallet.Id,
+            wallet.StudentId,
+            wallet.WalletAddress,
+            wallet.Did,
+            wallet.Status.ToString(),
+            wallet.IsPrimary,
+            ToDateTimeOffset(wallet.ActivatedAt));
+
+    private static InstitutionUserSummary ToSummary(InstitutionUserEntity institutionUser, UserEntity user) =>
+        new(
+            institutionUser.Id,
+            institutionUser.InstitutionId,
+            institutionUser.UserId,
+            user.WalletAddress,
+            user.Did,
+            user.Email,
+            user.DisplayName,
+            institutionUser.Role.ToString(),
+            ToDateTimeOffset(institutionUser.GrantedAt),
+            institutionUser.RevokedAt is null ? null : ToDateTimeOffset(institutionUser.RevokedAt.Value));
+
+    private static HolderProfile ToHolderProfile(UserEntity user, HolderProfileEntity? profile) =>
+        new(
+            user.WalletAddress,
+            user.Did,
+            user.DisplayName,
+            profile?.FullName,
+            profile?.BirthDate,
+            profile?.ContactEmail,
+            profile?.CountryCode,
+            profile?.PhoneNumber,
+            profile is null ? null : ToDateTimeOffset(profile.UpdatedAt));
+
     private static InstitutionInvitationCreated ToInvitation(InstitutionInvitationEntity entity) =>
         new(
             entity.Id,
@@ -271,7 +569,8 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
 
     private static UserRole ParseRole(string role) => Enum.Parse<UserRole>(role, ignoreCase: true);
 
-    private static DateTime UtcDateTime(DateTimeOffset value) => value.UtcDateTime;
+    private static DateTime UtcDateTime(DateTimeOffset value) =>
+        DateTime.SpecifyKind(value.UtcDateTime, DateTimeKind.Unspecified);
 
     private static DateTimeOffset ToDateTimeOffset(DateTime value) =>
         new(DateTime.SpecifyKind(value, DateTimeKind.Utc));

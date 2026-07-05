@@ -36,13 +36,16 @@ internal partial class SovereignIdDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<UserGlobalRole> UserGlobalRoles { get; set; }
+
     public virtual DbSet<VerificationLog> VerificationLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
             .HasPostgresEnum("credential_status", new[] { "active", "revoked", "expired" })
-            .HasPostgresEnum("user_role", new[] { "admin", "issuer", "student" })
+            .HasPostgresEnum("global_user_role", new[] { "platform_admin" })
+            .HasPostgresEnum("user_role", new[] { "admin", "issuer", "student", "viewer" })
             .HasPostgresEnum("verification_result", new[] { "valid", "invalid_signature", "tampered", "revoked", "expired", "not_found", "ipfs_unreachable" })
             .HasPostgresEnum("wallet_status", new[] { "active", "rotated", "revoked" });
 

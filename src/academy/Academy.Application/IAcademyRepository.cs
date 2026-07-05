@@ -4,6 +4,8 @@ public interface IAcademyRepository
 {
     Task<bool> InstitutionCodeExistsAsync(string code, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<InstitutionSummary>> ListInstitutionsAsync(CancellationToken cancellationToken);
+
     Task<InstitutionSummary?> GetInstitutionAsync(Guid institutionId, CancellationToken cancellationToken);
 
     Task<InstitutionSummary> CreateInstitutionAsync(
@@ -26,9 +28,46 @@ public interface IAcademyRepository
         string externalReference,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<StudentSummary>> ListStudentsAsync(Guid institutionId, CancellationToken cancellationToken);
+
+    Task<StudentSummary?> GetStudentAsync(Guid institutionId, Guid studentId, CancellationToken cancellationToken);
+
     Task<StudentSummary> CreateStudentAsync(
         CreateStudentCommand command,
         string? walletDid,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<StudentWalletSummary?> AddStudentWalletAsync(
+        AddStudentWalletCommand command,
+        string did,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<HolderDashboard> GetHolderDashboardAsync(
+        string walletAddress,
+        string did,
+        CancellationToken cancellationToken);
+
+    Task<HolderProfile> UpdateHolderProfileAsync(
+        UpdateHolderProfileCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<InstitutionUserSummary>> ListInstitutionUsersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken);
+
+    Task<InstitutionUserSummary?> UpdateInstitutionUserRoleAsync(
+        Guid institutionId,
+        Guid userId,
+        string role,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<bool> RevokeInstitutionUserAsync(
+        Guid institutionId,
+        Guid userId,
         DateTimeOffset now,
         CancellationToken cancellationToken);
 
