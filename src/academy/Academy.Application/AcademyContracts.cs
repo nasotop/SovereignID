@@ -54,6 +54,12 @@ public sealed record CreateStudentCommand(
     int? EnrollmentYear,
     string? WalletAddress);
 
+public sealed record AddStudentWalletCommand(
+    Guid InstitutionId,
+    Guid StudentId,
+    string WalletAddress,
+    bool MakePrimary = true);
+
 public sealed record StudentSummary(
     Guid Id,
     Guid InstitutionId,
@@ -64,6 +70,52 @@ public sealed record StudentSummary(
     string? PrimaryWalletDid,
     bool IsActive,
     DateTimeOffset CreatedAt);
+
+public sealed record StudentWalletSummary(
+    Guid Id,
+    Guid StudentId,
+    string WalletAddress,
+    string Did,
+    string Status,
+    bool IsPrimary,
+    DateTimeOffset ActivatedAt);
+
+public sealed record HolderProfile(
+    string WalletAddress,
+    string Did,
+    string? DisplayName,
+    string? FullName,
+    DateOnly? BirthDate,
+    string? ContactEmail,
+    string? CountryCode,
+    string? PhoneNumber,
+    DateTimeOffset? UpdatedAt);
+
+public sealed record UpdateHolderProfileCommand(
+    string WalletAddress,
+    string Did,
+    string? DisplayName,
+    string? FullName,
+    DateOnly? BirthDate,
+    string? ContactEmail,
+    string? CountryCode,
+    string? PhoneNumber);
+
+public sealed record HolderInstitutionSummary(
+    Guid InstitutionId,
+    string InstitutionCode,
+    string InstitutionName,
+    Guid StudentId,
+    string? ExternalReference,
+    int? EnrollmentYear,
+    string WalletAddress,
+    string Did,
+    bool IsPrimary,
+    DateTimeOffset LinkedAt);
+
+public sealed record HolderDashboard(
+    HolderProfile Profile,
+    IReadOnlyList<HolderInstitutionSummary> Institutions);
 
 public sealed record CreateInstitutionInvitationCommand(
     Guid InstitutionId,
@@ -91,16 +143,30 @@ public sealed record InstitutionInvitationAccepted(
     string Did,
     string Role);
 
+public sealed record InstitutionUserSummary(
+    Guid Id,
+    Guid InstitutionId,
+    Guid UserId,
+    string WalletAddress,
+    string Did,
+    string? Email,
+    string? DisplayName,
+    string Role,
+    DateTimeOffset GrantedAt,
+    DateTimeOffset? RevokedAt);
+
 public static class InstitutionRoles
 {
     public const string Admin = "admin";
     public const string Issuer = "issuer";
     public const string Student = "student";
+    public const string Viewer = "viewer";
 
     public static bool IsValid(string role) =>
         string.Equals(role, Admin, StringComparison.OrdinalIgnoreCase)
         || string.Equals(role, Issuer, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(role, Student, StringComparison.OrdinalIgnoreCase);
+        || string.Equals(role, Student, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(role, Viewer, StringComparison.OrdinalIgnoreCase);
 
     public static string Normalize(string role) => role.Trim().ToLowerInvariant();
 }

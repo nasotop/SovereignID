@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a6dd0fd4-5d29-42b3-a373-sovereignid",
     "name": "SovereignID - Academy + Issuer MVP",
-    "description": "Flujo integrado para probar Academy e Issuer localmente. Requiere Academy en http://127.0.0.1:5135, Issuer en http://127.0.0.1:5134 y Postgres con credential_types sembrado.",
+    "description": "Flujo integrado para probar Academy e Issuer localmente. Requiere Academy en http://127.0.0.1:5135, Issuer en http://127.0.0.1:5134, Postgres con credential_types sembrado y JWTs SIWE en platformAdminJwt/institutionAdminJwt para endpoints protegidos.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,6 +15,14 @@
       "value": "http://127.0.0.1:5134"
     },
     {
+      "key": "platformAdminJwt",
+      "value": ""
+    },
+    {
+      "key": "institutionAdminJwt",
+      "value": ""
+    },
+    {
       "key": "run",
       "value": ""
     },
@@ -24,6 +32,10 @@
     },
     {
       "key": "studentWallet",
+      "value": ""
+    },
+    {
+      "key": "manualStudentWallet",
       "value": ""
     },
     {
@@ -44,6 +56,14 @@
     },
     {
       "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "studentWithoutWalletId",
+      "value": ""
+    },
+    {
+      "key": "institutionUserId",
       "value": ""
     },
     {
@@ -107,6 +127,7 @@
                   "pm.collectionVariables.set('run', run);",
                   "pm.collectionVariables.set('adminWallet', wallet('aa'));",
                   "pm.collectionVariables.set('studentWallet', wallet('bb'));",
+                  "pm.collectionVariables.set('manualStudentWallet', wallet('bd'));",
                   "pm.collectionVariables.set('issuerWallet', wallet('cc'));",
                   "pm.collectionVariables.set('contentHash', '0x' + run + 'a'.repeat(56));",
                   "pm.collectionVariables.set('transactionHash', '0x' + run + 'b'.repeat(56));",
@@ -115,6 +136,8 @@
                   "pm.collectionVariables.unset('invitationToken');",
                   "pm.collectionVariables.unset('careerId');",
                   "pm.collectionVariables.unset('studentId');",
+                  "pm.collectionVariables.unset('studentWithoutWalletId');",
+                  "pm.collectionVariables.unset('institutionUserId');",
                   "pm.collectionVariables.unset('credentialId');"
                 ]
               }
@@ -140,6 +163,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{platformAdminJwt}}"
               }
             ],
             "body": {
@@ -157,7 +184,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Accepted invitation', function () { pm.response.to.have.status(200); });"
+                  "pm.test('Accepted invitation', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('institutionUserId', pm.response.json().userId);"
                 ]
               }
             }
@@ -175,6 +203,30 @@
               "raw": "{\n  \"token\": \"{{invitationToken}}\",\n  \"walletAddress\": \"{{adminWallet}}\",\n  \"displayName\": \"Admin {{run}}\"\n}"
             },
             "url": "{{academyBaseUrl}}/academy/invitations/accept"
+          }
+        },
+        {
+          "name": "List institutions as platform admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listed institutions', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{platformAdminJwt}}"
+              }
+            ],
+            "url": "{{academyBaseUrl}}/academy/institutions"
           }
         },
         {
@@ -197,6 +249,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
               }
             ],
             "body": {
@@ -226,6 +282,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
               }
             ],
             "body": {
@@ -233,6 +293,151 @@
               "raw": "{\n  \"externalReference\": \"ALU-{{run}}\",\n  \"enrollmentYear\": 2026,\n  \"walletAddress\": \"{{studentWallet}}\"\n}"
             },
             "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/students"
+          }
+        },
+        {
+          "name": "List students",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listed students', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
+              }
+            ],
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/students"
+          }
+        },
+        {
+          "name": "Create student without wallet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Created student without wallet', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('studentWithoutWalletId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalReference\": \"ALU-MANUAL-{{run}}\",\n  \"enrollmentYear\": 2026\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/students"
+          }
+        },
+        {
+          "name": "Add manual wallet to student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Linked manual student wallet', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"walletAddress\": \"{{manualStudentWallet}}\",\n  \"makePrimary\": true\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/students/{{studentWithoutWalletId}}/wallets"
+          }
+        },
+        {
+          "name": "List institution users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listed institution users', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
+              }
+            ],
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/users"
+          }
+        },
+        {
+          "name": "Change institution user role to viewer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Updated institution user role', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"viewer\"\n}"
+            },
+            "url": "{{academyBaseUrl}}/academy/institutions/{{institutionId}}/users/{{institutionUserId}}/role"
           }
         }
       ]
@@ -259,6 +464,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
               }
             ],
             "body": {
@@ -290,6 +499,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{institutionAdminJwt}}"
               }
             ],
             "body": {

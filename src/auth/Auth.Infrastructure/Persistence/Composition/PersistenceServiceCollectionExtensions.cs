@@ -21,7 +21,10 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<SovereignIdDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
-                npgsql.MapEnum<UserRole>("user_role")));
+            {
+                npgsql.MapEnum<UserRole>("user_role");
+                npgsql.MapEnum<GlobalUserRole>("global_user_role");
+            }));
 
         return services;
     }

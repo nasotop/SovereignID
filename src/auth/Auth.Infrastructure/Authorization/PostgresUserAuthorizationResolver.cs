@@ -39,6 +39,16 @@ internal sealed class PostgresUserAuthorizationResolver : IUserAuthorizationReso
         IReadOnlyList<InstitutionMembershipRecord> memberships = [];
         if (user is not null)
         {
+            var hasGlobalPlatformAdminRole = await _dbContext.UserGlobalRoles
+                .AsNoTracking()
+                .AnyAsync(
+                    role => role.UserId == user.Id
+                        && role.Role == GlobalUserRole.platform_admin
+                        && role.RevokedAt == null,
+                    cancellationToken);
+
+            isPlatformAdmin = isPlatformAdmin || hasGlobalPlatformAdminRole;
+
             var membershipRows = await _dbContext.InstitutionUsers
                 .AsNoTracking()
                 .Where(row => row.UserId == user.Id && row.RevokedAt == null)
@@ -53,7 +63,7 @@ internal sealed class PostgresUserAuthorizationResolver : IUserAuthorizationReso
                 .ExecuteUpdateAsync(
                     setters => setters.SetProperty(
                         candidate => candidate.LastLoginAt,
-                        _timeProvider.GetUtcNow().UtcDateTime),
+                        ToPostgresTimestamp(_timeProvider.GetUtcNow())),
                     cancellationToken);
         }
 
@@ -67,4 +77,7 @@ internal sealed class PostgresUserAuthorizationResolver : IUserAuthorizationReso
 
         return new UserAuthorizationProfile(user?.Id, isPlatformAdmin, isHolder, memberships);
     }
+
+    private static DateTime ToPostgresTimestamp(DateTimeOffset value) =>
+        DateTime.SpecifyKind(value.UtcDateTime, DateTimeKind.Unspecified);
 }

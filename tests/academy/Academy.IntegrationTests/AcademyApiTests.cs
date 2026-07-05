@@ -75,8 +75,27 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         });
 
         Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
+        using var acceptedJson = await JsonDocument.ParseAsync(await acceptResponse.Content.ReadAsStreamAsync());
+        var acceptedUserId = acceptedJson.RootElement.GetProperty("userId").GetGuid();
+
+        var listInstitutionsResponse = await SendAuthorizedGetAsync(
+            "/academy/institutions",
+            JwtTestHelper.CreatePlatformAdminToken());
+
+        Assert.Equal(HttpStatusCode.OK, listInstitutionsResponse.StatusCode);
 
         var adminToken = JwtTestHelper.CreateInstitutionAdminToken(institutionId);
+        var listUsersResponse = await SendAuthorizedGetAsync(
+            $"/academy/institutions/{institutionId}/users",
+            adminToken);
+
+        Assert.Equal(HttpStatusCode.OK, listUsersResponse.StatusCode);
+        using var usersJson = await JsonDocument.ParseAsync(await listUsersResponse.Content.ReadAsStreamAsync());
+        Assert.Contains(
+            usersJson.RootElement.EnumerateArray(),
+            user => user.GetProperty("userId").GetGuid() == acceptedUserId
+                && user.GetProperty("role").GetString() == "admin");
+
         var createCareerResponse = await SendAuthorizedPostAsync(
             $"/academy/institutions/{institutionId}/careers",
             adminToken,
@@ -105,6 +124,75 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         var studentId = studentJson.RootElement.GetProperty("id").GetGuid();
         Assert.NotEqual(Guid.Empty, careerId);
         Assert.NotEqual(Guid.Empty, studentId);
+
+        var listStudentsResponse = await SendAuthorizedGetAsync(
+            $"/academy/institutions/{institutionId}/students",
+            adminToken);
+
+        Assert.Equal(HttpStatusCode.OK, listStudentsResponse.StatusCode);
+
+        var createStudentWithoutWalletResponse = await SendAuthorizedPostAsync(
+            $"/academy/institutions/{institutionId}/students",
+            adminToken,
+            new
+            {
+                externalReference = $"ALU-{Guid.NewGuid():N}"[..12],
+                enrollmentYear = 2026
+            });
+
+        Assert.Equal(HttpStatusCode.Created, createStudentWithoutWalletResponse.StatusCode);
+        using var studentWithoutWalletJson = await JsonDocument.ParseAsync(await createStudentWithoutWalletResponse.Content.ReadAsStreamAsync());
+        var studentWithoutWalletId = studentWithoutWalletJson.RootElement.GetProperty("id").GetGuid();
+        Assert.Equal(JsonValueKind.Null, studentWithoutWalletJson.RootElement.GetProperty("primaryWalletAddress").ValueKind);
+
+        var addWalletResponse = await SendAuthorizedPostAsync(
+            $"/academy/institutions/{institutionId}/students/{studentWithoutWalletId}/wallets",
+            adminToken,
+            new
+            {
+                walletAddress = "0x3333333333333333333333333333333333333333",
+                makePrimary = true
+            });
+
+        Assert.Equal(HttpStatusCode.Created, addWalletResponse.StatusCode);
+        using var walletJson = await JsonDocument.ParseAsync(await addWalletResponse.Content.ReadAsStreamAsync());
+        Assert.Equal("0x3333333333333333333333333333333333333333", walletJson.RootElement.GetProperty("walletAddress").GetString());
+        Assert.True(walletJson.RootElement.GetProperty("isPrimary").GetBoolean());
+
+        var updateRoleResponse = await SendAuthorizedPatchAsync(
+            $"/academy/institutions/{institutionId}/users/{acceptedUserId}/role",
+            adminToken,
+            new { role = "viewer" });
+
+        Assert.Equal(HttpStatusCode.OK, updateRoleResponse.StatusCode);
+        using var updatedRoleJson = await JsonDocument.ParseAsync(await updateRoleResponse.Content.ReadAsStreamAsync());
+        Assert.Equal("viewer", updatedRoleJson.RootElement.GetProperty("role").GetString());
+
+        var revokeUserResponse = await SendAuthorizedDeleteAsync(
+            $"/academy/institutions/{institutionId}/users/{acceptedUserId}",
+            adminToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, revokeUserResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateInstitution_WithIssuerMembershipOnly_ReturnsForbidden()
+    {
+        var institutionId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var issuerToken = JwtTestHelper.CreateToken(
+            "0xcccccccccccccccccccccccccccccccccccccccc",
+            memberships: [new SovereignID.Authorization.InstitutionMembership(institutionId, "issuer")]);
+
+        var response = await SendAuthorizedPostAsync("/academy/institutions", issuerToken, new
+        {
+            code = $"INST-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Demo SpA",
+            displayName = "Institucion Demo",
+            contactEmail = "admin@demo.test",
+            countryCode = "CL"
+        });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
@@ -159,6 +247,13 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
     private Task<HttpResponseMessage> SendPlatformAdminPostAsync(string url, object body) =>
         SendAuthorizedPostAsync(url, JwtTestHelper.CreatePlatformAdminToken(), body);
 
+    private Task<HttpResponseMessage> SendAuthorizedGetAsync(string url, string bearerToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        return _client.SendAsync(request);
+    }
+
     private static Task<HttpResponseMessage> SendAuthorizedPostAsync(
         HttpClient client,
         string url,
@@ -175,6 +270,23 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
 
     private Task<HttpResponseMessage> SendAuthorizedPostAsync(string url, string bearerToken, object body) =>
         SendAuthorizedPostAsync(_client, url, bearerToken, body);
+
+    private Task<HttpResponseMessage> SendAuthorizedPatchAsync(string url, string bearerToken, object body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Patch, url)
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        return _client.SendAsync(request);
+    }
+
+    private Task<HttpResponseMessage> SendAuthorizedDeleteAsync(string url, string bearerToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        return _client.SendAsync(request);
+    }
 
     private static string ExtractToken(string? invitationUrl)
     {

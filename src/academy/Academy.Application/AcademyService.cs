@@ -69,6 +69,13 @@ public sealed class AcademyService
                 ((AcademyFailureResult<InstitutionInvitationCreated>)invitationResult).Failure.Detail);
     }
 
+    public async Task<AcademyResult<IReadOnlyList<InstitutionSummary>>> ListInstitutionsAsync(
+        CancellationToken cancellationToken)
+    {
+        var institutions = await _repository.ListInstitutionsAsync(cancellationToken);
+        return new AcademySuccess<IReadOnlyList<InstitutionSummary>>(institutions);
+    }
+
     public async Task<AcademyResult<InstitutionSummary>> GetInstitutionAsync(
         Guid institutionId,
         CancellationToken cancellationToken)
@@ -132,6 +139,175 @@ public sealed class AcademyService
         return new AcademySuccess<StudentSummary>(student);
     }
 
+    public async Task<AcademyResult<IReadOnlyList<StudentSummary>>> ListStudentsAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        if (await _repository.GetInstitutionAsync(institutionId, cancellationToken) is null)
+        {
+            return Fail<IReadOnlyList<StudentSummary>>("institution_not_found", 404, "Institution was not found.");
+        }
+
+        var students = await _repository.ListStudentsAsync(institutionId, cancellationToken);
+        return new AcademySuccess<IReadOnlyList<StudentSummary>>(students);
+    }
+
+    public async Task<AcademyResult<StudentSummary>> GetStudentAsync(
+        Guid institutionId,
+        Guid studentId,
+        CancellationToken cancellationToken)
+    {
+        var student = await _repository.GetStudentAsync(institutionId, studentId, cancellationToken);
+        return student is null
+            ? Fail<StudentSummary>("student_not_found", 404, "Student was not found.")
+            : new AcademySuccess<StudentSummary>(student);
+    }
+
+    public async Task<AcademyResult<StudentWalletSummary>> AddStudentWalletAsync(
+        AddStudentWalletCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (await _repository.GetInstitutionAsync(command.InstitutionId, cancellationToken) is null)
+        {
+            return Fail<StudentWalletSummary>("institution_not_found", 404, "Institution was not found.");
+        }
+
+        var walletAddress = BlockchainIdentity.NormalizeWalletAddress(command.WalletAddress);
+        if (walletAddress is null)
+        {
+            return Fail<StudentWalletSummary>("invalid_wallet_address", 400, "walletAddress must be a valid Ethereum address.");
+        }
+
+        var normalized = command with { WalletAddress = walletAddress };
+        var wallet = await _repository.AddStudentWalletAsync(
+            normalized,
+            BlockchainIdentity.CreateDid(walletAddress),
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return wallet is null
+            ? Fail<StudentWalletSummary>("student_not_found", 404, "Student was not found.")
+            : new AcademySuccess<StudentWalletSummary>(wallet);
+    }
+
+    public async Task<AcademyResult<HolderDashboard>> GetHolderDashboardAsync(
+        string? walletAddress,
+        string? did,
+        CancellationToken cancellationToken)
+    {
+        var normalizedWallet = BlockchainIdentity.NormalizeWalletAddress(walletAddress);
+        if (normalizedWallet is null)
+        {
+            return Fail<HolderDashboard>("invalid_holder_wallet", 400, "A valid holder wallet address is required.");
+        }
+
+        var dashboard = await _repository.GetHolderDashboardAsync(
+            normalizedWallet,
+            NormalizeDid(did, normalizedWallet),
+            cancellationToken);
+
+        return new AcademySuccess<HolderDashboard>(dashboard);
+    }
+
+    public async Task<AcademyResult<HolderProfile>> UpdateHolderProfileAsync(
+        UpdateHolderProfileCommand command,
+        CancellationToken cancellationToken)
+    {
+        var walletAddress = BlockchainIdentity.NormalizeWalletAddress(command.WalletAddress);
+        if (walletAddress is null)
+        {
+            return Fail<HolderProfile>("invalid_holder_wallet", 400, "A valid holder wallet address is required.");
+        }
+
+        if (command.BirthDate is DateOnly birthDate
+            && birthDate > DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime))
+        {
+            return Fail<HolderProfile>("invalid_birth_date", 400, "birthDate cannot be in the future.");
+        }
+
+        var contactEmail = BlankToNull(command.ContactEmail);
+        if (contactEmail is not null && !contactEmail.Contains('@', StringComparison.Ordinal))
+        {
+            return Fail<HolderProfile>("invalid_contact_email", 400, "contactEmail must be a valid email address.");
+        }
+
+        var countryCode = BlankToNull(command.CountryCode);
+        if (countryCode is not null && countryCode.Length != 2)
+        {
+            return Fail<HolderProfile>("invalid_country_code", 400, "countryCode must use two letters.");
+        }
+
+        var normalized = command with
+        {
+            WalletAddress = walletAddress,
+            Did = NormalizeDid(command.Did, walletAddress),
+            DisplayName = BlankToNull(command.DisplayName),
+            FullName = BlankToNull(command.FullName),
+            ContactEmail = contactEmail?.ToLowerInvariant(),
+            CountryCode = countryCode?.ToUpperInvariant(),
+            PhoneNumber = BlankToNull(command.PhoneNumber)
+        };
+
+        var profile = await _repository.UpdateHolderProfileAsync(
+            normalized,
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return new AcademySuccess<HolderProfile>(profile);
+    }
+
+    public async Task<AcademyResult<IReadOnlyList<InstitutionUserSummary>>> ListInstitutionUsersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        if (await _repository.GetInstitutionAsync(institutionId, cancellationToken) is null)
+        {
+            return Fail<IReadOnlyList<InstitutionUserSummary>>("institution_not_found", 404, "Institution was not found.");
+        }
+
+        var users = await _repository.ListInstitutionUsersAsync(institutionId, cancellationToken);
+        return new AcademySuccess<IReadOnlyList<InstitutionUserSummary>>(users);
+    }
+
+    public async Task<AcademyResult<InstitutionUserSummary>> UpdateInstitutionUserRoleAsync(
+        Guid institutionId,
+        Guid userId,
+        string role,
+        CancellationToken cancellationToken)
+    {
+        if (!InstitutionRoles.IsValid(role) || string.Equals(role, InstitutionRoles.Student, StringComparison.OrdinalIgnoreCase))
+        {
+            return Fail<InstitutionUserSummary>("invalid_institution_role", 400, "Institution role is not supported.");
+        }
+
+        var updated = await _repository.UpdateInstitutionUserRoleAsync(
+            institutionId,
+            userId,
+            InstitutionRoles.Normalize(role),
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return updated is null
+            ? Fail<InstitutionUserSummary>("institution_user_not_found", 404, "Institution user was not found.")
+            : new AcademySuccess<InstitutionUserSummary>(updated);
+    }
+
+    public async Task<AcademyResult<bool>> RevokeInstitutionUserAsync(
+        Guid institutionId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var revoked = await _repository.RevokeInstitutionUserAsync(
+            institutionId,
+            userId,
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return revoked
+            ? new AcademySuccess<bool>(true)
+            : Fail<bool>("institution_user_not_found", 404, "Institution user was not found.");
+    }
+
     public Task<AcademyResult<InstitutionInvitationCreated>> CreateInvitationAsync(
         CreateInstitutionInvitationCommand command,
         CancellationToken cancellationToken) =>
@@ -180,7 +356,7 @@ public sealed class AcademyService
             return Fail<InstitutionInvitationCreated>("invalid_invitation_email", 400, "A valid invitation email is required.");
         }
 
-        if (!InstitutionRoles.IsValid(command.Role))
+        if (!InstitutionRoles.IsValid(command.Role) || string.Equals(command.Role, InstitutionRoles.Student, StringComparison.OrdinalIgnoreCase))
         {
             return Fail<InstitutionInvitationCreated>("invalid_institution_role", 400, "Institution role is not supported.");
         }
@@ -217,6 +393,9 @@ public sealed class AcademyService
     private static bool IsBlank(string? value) => string.IsNullOrWhiteSpace(value);
 
     private static string? BlankToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string NormalizeDid(string? did, string walletAddress) =>
+        string.IsNullOrWhiteSpace(did) ? BlockchainIdentity.CreateDid(walletAddress) : did.Trim().ToLowerInvariant();
 
     private static string NormalizeCountry(string? countryCode)
     {

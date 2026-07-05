@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Serialization.Json;
+using System.Text.Json;
 
 namespace Bff.Api;
 
@@ -101,11 +102,7 @@ internal static class DownstreamResults
     {
         if (ex is IParsable parsable)
         {
-            using var writer = new JsonSerializationWriter();
-            parsable.Serialize(writer);
-            using var stream = writer.GetSerializedContent();
-            using var reader = new StreamReader(stream);
-            var content = reader.ReadToEnd();
+            var content = SerializeProblemDetails(ex, parsable);
 
             return new ContentResult
             {
@@ -117,4 +114,35 @@ internal static class DownstreamResults
 
         return new StatusCodeResult(ex.ResponseStatusCode);
     }
+
+    private static string SerializeProblemDetails(ApiException ex, IParsable parsable)
+    {
+        try
+        {
+            using var writer = new JsonSerializationWriter();
+            writer.WriteObjectValue(null, parsable);
+            using var stream = writer.GetSerializedContent();
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        catch (InvalidOperationException)
+        {
+            var problem = new Dictionary<string, object?>
+            {
+                ["title"] = GetStringProperty(parsable, "Title") ?? ex.Message,
+                ["status"] = ex.ResponseStatusCode,
+                ["detail"] = GetStringProperty(parsable, "Detail") ?? ex.Message,
+                ["type"] = GetStringProperty(parsable, "Type"),
+                ["instance"] = GetStringProperty(parsable, "Instance"),
+            };
+
+            return JsonSerializer.Serialize(
+                problem
+                    .Where(item => item.Value is not null)
+                    .ToDictionary(item => item.Key, item => item.Value));
+        }
+    }
+
+    private static string? GetStringProperty(IParsable parsable, string propertyName) =>
+        parsable.GetType().GetProperty(propertyName)?.GetValue(parsable) as string;
 }
