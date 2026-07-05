@@ -2,6 +2,7 @@
 #pragma warning disable CS0618
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions;
+using SovereignID.Bff.Clients.Academy.Academy.Holders;
 using SovereignID.Bff.Clients.Academy.Academy.Institutions;
 using SovereignID.Bff.Clients.Academy.Academy.Invitations;
 using System.Collections.Generic;
@@ -16,6 +17,11 @@ namespace SovereignID.Bff.Clients.Academy.Academy
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class AcademyRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>The holders property</summary>
+        public global::SovereignID.Bff.Clients.Academy.Academy.Holders.HoldersRequestBuilder Holders
+        {
+            get => new global::SovereignID.Bff.Clients.Academy.Academy.Holders.HoldersRequestBuilder(PathParameters, RequestAdapter);
+        }
         /// <summary>The institutions property</summary>
         public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.InstitutionsRequestBuilder Institutions
         {

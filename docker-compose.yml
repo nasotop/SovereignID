@@ -208,6 +208,47 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Identity service (health scaffold; business endpoints TBD)"
 
+  reports-api:
+    build:
+      context: .
+      dockerfile: src/reports/Reports.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
+    image: sovereignid-reports:latest
+    container_name: sovereignid-reports
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
+      Auth__JwtSigningKey: ${AUTH_JWT_SIGNING_KEY:?AUTH_JWT_SIGNING_KEY is required}
+      Auth__JwtIssuer: ${Auth__JwtIssuer:-sovereignid-auth}
+      Auth__JwtAudience: ${Auth__JwtAudience:-sovereignid-clients}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+      Persistence__Provider: Postgres
+      Reports__SnapshotJobHourUtc: ${Reports__SnapshotJobHourUtc:-1}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sovereign-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.sovereignid.service: reports-api
+      com.sovereignid.version: "1.0"
+      com.sovereignid.description: "Read-only analytics and dashboard reports service"
+
   bff-api:
     build:
       context: .
@@ -224,6 +265,7 @@ services:
       Downstream__Issuer: http://issuer-api:8080
       Downstream__Academy: http://academy-api:8080
       Downstream__Identity: http://identity-api:8080
+      Downstream__Reports: http://reports-api:8080
     expose:
       - "8080"
     depends_on:
@@ -234,6 +276,8 @@ services:
       academy-api:
         condition: service_started
       identity-api:
+        condition: service_started
+      reports-api:
         condition: service_started
     networks:
       - sovereign-net

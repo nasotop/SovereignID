@@ -177,6 +177,11 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Proveedor de persistencia** | `InMemory` o `Postgres`; selecciona el adapter activo sin cambiar casos de uso |
 | **Titular (holder)** | Estudiante con wallet primaria activa en `student_wallets`. SIWE no crea fila en BD; issuer filtra credenciales por claim `did` del JWT contra `credentials.subject_did` (derivado de la wallet en minúsculas). Distinto de `users` (usuarios institucionales). |
 | **Seed de desarrollo** | Datos ficticios idempotentes en `database/seed-dev.sql`, aplicados con `scripts/seed-dev.ps1` contra Postgres local Docker. Refresca fixtures demo a estado canónico; no forma parte del esquema canónico. |
+| **Reporte institution-scoped** | KPI de una sola institución; path `/reports/institutions/{institutionId}/…`; consumidor UI: tab Reportes en `/academy`. |
+| **Reporte platform-scoped** | KPI cross-tenant; path `/reports/platform/…`; consumidor UI: sección reportes en `/platform`. |
+| **Verificaciones (R-I2)** | Intentos de verificación registrados en `verification_logs` para credenciales de la institución; en UI no usar el término "leídas". |
+| **Fuente del reporte (`source`)** | Metadato del backend: `snapshot` (día pre-agregado), `live` (query en tiempo real), `hybrid` (mezcla). |
+| **Período de reporte** | Rango `{from, to}` compartido por todos los reportes de un portal; presets 7/30/90 días (default 30). Reportes puntuales usan `asOf = to`. |
 
 ## Configuración relevante
 
@@ -245,6 +250,28 @@ Contrato HTTP: OpenAPI generado por `Issuer.Api` → `docs/contracts/issuer.open
 
 **Portal web del holder:** `/holder` requiere sesión SIWE (`authGuard`) y carga credenciales reales con `GET /issuer/holders/me/credentials`. El componente habla solo con **`HolderService`**, fachada sobre el cliente generado (`ng-openapi-gen` → `src/app/api/issuer/`). El JWT se adjunta vía interceptor global y la fachada falla temprano si no hay sesión. Estados UI: `loading` / `loaded` / `empty` / `error`; badge de `status` (`active|revoked|expired`); icono por `typeCode` (`TITULO` → degree). Download JSON usa el detalle holder; Share QR v1 copia el UUID al portapapeles. El front llega al backend vía **`/api/issuer/…`** (nginx strip → `bff-api` → Kiota → `issuer-api`; JWT reenviado sin validar en BFF v1).
 
+## Servicio `reports`
+
+Microservicio de **solo lectura** para dashboards institution y platform (KPIs operativos). Backend v1 completo; la UI Angular consume los endpoints vía BFF (`/api/reports/…`).
+
+| Endpoint | Perfil | Propósito |
+|----------|--------|-----------|
+| `GET /reports/institutions/{id}/credentials-issued` | `admin` / `issuer` / `viewer` (+ platform admin) | Emisiones diarias (snapshot + live tail) |
+| `GET /reports/institutions/{id}/credential-reads` | idem | Verificaciones (leídas) por día |
+| `GET /reports/institutions/{id}/credentials-per-student` | idem | Promedio credenciales / alumno activo (`asOf`) |
+| `GET /reports/institutions/{id}/credentials-revoked` | idem | Revocaciones en período |
+| `GET /reports/institutions/{id}/verification-outcomes` | idem | Válidas vs inválidas |
+| `GET /reports/platform/credentials-by-institution` | `platform_admin` | Ranking emisiones cross-tenant |
+| `GET /reports/platform/students-by-institution` | `platform_admin` | Stock alumnos activos por institución |
+
+Autorización: librería `SovereignID.Authorization` (`PlatformOrInstitutionMember` en rutas `{institutionId}`, `PlatformAdmin` en `/reports/platform/*`). Persistencia database-first read-only sobre `credentials`, `verification_logs`, `students`, `institutions`, `institution_metrics_daily`.
+
+**Job de snapshot:** `MetricsSnapshotJob` (nightly UTC) + CLI `dotnet run --project src/reports/Reports.Api -- snapshot --from YYYY-MM-DD --to YYYY-MM-DD` para backfill tras `seed-dev.ps1` cuando `Persistence:Provider=Postgres`.
+
+Contrato HTTP: `docs/contracts/reports.openapi.json`. BFF pass-through: `/api/reports/…` → `reports-api` (JWT reenviado).
+
+**Frontend (web) — reportes:** tab **Reportes** en portal `/academy` (reportes institution-scoped R-I1…R-I5) y tab **Reportes** en portal `/platform` (R-P1, R-P2), junto a tab **Instituciones** en platform. Alcance v1 de componentización: **`platform-institutions-tab`**, **`platform-reports-tab`** y **`academy-reports-tab`** como hijos standalone; tabs Estudiantes/Usuarios de Academy permanecen en el shell del portal. Tab Reportes en Academy visible para roles **`admin`**, **`issuer`** y **`viewer`** (misma regla que Estudiantes; requiere institución seleccionada). Componentes de visualización compartidos en `shared/ui/reports/`. Cliente HTTP generado desde `docs/contracts/bff.openapi.json` (`npm run gen:api:bff`) + fachada `ReportsService` con seam de Problem Details. Series temporales (R-I1, R-I2, R-I4, R-I5) se renderizan con **AntV G2 v5** (`theme: classicDark`); R-I3 y rankings platform usan KPI cards + gráfico de barras horizontal G2. En UI, R-I2 se etiqueta **Verificaciones** (no "leídas"): son intentos en `verification_logs`, no descargas IPFS. Selector de período compartido por portal: presets **7 / 30 / 90 días** (default **30**); reportes con `asOf` (R-I3, R-P2) usan `asOf = to` del rango seleccionado. Carga en tab Reportes: **`Promise.allSettled`** paralelo; error aislado por tarjeta con reintento local (`toErrorMessage` para Problem Details).
+
 ## Servicio `bff`
 
 Backend-for-Frontend entre el portal web y los microservicios internos. Decisión: [ADR-0005](docs/adr/0005-bff-kiota.md).
@@ -255,7 +282,7 @@ Backend-for-Frontend entre el portal web y los microservicios internos. Decisió
 | Contrato público | `docs/contracts/bff.openapi.json` (pass-through v1) |
 | Prefijo browser | `/api/` (nginx strip → `bff-api:8080`) |
 | Auth SIWE | **Fuera del BFF** — `/auth/` directo a `auth-api` |
-| Downstream v1 | verifier, issuer (holder + admin), academy, identity (health) |
+| Downstream v1 | verifier, issuer (holder + admin), academy, identity (health), reports |
 | JWT holder | Reenvío del header `Authorization`; validación en `issuer-api` |
 
 Rutas issuer admin expuestas en v1: `POST /issuer/institutions/{id}/wallet`, `POST /issuer/students/{id}/title`, `GET /issuer/credentials/{id}`.

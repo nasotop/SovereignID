@@ -48,6 +48,7 @@ El valor historico `student` puede existir en el enum por compatibilidad, pero n
 | Cambiar/revocar roles institucionales | Si | Si | No | No |
 | Asociar wallet/DID emisor | Si | Si | Si | No |
 | Vincular titulo emitido | Si | Si | Si | No |
+| Ver reportes / dashboard | Si | Si | Si | Si |
 
 ## Resolucion de autorizacion
 

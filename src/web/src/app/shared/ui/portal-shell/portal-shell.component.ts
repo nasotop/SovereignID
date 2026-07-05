@@ -8,6 +8,9 @@ type PortalLayoutWidth = 'contained' | 'full';
   selector: 'app-portal-shell',
   standalone: true,
   imports: [CommonModule],
+  host: {
+    class: 'block h-full',
+  },
   template: `
     <div class="bg-slate-900" [ngClass]="rootClass()">
       <nav class="shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
@@ -61,7 +64,9 @@ type PortalLayoutWidth = 'contained' | 'full';
           }
         </header>
 
-        <ng-content />
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ng-content />
+        </div>
       </main>
     </div>
   `,
@@ -98,7 +103,7 @@ export class PortalShellComponent {
 
   mainClass(): string {
     return this.layoutWidth() === 'full'
-      ? 'flex min-h-0 w-full max-w-none flex-1 flex-col px-6 py-6 2xl:px-8'
+      ? 'flex min-h-0 w-full max-w-none flex-1 flex-col overflow-hidden px-6 py-6 2xl:px-8'
       : 'max-w-7xl px-6 py-8';
   }
 

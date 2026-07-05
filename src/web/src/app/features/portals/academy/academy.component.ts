@@ -17,7 +17,9 @@ import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-badge.component';
 
-type AcademyTab = 'students' | 'users';
+import { AcademyReportsTabComponent } from './academy-reports-tab.component';
+
+type AcademyTab = 'students' | 'users' | 'reports';
 type AcademyInfoPanelTab = 'summary' | 'institution';
 
 const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewer'];
@@ -25,6 +27,9 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
 @Component({
   selector: 'app-academy',
   standalone: true,
+  host: {
+    class: 'block h-full',
+  },
   imports: [
     CommonModule,
     FormsModule,
@@ -33,6 +38,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
     ModalComponent,
     StatusBadgeComponent,
     CopyValueComponent,
+    AcademyReportsTabComponent,
   ],
   template: `
     <app-portal-shell
@@ -42,19 +48,21 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       layoutWidth="full"
       (logout)="handleLogout()"
     >
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
       @if (errorMessage()) {
-        <div class="mb-6 rounded-lg border border-red-700 bg-red-900/40 p-4 text-sm text-red-100">
+        <div class="mb-6 shrink-0 rounded-lg border border-red-700 bg-red-900/40 p-4 text-sm text-red-100">
           {{ errorMessage() }}
         </div>
       }
       @if (successMessage()) {
-        <div class="mb-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+        <div class="mb-6 shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-100">
           {{ successMessage() }}
         </div>
       }
 
       @if (selectedInstitution()) {
-        <section class="mb-6 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] gap-6 overflow-hidden">
+          <section class="flex shrink-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0">
             <p class="text-xs font-medium uppercase text-blue-300">Institucion activa</p>
             <h3 class="mt-1 truncate text-2xl font-bold text-white">
@@ -101,7 +109,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
           </div>
         </section>
 
-        <div class="mb-6 flex shrink-0 gap-2 border-b border-slate-700">
+        <div class="flex shrink-0 gap-2 border-b border-slate-700">
           <button
             type="button"
             class="border-b-2 px-4 py-3 text-sm font-medium"
@@ -124,9 +132,24 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               Usuarios
             </button>
           }
+          <button
+            type="button"
+            class="border-b-2 px-4 py-3 text-sm font-medium"
+            [ngClass]="activeTab() === 'reports'
+              ? 'border-blue-500 text-blue-300'
+              : 'border-transparent text-slate-400 hover:text-white'"
+            (click)="setActiveTab('reports')"
+          >
+            Reportes
+          </button>
         </div>
 
-        <section class="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
+        @if (activeTab() === 'reports') {
+          <section class="min-h-0 overflow-y-auto overscroll-y-contain">
+            <app-academy-reports-tab [institutionId]="selectedInstitutionId()" />
+          </section>
+        } @else {
+          <section class="grid min-h-0 overflow-hidden gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
           @if (activeTab() === 'students') {
             <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
               <div class="border-b border-slate-700 p-4">
@@ -404,14 +427,17 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
             </aside>
           }
         </section>
+        }
+        </div>
       } @else {
-        <section class="rounded-lg border border-slate-700 bg-slate-800/50 p-10 text-center">
+        <section class="shrink-0 rounded-lg border border-slate-700 bg-slate-800/50 p-10 text-center">
           <p class="font-medium text-white">Selecciona una institucion</p>
           <p class="mt-2 text-sm text-slate-400">
             Tu rol define que acciones puedes ejecutar dentro de la institucion.
           </p>
         </section>
       }
+      </div>
 
       <ng-template #institutionContextPanel>
         <div class="space-y-5">

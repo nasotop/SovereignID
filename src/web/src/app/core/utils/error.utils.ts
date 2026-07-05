@@ -32,6 +32,10 @@ export function toHttpErrorMessage(error: unknown, fallback: string): string {
 
 /** Wraps unknown errors into Error instances for consistent propagation */
 export function toThrownError(error: unknown, fallback: string): Error {
+  if (error instanceof HttpErrorResponse) {
+    return new Error(toHttpErrorMessage(error, fallback));
+  }
+
   if (error instanceof Error) {
     return error;
   }
