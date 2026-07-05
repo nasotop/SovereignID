@@ -91,6 +91,22 @@
           }
         }
       }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Comprueba que el servicio está operativo (liveness check).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -227,6 +243,9 @@
   "tags": [
     {
       "name": "Auth"
+    },
+    {
+      "name": "Health"
     }
   ]
 }
