@@ -21,7 +21,7 @@ public static class SovereignIdAuthorizationServiceCollectionExtensions
             policy.Requirements.Add(new PlatformAdminRequirement()));
 
         options.AddPolicy(AuthorizationPolicies.PlatformOrInstitutionMember, policy =>
-            policy.Requirements.Add(new InstitutionRouteRequirement("admin", "issuer")));
+            policy.Requirements.Add(new InstitutionRouteRequirement("admin", "issuer", "viewer")));
 
         options.AddPolicy(AuthorizationPolicies.InstitutionAdmin, policy =>
             policy.Requirements.Add(new InstitutionRouteRequirement("admin")));

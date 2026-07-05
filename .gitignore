@@ -1,6 +1,7 @@
 /.cursor
 /.vs
 /.vscode
+/.env
 /graphify-out
 **/bin/**
 **/obj/**

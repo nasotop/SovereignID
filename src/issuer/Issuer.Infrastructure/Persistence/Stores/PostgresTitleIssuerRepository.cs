@@ -242,7 +242,8 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             entity.RevocationReason,
             studentExternalReference);
 
-    private static DateTime UtcDateTime(DateTimeOffset value) => value.UtcDateTime;
+    private static DateTime UtcDateTime(DateTimeOffset value) =>
+        DateTime.SpecifyKind(value.UtcDateTime, DateTimeKind.Unspecified);
 
     private static DateTimeOffset ToDateTimeOffset(DateTime value) =>
         new(DateTime.SpecifyKind(value, DateTimeKind.Utc));

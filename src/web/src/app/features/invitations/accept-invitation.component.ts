@@ -116,13 +116,32 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
                 />
               </div>
 
+              @if (connectedWallet()) {
+                <div class="rounded-lg border border-orange-500/40 bg-orange-500/10 p-4 text-sm text-slate-200">
+                  <p class="font-semibold text-orange-200">Wallet seleccionada</p>
+                  <p class="mt-2 break-all font-mono text-xs">{{ connectedWallet() }}</p>
+                  <p class="mt-2 text-slate-400">
+                    La invitacion quedara asociada a esta wallet. Si no corresponde, cambia la cuenta activa en MetaMask y vuelve a conectar.
+                  </p>
+                </div>
+              }
+
+              <button
+                type="button"
+                class="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
+                [disabled]="!web3Service.isMetaMaskAvailable()"
+                (click)="handleConnectWallet()"
+              >
+                {{ connectedWallet() ? 'Cambiar wallet conectada' : 'Conectar MetaMask' }}
+              </button>
+
               <button
                 type="button"
                 class="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
-                [disabled]="!web3Service.isMetaMaskAvailable()"
+                [disabled]="!connectedWallet()"
                 (click)="handleAccept()"
               >
-                Conectar MetaMask y aceptar
+                Aceptar invitacion con esta wallet
               </button>
             </div>
           }
@@ -141,6 +160,7 @@ export class AcceptInvitationComponent implements OnInit {
   readonly state = signal<AcceptState>('idle');
   readonly errorMessage = signal<string | null>(null);
   readonly accepted = signal<InstitutionInvitationAccepted | null>(null);
+  readonly connectedWallet = signal<string | null>(null);
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
@@ -154,7 +174,8 @@ export class AcceptInvitationComponent implements OnInit {
 
   async handleAccept(): Promise<void> {
     const token = this.invitationToken();
-    if (!token) {
+    const walletAddress = this.connectedWallet();
+    if (!token || !walletAddress) {
       return;
     }
 
@@ -162,11 +183,6 @@ export class AcceptInvitationComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      const walletAddress = await this.web3Service.connectWallet();
-      if (!walletAddress) {
-        throw new Error('No se pudo conectar la wallet');
-      }
-
       const displayName = this.displayName().trim();
       const result = await this.academyService.acceptInvitationPublic({
         token,
@@ -176,6 +192,22 @@ export class AcceptInvitationComponent implements OnInit {
 
       this.accepted.set(result);
       this.state.set('success');
+    } catch (error: unknown) {
+      this.state.set('error');
+      this.errorMessage.set(toErrorMessage(error));
+    }
+  }
+
+  async handleConnectWallet(): Promise<void> {
+    this.errorMessage.set(null);
+
+    try {
+      const walletAddress = await this.web3Service.connectWallet();
+      if (!walletAddress) {
+        throw new Error('No se pudo conectar la wallet');
+      }
+
+      this.connectedWallet.set(walletAddress);
     } catch (error: unknown) {
       this.state.set('error');
       this.errorMessage.set(toErrorMessage(error));

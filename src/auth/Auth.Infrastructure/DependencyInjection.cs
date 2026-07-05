@@ -19,6 +19,17 @@ public static class DependencyInjection
             {
                 options.JwtSigningKey = envKey;
             }
+
+            var platformAdminAddresses = configuration["Auth:PlatformAdminAddresses"];
+            if (!string.IsNullOrWhiteSpace(platformAdminAddresses))
+            {
+                options.PlatformAdminAddresses = options.PlatformAdminAddresses
+                    .Concat(platformAdminAddresses.Split(
+                        [',', ';', ' '],
+                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            }
         });
 
         services.AddSingleton(TimeProvider.System);

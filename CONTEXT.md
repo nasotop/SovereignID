@@ -62,6 +62,8 @@ El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`
 
 **Frontend (web) — auth:** el cliente HTTP se **genera desde `docs/contracts/auth.openapi.json`** con `ng-openapi-gen` → `src/app/api/auth/` (`npm run gen:api:auth`, `rootUrl` vacío — rutas `/auth/*` directas a `auth-api`). `AuthApiService` envuelve el cliente generado y aplica `error.utils.ts`. El estado de sesión del cliente usa el mismo nombre que el wire: **`jwt`** (no `token`). Tras verify exitoso, la **`address` de sesión proviene de la respuesta HTTP** (identidad certificada por auth), no de la lectura previa de la wallet. El cliente **persiste `expiresAt`** del JWT y restaura sesión solo si aún no ha caducado. El mensaje SIWE usa **chain ID Sepolia (`11155111`)** vía constante; v1 no comprueba ni fuerza el cambio de red en la wallet antes de firmar.
 
+**Frontend (web) — sistema de diseño:** el mapa UX/UI y la propuesta de sistema de diseño viven en [`docs/web-design-system.md`](docs/web-design-system.md). El roadmap Academy/roles vive en [`docs/web-academy-ui-todo.md`](docs/web-academy-ui-todo.md). La app usa Angular standalone + Tailwind; hoy los patrones visuales están embebidos en templates y deben formalizarse gradualmente en `shared/ui`.
+
 **Frontend (web) — portales verifier/holder:** el cliente HTTP se **genera desde `docs/contracts/bff.openapi.json`** con `ng-openapi-gen` → `src/app/api/bff/` (`npm run gen:api:bff`, `rootUrl = '/api'`). Las fachadas `VerifierService` y `HolderService` envuelven el cliente BFF y aplican el seam de Problem Details (`error.utils.ts`). Ver [ADR-0004](docs/adr/0004-openapi-client-codegen.md) y [ADR-0005](docs/adr/0005-bff-kiota.md).
 
 ## Servicio `verifier`
@@ -204,16 +206,26 @@ El microservicio `academy` concentra el dominio academico del MVP: instituciones
 | Endpoint | Proposito |
 |----------|-----------|
 | `POST /academy/institutions` | Crea institucion y genera una invitacion admin |
+| `GET /academy/institutions` | Lista instituciones para platform admin |
 | `GET /academy/institutions/{institutionId}` | Consulta institucion |
 | `POST /academy/institutions/{institutionId}/careers` | Crea carrera |
 | `POST /academy/institutions/{institutionId}/students` | Crea estudiante, con wallet opcional |
+| `GET /academy/institutions/{institutionId}/students` | Lista estudiantes de la institucion |
+| `GET /academy/institutions/{institutionId}/students/{studentId}` | Consulta estudiante |
+| `POST /academy/institutions/{institutionId}/students/{studentId}/wallets` | Vincula wallet manual a estudiante |
 | `POST /academy/institutions/{institutionId}/invitations` | Invita un usuario institucional |
+| `POST /academy/institutions/{institutionId}/users/invitations` | Alias para invitar usuario institucional |
+| `GET /academy/institutions/{institutionId}/users` | Lista usuarios institucionales |
+| `PATCH /academy/institutions/{institutionId}/users/{userId}/role` | Cambia rol institucional |
+| `DELETE /academy/institutions/{institutionId}/users/{userId}` | Revoca acceso institucional |
 | `POST /academy/invitations/accept` | Acepta invitacion y vincula wallet MetaMask existente |
 Regla MVP: el backend **no crea cuentas MetaMask**. Las wallets son existentes y se vinculan cuando el usuario acepta una invitacion o cuando la institucion registra la wallet del estudiante. El link de invitacion expira; en BD se persiste solo el hash SHA-256 del token, no el token crudo.
 
+Roles MVP: `platform_admin` administra tenants/instituciones desde `user_global_roles`; `admin`, `issuer` y `viewer` viven en `institution_users` acotados a una institucion. El primer platform admin se crea con `database/seed-platform-admin.sql`; sobre una BD existente aplicar antes `database/patches/2026-07-04-academy-authz.sql`.
+
 La wallet/DID emisor de la institucion y la emision o vinculacion de titulos/credenciales quedan en el servicio `issuer`.
 
-Contrato de dominio: [`docs/academy-domain-contract.md`](docs/academy-domain-contract.md).
+Contrato de dominio: [`docs/academy-domain-contract.md`](docs/academy-domain-contract.md). Contrato de autorizacion: [`docs/authorization-domain-contract.md`](docs/authorization-domain-contract.md).
 
 ## Servicio `issuer`
 
