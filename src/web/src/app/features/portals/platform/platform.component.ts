@@ -73,79 +73,6 @@ type PlatformTab = 'institutions' | 'reports';
           <app-platform-reports-tab />
         }
       </main>
-
-      <app-modal
-        [isOpen]="createModalOpen()"
-        title="Crear institucion"
-        description="Registra una nueva institucion tenant y deja sus datos base disponibles para Academy."
-        size="lg"
-        (closed)="closeCreateModal()"
-      >
-        <form class="grid gap-4 md:grid-cols-2" (submit)="handleCreate($event)">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="code">Codigo</label>
-            <input id="code" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createCode()" (input)="updateSignal(createCode, $event)" required />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="countryCode">Pais</label>
-            <input id="countryCode" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createCountryCode()" (input)="updateSignal(createCountryCode, $event)" required />
-          </div>
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="legalName">Razon social</label>
-            <input id="legalName" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createLegalName()" (input)="updateSignal(createLegalName, $event)" required />
-          </div>
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="displayName">Nombre para mostrar</label>
-            <input id="displayName" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createDisplayName()" (input)="updateSignal(createDisplayName, $event)" required />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="contactEmail">Email de contacto</label>
-            <input id="contactEmail" type="email" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createContactEmail()" (input)="updateSignal(createContactEmail, $event)" required />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="websiteUrl">Sitio web opcional</label>
-            <input id="websiteUrl" type="url" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="createWebsiteUrl()" (input)="updateSignal(createWebsiteUrl, $event)" />
-          </div>
-          <div class="flex justify-end gap-3 md:col-span-2">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCreateModal()">Cancelar</button>
-            <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="creating()">
-              {{ creating() ? 'Creando...' : 'Crear institucion' }}
-            </button>
-          </div>
-        </form>
-      </app-modal>
-
-      <app-modal
-        [isOpen]="inviteModalOpen()"
-        title="Invitar usuario"
-        description="Envia un link temporal para que el usuario institucional conecte su wallet."
-        (closed)="closeInviteModal()"
-      >
-        <form class="grid gap-4" (submit)="handleInvite($event)">
-          <p class="text-sm text-slate-400">
-            La invitacion quedara asociada a
-            <span class="font-semibold text-white">{{ selectedInstitution()?.displayName }}</span>.
-          </p>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="inviteEmail">Email</label>
-            <input id="inviteEmail" type="email" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [value]="inviteEmail()" (input)="updateSignal(inviteEmail, $event)" required />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300" for="inviteRole">Rol</label>
-            <select id="inviteRole" name="platformInviteRole" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30" [ngModel]="inviteRole()" (ngModelChange)="inviteRole.set($event)">
-              @for (role of invitationRoles; track role) {
-                <option [value]="role">{{ role }}</option>
-              }
-            </select>
-          </div>
-          <div class="flex justify-end gap-3">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeInviteModal()">Cancelar</button>
-            <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="inviting()">
-              {{ inviting() ? 'Enviando...' : 'Enviar invitacion' }}
-            </button>
-          </div>
-        </form>
-      </app-modal>
     </div>
   `,
 })
@@ -162,14 +89,5 @@ export class PlatformComponent {
   async handleLogout(): Promise<void> {
     await this.authService.logout();
     await this.router.navigate(['/login']);
-  }
-
-  private resetCreateForm(): void {
-    this.createCode.set('');
-    this.createLegalName.set('');
-    this.createDisplayName.set('');
-    this.createContactEmail.set('');
-    this.createCountryCode.set(PLATFORM_DEFAULT_COUNTRY_CODE);
-    this.createWebsiteUrl.set('');
   }
 }
