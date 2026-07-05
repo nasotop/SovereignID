@@ -12,6 +12,8 @@ namespace SovereignID.Bff.Clients;
 
 public static class DependencyInjection
 {
+    public const string AcademyDirectHttpClientName = "AcademyDirect";
+
     public static IServiceCollection AddBffDownstreamClients(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -26,6 +28,11 @@ public static class DependencyInjection
         RegisterClient<IssuerApiClient>(services, options.Issuer);
         RegisterClient<AcademyApiClient>(services, options.Academy);
         RegisterClient<IdentityApiClient>(services, options.Identity);
+        services.AddTransient<AuthorizationForwardingHandler>();
+        services.AddHttpClient(
+                AcademyDirectHttpClientName,
+                client => client.BaseAddress = new Uri(options.Academy.TrimEnd('/') + "/"))
+            .AddHttpMessageHandler<AuthorizationForwardingHandler>();
 
         return services;
     }

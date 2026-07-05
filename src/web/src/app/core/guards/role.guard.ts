@@ -13,12 +13,14 @@ export function roleGuard(options: RoleGuardOptions): CanActivateFn {
       return router.createUrlTree(['/login']);
     }
 
-    if (options.platformAdmin && !authService.hasPlatformAdmin()) {
-      return router.createUrlTree(['/unauthorized']);
+    const checks: boolean[] = [];
+
+    if (options.platformAdmin) {
+      checks.push(authService.hasPlatformAdmin());
     }
 
-    if (options.holder && !authService.isHolder()) {
-      return router.createUrlTree(['/unauthorized']);
+    if (options.holder) {
+      checks.push(authService.isHolder());
     }
 
     if (options.institutionRoles?.length) {
@@ -28,9 +30,15 @@ export function roleGuard(options: RoleGuardOptions): CanActivateFn {
           options.institutionRoles!.includes(membership.role),
         );
 
-      if (!hasRole) {
-        return router.createUrlTree(['/unauthorized']);
-      }
+      checks.push(hasRole);
+    }
+
+    const allowed = options.mode === 'any'
+      ? checks.some(Boolean)
+      : checks.every(Boolean);
+
+    if (!allowed) {
+      return router.createUrlTree(['/unauthorized']);
     }
 
     return true;

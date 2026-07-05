@@ -20,6 +20,8 @@ describe('PlatformComponent', () => {
             createInstitution: vi.fn(),
             getInstitution: vi.fn(),
             createInvitation: vi.fn(),
+            inviteInstitutionUser: vi.fn(),
+            listInstitutions: vi.fn().mockResolvedValue([]),
           },
         },
         {
@@ -41,10 +43,11 @@ describe('PlatformComponent', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render institution create form', () => {
+  it('should render institution actions without an inline create form', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Crear institución');
-    expect(compiled.querySelector('#code')).toBeTruthy();
-    expect(compiled.querySelector('#contactEmail')).toBeTruthy();
+    expect(compiled.textContent).toContain('Crear institucion');
+    expect(compiled.textContent).toContain('Vista general');
+    expect(compiled.querySelector('dialog[open] #code')).toBeFalsy();
+    expect(compiled.querySelector('dialog[open] #contactEmail')).toBeFalsy();
   });
 });

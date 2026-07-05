@@ -25,4 +25,5 @@ export interface RoleGuardOptions {
   readonly platformAdmin?: boolean;
   readonly holder?: boolean;
   readonly institutionRoles?: readonly string[];
+  readonly mode?: 'all' | 'any';
 }

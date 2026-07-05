@@ -41,6 +41,17 @@ public sealed class InstitutionsController : ControllerBase
         return FromResult(result, success => CreatedAtAction(nameof(GetInstitution), new { institutionId = success.Institution.Id }, success));
     }
 
+    /// <summary>Lista instituciones activas para administracion de plataforma.</summary>
+    [HttpGet]
+    [Authorize(Policy = AuthorizationPolicies.PlatformAdmin)]
+    [ProducesResponseType(typeof(IReadOnlyList<InstitutionSummary>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InstitutionSummary>>> ListInstitutions(
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.ListInstitutionsAsync(cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
     /// <summary>Consulta una institucion por identificador.</summary>
     [HttpGet("{institutionId:guid}")]
     [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
@@ -92,6 +103,52 @@ public sealed class InstitutionsController : ControllerBase
         return FromResult(result, success => Created($"/academy/institutions/{institutionId}/students/{success.Id}", success));
     }
 
+    /// <summary>Lista estudiantes de una institucion.</summary>
+    [HttpGet("{institutionId:guid}/students")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
+    [ProducesResponseType(typeof(IReadOnlyList<StudentSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<StudentSummary>>> ListStudents(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.ListStudentsAsync(institutionId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Consulta un estudiante de una institucion.</summary>
+    [HttpGet("{institutionId:guid}/students/{studentId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
+    [ProducesResponseType(typeof(StudentSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StudentSummary>> GetStudent(
+        Guid institutionId,
+        Guid studentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.GetStudentAsync(institutionId, studentId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Vincula manualmente una wallet existente a un estudiante.</summary>
+    [HttpPost("{institutionId:guid}/students/{studentId:guid}/wallets")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(StudentWalletSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StudentWalletSummary>> AddStudentWallet(
+        Guid institutionId,
+        Guid studentId,
+        [FromBody] AddStudentWalletRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.AddStudentWalletAsync(
+            new AddStudentWalletCommand(institutionId, studentId, request.WalletAddress, request.MakePrimary),
+            cancellationToken);
+
+        return FromResult(result, success => Created($"/academy/institutions/{institutionId}/students/{studentId}/wallets/{success.Id}", success));
+    }
+
     /// <summary>Crea una invitacion para que un usuario de institucion vincule una wallet MetaMask existente.</summary>
     [HttpPost("{institutionId:guid}/invitations")]
     [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
@@ -109,6 +166,66 @@ public sealed class InstitutionsController : ControllerBase
             cancellationToken);
 
         return FromResult(result, success => Created($"/academy/institutions/{institutionId}/invitations/{success.Id}", success));
+    }
+
+    /// <summary>Crea una invitacion para un usuario institucional desde el recurso users.</summary>
+    [HttpPost("{institutionId:guid}/users/invitations")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(InstitutionInvitationCreated), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<ActionResult<InstitutionInvitationCreated>> CreateUserInvitation(
+        Guid institutionId,
+        [FromBody] CreateInstitutionInvitationRequest request,
+        CancellationToken cancellationToken) =>
+        CreateInvitation(institutionId, request, cancellationToken);
+
+    /// <summary>Lista usuarios institucionales y sus roles.</summary>
+    [HttpGet("{institutionId:guid}/users")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(IReadOnlyList<InstitutionUserSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<InstitutionUserSummary>>> ListInstitutionUsers(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.ListInstitutionUsersAsync(institutionId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Cambia el rol de un usuario institucional.</summary>
+    [HttpPatch("{institutionId:guid}/users/{userId:guid}/role")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(InstitutionUserSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<InstitutionUserSummary>> UpdateInstitutionUserRole(
+        Guid institutionId,
+        Guid userId,
+        [FromBody] UpdateInstitutionUserRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.UpdateInstitutionUserRoleAsync(
+            institutionId,
+            userId,
+            request.Role,
+            cancellationToken);
+
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Revoca el acceso de un usuario a una institucion.</summary>
+    [HttpDelete("{institutionId:guid}/users/{userId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<bool>> RevokeInstitutionUser(
+        Guid institutionId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.RevokeInstitutionUserAsync(institutionId, userId, cancellationToken);
+        return FromResult(result, _ => NoContent());
     }
 
     private static ActionResult<T> FromResult<T>(

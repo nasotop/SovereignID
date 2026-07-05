@@ -18,6 +18,8 @@ internal sealed class AcademyDbContext : DbContext
 
     public DbSet<InstitutionUserEntity> InstitutionUsers => Set<InstitutionUserEntity>();
 
+    public DbSet<HolderProfileEntity> HolderProfiles => Set<HolderProfileEntity>();
+
     public DbSet<StudentEntity> Students => Set<StudentEntity>();
 
     public DbSet<StudentWalletEntity> StudentWallets => Set<StudentWalletEntity>();
@@ -40,8 +42,8 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
             entity.Property(e => e.WebsiteUrl).HasColumnName("website_url").HasMaxLength(300);
             entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.RegisteredAt).HasColumnName("registered_at");
-            entity.Property(e => e.DeactivatedAt).HasColumnName("deactivated_at");
+            entity.Property(e => e.RegisteredAt).HasColumnName("registered_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.DeactivatedAt).HasColumnName("deactivated_at").HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<InstitutionInvitationEntity>(entity =>
@@ -54,12 +56,12 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.Role).HasColumnName("role").HasColumnType("user_role");
             entity.Property(e => e.TokenHash).HasColumnName("token_hash").HasMaxLength(64);
             entity.Property(e => e.InvitationUrl).HasColumnName("invitation_url").HasMaxLength(700);
-            entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
-            entity.Property(e => e.AcceptedAt).HasColumnName("accepted_at");
+            entity.Property(e => e.ExpiresAt).HasColumnName("expires_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.AcceptedAt).HasColumnName("accepted_at").HasColumnType("timestamp without time zone");
             entity.Property(e => e.AcceptedByUserId).HasColumnName("accepted_by_user_id");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp without time zone");
             entity.Property(e => e.CreatedByUserId).HasColumnName("created_by_user_id");
-            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at");
+            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at").HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<UserEntity>(entity =>
@@ -72,8 +74,22 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(200);
             entity.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(120);
             entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.LastLoginAt).HasColumnName("last_login_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.LastLoginAt).HasColumnName("last_login_at").HasColumnType("timestamp without time zone");
+        });
+
+        modelBuilder.Entity<HolderProfileEntity>(entity =>
+        {
+            entity.ToTable("holder_profiles");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(180);
+            entity.Property(e => e.BirthDate).HasColumnName("birth_date").HasColumnType("date");
+            entity.Property(e => e.ContactEmail).HasColumnName("contact_email").HasMaxLength(200);
+            entity.Property(e => e.CountryCode).HasColumnName("country_code").HasMaxLength(2);
+            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(40);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<InstitutionUserEntity>(entity =>
@@ -85,8 +101,8 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Role).HasColumnName("role").HasColumnType("user_role");
             entity.Property(e => e.GrantedByUserId).HasColumnName("granted_by_user_id");
-            entity.Property(e => e.GrantedAt).HasColumnName("granted_at");
-            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at");
+            entity.Property(e => e.GrantedAt).HasColumnName("granted_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.RevokedAt).HasColumnName("revoked_at").HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<StudentEntity>(entity =>
@@ -98,7 +114,7 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.ExternalReference).HasColumnName("external_reference").HasMaxLength(80);
             entity.Property(e => e.EnrollmentYear).HasColumnName("enrollment_year");
             entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<StudentWalletEntity>(entity =>
@@ -111,8 +127,8 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.Did).HasColumnName("did").HasMaxLength(200);
             entity.Property(e => e.Status).HasColumnName("status").HasColumnType("wallet_status");
             entity.Property(e => e.IsPrimary).HasColumnName("is_primary");
-            entity.Property(e => e.ActivatedAt).HasColumnName("activated_at");
-            entity.Property(e => e.RotatedAt).HasColumnName("rotated_at");
+            entity.Property(e => e.ActivatedAt).HasColumnName("activated_at").HasColumnType("timestamp without time zone");
+            entity.Property(e => e.RotatedAt).HasColumnName("rotated_at").HasColumnType("timestamp without time zone");
             entity.Property(e => e.RotationReason).HasColumnName("rotation_reason").HasMaxLength(80);
         });
 
@@ -125,7 +141,7 @@ internal sealed class AcademyDbContext : DbContext
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(40);
             entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(200);
             entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp without time zone");
         });
 
     }

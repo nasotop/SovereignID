@@ -1,6 +1,8 @@
 using Bff.Api;
+using Bff.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using SovereignID.Bff.Clients.Academy.Models;
+using SovereignID.Bff.Clients;
 using AcademyApiClient = SovereignID.Bff.Clients.Academy.ApiClient;
 
 namespace Bff.Api.Controllers;
@@ -8,7 +10,9 @@ namespace Bff.Api.Controllers;
 [ApiController]
 [Route("academy/institutions")]
 [Produces("application/json")]
-public sealed class AcademyInstitutionsController(AcademyApiClient academy) : ControllerBase
+public sealed class AcademyInstitutionsController(
+    AcademyApiClient academy,
+    IHttpClientFactory httpClientFactory) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(InstitutionCreated), StatusCodes.Status201Created)]
@@ -20,6 +24,13 @@ public sealed class AcademyInstitutionsController(AcademyApiClient academy) : Co
         DownstreamResults.CreatedAsync(
             () => academy.Academy.Institutions.PostAsync(request, cancellationToken: cancellationToken),
             success => $"/academy/institutions/{success!.Institution!.Id}");
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<InstitutionSummary>), StatusCodes.Status200OK)]
+    public Task<IActionResult> ListInstitutions(CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, "academy/institutions"),
+            cancellationToken);
 
     [HttpGet("{institutionId:guid}")]
     [ProducesResponseType(typeof(InstitutionSummary), StatusCodes.Status200OK)]
@@ -49,12 +60,51 @@ public sealed class AcademyInstitutionsController(AcademyApiClient academy) : Co
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status409Conflict)]
     public Task<IActionResult> CreateStudent(
         Guid institutionId,
-        [FromBody] CreateStudentRequest request,
+        [FromBody] Bff.Api.Models.CreateStudentRequest request,
         CancellationToken cancellationToken) =>
-        DownstreamResults.CreatedAsync(
-            () => academy.Academy.Institutions[institutionId].Students
-                .PostAsync(request, cancellationToken: cancellationToken),
-            success => $"/academy/institutions/{institutionId}/students/{success!.Id}");
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Post,
+                $"academy/institutions/{institutionId}/students",
+                request),
+            cancellationToken);
+
+    [HttpGet("{institutionId:guid}/students")]
+    [ProducesResponseType(typeof(IReadOnlyList<StudentSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> ListStudents(
+        Guid institutionId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, $"academy/institutions/{institutionId}/students"),
+            cancellationToken);
+
+    [HttpGet("{institutionId:guid}/students/{studentId:guid}")]
+    [ProducesResponseType(typeof(StudentSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> GetStudent(
+        Guid institutionId,
+        Guid studentId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, $"academy/institutions/{institutionId}/students/{studentId}"),
+            cancellationToken);
+
+    [HttpPost("{institutionId:guid}/students/{studentId:guid}/wallets")]
+    [ProducesResponseType(typeof(StudentWalletSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> AddStudentWallet(
+        Guid institutionId,
+        Guid studentId,
+        [FromBody] AddStudentWalletRequest request,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Post,
+                $"academy/institutions/{institutionId}/students/{studentId}/wallets",
+                request),
+            cancellationToken);
 
     [HttpPost("{institutionId:guid}/invitations")]
     [ProducesResponseType(typeof(InstitutionInvitationCreated), StatusCodes.Status201Created)]
@@ -68,4 +118,88 @@ public sealed class AcademyInstitutionsController(AcademyApiClient academy) : Co
             () => academy.Academy.Institutions[institutionId].Invitations
                 .PostAsync(request, cancellationToken: cancellationToken),
             success => $"/academy/institutions/{institutionId}/invitations/{success!.Id}");
+
+    [HttpPost("{institutionId:guid}/users/invitations")]
+    [ProducesResponseType(typeof(InstitutionInvitationCreated), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> CreateUserInvitation(
+        Guid institutionId,
+        [FromBody] CreateInstitutionInvitationRequest request,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Post,
+                $"academy/institutions/{institutionId}/users/invitations",
+                request),
+            cancellationToken);
+
+    [HttpGet("{institutionId:guid}/users")]
+    [ProducesResponseType(typeof(IReadOnlyList<InstitutionUserSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> ListInstitutionUsers(
+        Guid institutionId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, $"academy/institutions/{institutionId}/users"),
+            cancellationToken);
+
+    [HttpPatch("{institutionId:guid}/users/{userId:guid}/role")]
+    [ProducesResponseType(typeof(InstitutionUserSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> UpdateInstitutionUserRole(
+        Guid institutionId,
+        Guid userId,
+        [FromBody] UpdateInstitutionUserRoleRequest request,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Patch,
+                $"academy/institutions/{institutionId}/users/{userId}/role",
+                request),
+            cancellationToken);
+
+    [HttpDelete("{institutionId:guid}/users/{userId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> RevokeInstitutionUser(
+        Guid institutionId,
+        Guid userId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Delete, $"academy/institutions/{institutionId}/users/{userId}"),
+            cancellationToken);
+
+    private static HttpRequestMessage CreateJsonRequest<T>(
+        HttpMethod method,
+        string path,
+        T body) =>
+        new(method, path)
+        {
+            Content = JsonContent.Create(body)
+        };
+
+    private async Task<IActionResult> SendAcademyAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var httpClient = httpClientFactory.CreateClient(DependencyInjection.AcademyDirectHttpClientName);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+        {
+            return NoContent();
+        }
+
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+
+        return new ContentResult
+        {
+            StatusCode = (int)response.StatusCode,
+            Content = content,
+            ContentType = contentType,
+        };
+    }
 }

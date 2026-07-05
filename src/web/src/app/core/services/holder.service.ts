@@ -1,11 +1,18 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 import { Api } from '../../api/bff/api';
 import { issuerHoldersMeCredentialsCredentialIdGet } from '../../api/bff/fn/holder-credentials/issuer-holders-me-credentials-credential-id-get';
 import { issuerHoldersMeCredentialsGet } from '../../api/bff/fn/holder-credentials/issuer-holders-me-credentials-get';
 import { HolderCredentialDetail } from '../../api/bff/models/holder-credential-detail';
 import { HolderCredentialSummary } from '../../api/bff/models/holder-credential-summary';
+import { BFF_API_BASE } from '../constants/api.constants';
+import {
+  HolderDashboard,
+  HolderProfile,
+  UpdateHolderProfilePayload,
+} from '../models/holder.models';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
 import { AuthService } from './auth.service';
 
@@ -28,6 +35,7 @@ export class HolderUnauthorizedError extends Error {
 })
 export class HolderService {
   private readonly api = inject(Api);
+  private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
 
   private requireJwt(): string {
@@ -46,6 +54,35 @@ export class HolderService {
       return await this.api.invoke(issuerHoldersMeCredentialsGet, {});
     } catch (error: unknown) {
       throw this.mapApiError(error, 'No se pudieron cargar las credenciales');
+    }
+  }
+
+  async getMyDashboard(): Promise<HolderDashboard> {
+    this.requireJwt();
+
+    try {
+      return await firstValueFrom(
+        this.http.get<HolderDashboard>(`${BFF_API_BASE}/academy/holders/me`),
+      );
+    } catch (error: unknown) {
+      throw this.mapApiError(error, 'No se pudo cargar el perfil del holder');
+    }
+  }
+
+  async updateMyProfile(
+    body: UpdateHolderProfilePayload,
+  ): Promise<HolderProfile> {
+    this.requireJwt();
+
+    try {
+      return await firstValueFrom(
+        this.http.put<HolderProfile>(
+          `${BFF_API_BASE}/academy/holders/me/profile`,
+          body,
+        ),
+      );
+    } catch (error: unknown) {
+      throw this.mapApiError(error, 'No se pudo actualizar el perfil');
     }
   }
 

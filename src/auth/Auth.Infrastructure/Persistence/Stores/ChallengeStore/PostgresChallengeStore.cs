@@ -77,7 +77,7 @@ internal sealed class PostgresChallengeStore : IChallengeStore
             row.ConsumedAt is not null);
 
     private static DateTime ToUtcDateTime(DateTimeOffset value) =>
-        value.UtcDateTime;
+        DateTime.SpecifyKind(value.UtcDateTime, DateTimeKind.Unspecified);
 
     private static DateTimeOffset ToUtcOffset(DateTime value) =>
         new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
