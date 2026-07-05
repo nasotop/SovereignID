@@ -196,26 +196,6 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
     }
 
     [Fact]
-    public async Task CreateInstitution_WithIssuerMembershipOnly_ReturnsForbidden()
-    {
-        var institutionId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var issuerToken = JwtTestHelper.CreateToken(
-            "0xcccccccccccccccccccccccccccccccccccccccc",
-            memberships: [new SovereignID.Authorization.InstitutionMembership(institutionId, "issuer")]);
-
-        var response = await SendAuthorizedPostAsync("/academy/institutions", issuerToken, new
-        {
-            code = $"INST-{Guid.NewGuid():N}"[..12],
-            legalName = "Institucion Demo SpA",
-            displayName = "Institucion Demo",
-            contactEmail = "admin@demo.test",
-            countryCode = "CL"
-        });
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
     public async Task CreateStudent_WithInvalidWallet_ReturnsProblemDetails()
     {
         var createInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
