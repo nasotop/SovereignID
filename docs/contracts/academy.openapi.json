@@ -9,11 +9,6 @@
     },
     "version": "v1"
   },
-  "servers": [
-    {
-      "url": "http://127.0.0.1:5195/"
-    }
-  ],
   "paths": {
     "/health": {
       "get": {
@@ -25,7 +20,85 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/academy/holders/me": {
+      "get": {
+        "tags": [
+          "HolderProfile"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolderDashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/academy/holders/me/profile": {
+      "put": {
+        "tags": [
+          "HolderProfile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHolderProfileRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHolderProfileRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHolderProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolderProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
             }
           }
         }
@@ -843,7 +916,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -1031,6 +1104,149 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "HolderDashboard": {
+        "required": [
+          "profile",
+          "institutions"
+        ],
+        "type": "object",
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/HolderProfile"
+          },
+          "institutions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HolderInstitutionSummary"
+            }
+          }
+        }
+      },
+      "HolderInstitutionSummary": {
+        "required": [
+          "institutionId",
+          "institutionCode",
+          "institutionName",
+          "studentId",
+          "externalReference",
+          "enrollmentYear",
+          "walletAddress",
+          "did",
+          "isPrimary",
+          "linkedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "institutionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "institutionCode": {
+            "type": "string"
+          },
+          "institutionName": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "enrollmentYear": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "walletAddress": {
+            "type": "string"
+          },
+          "did": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HolderProfile": {
+        "required": [
+          "walletAddress",
+          "did",
+          "displayName",
+          "fullName",
+          "birthDate",
+          "contactEmail",
+          "countryCode",
+          "phoneNumber",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "walletAddress": {
+            "type": "string"
+          },
+          "did": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fullName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -1372,6 +1588,56 @@
           }
         }
       },
+      "UpdateHolderProfileRequest": {
+        "required": [
+          "displayName",
+          "fullName",
+          "birthDate",
+          "contactEmail",
+          "countryCode",
+          "phoneNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fullName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "birthDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "countryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UpdateInstitutionUserRoleRequest": {
         "required": [
           "role"
@@ -1388,6 +1654,9 @@
   "tags": [
     {
       "name": "Health"
+    },
+    {
+      "name": "HolderProfile"
     },
     {
       "name": "InstitutionInvitations"
