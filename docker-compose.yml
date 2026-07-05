@@ -34,13 +34,16 @@ services:
       Auth__JwtTtlHours: ${Auth__JwtTtlHours:-24}
       Auth__PlatformAdminAddresses: ${Auth__PlatformAdminAddresses:-}
       Persistence__Provider: ${Persistence__Provider:-InMemory}
-      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:-}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
     expose:
       - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - sovereign-net
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/auth/nonce"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
