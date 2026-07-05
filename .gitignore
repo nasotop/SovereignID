@@ -5,3 +5,4 @@
 /graphify-out
 **/bin/**
 **/obj/**
+/.agents

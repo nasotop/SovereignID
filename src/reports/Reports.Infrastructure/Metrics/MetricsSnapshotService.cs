@@ -29,7 +29,9 @@ internal sealed class PostgresMetricsSnapshotService(ReportsDbContext db, TimePr
             .Select(i => i.Id)
             .ToListAsync(cancellationToken);
 
-        var computedAt = timeProvider.GetUtcNow().UtcDateTime;
+        var computedAt = DateTime.SpecifyKind(
+            timeProvider.GetUtcNow().UtcDateTime,
+            DateTimeKind.Unspecified);
 
         foreach (var institutionId in institutionIds)
         {
@@ -111,7 +113,9 @@ internal sealed class PostgresMetricsSnapshotService(ReportsDbContext db, TimePr
 
     private static (DateTime Start, DateTime End) DayBounds(DateOnly date)
     {
-        var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var start = DateTime.SpecifyKind(
+            date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            DateTimeKind.Unspecified);
         return (start, start.AddDays(1));
     }
 }

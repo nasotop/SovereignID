@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "skills": {
+    "antv-g2-chart": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/antv-g2-chart/SKILL.md",
+      "computedHash": "34237b530a87a704dc179f6be1dae877be011b30e0c668b2e940e4c61763bf4a"
+    },
+    "antv-g6-graph": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/antv-g6-graph/SKILL.md",
+      "computedHash": "9c601682c48b472f274ceabcd02564d752c427f05023ad9d9d19b4ec226324e5"
+    },
+    "antv-s2-expert": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/antv-s2-expert/SKILL.md",
+      "computedHash": "987abfafbc863d38d5e21a95a229ca75caf7b578d4cd62b6e4f840aacf2d9810"
+    },
+    "antv-skills-maintainer": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": ".github/skills/antv-skills-maintainer/SKILL.md",
+      "computedHash": "00c9c6f069287759f6789fd30eff614b229f5a863a455a9927d967d76d91afea"
+    },
+    "antv-x6-editor": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/antv-x6-editor/SKILL.md",
+      "computedHash": "cd7a79da311332b0dfcef81c936e156cb8f779dcdbc64bc66427938664b32230"
+    },
+    "chart-visualization": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/chart-visualization/SKILL.md",
+      "computedHash": "23f0cd837bcef40b5d84e9f9e24de1f010fa2aa9bcc01ad3b5fd71d082f576c6"
+    },
+    "icon-retrieval": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/icon-retrieval/SKILL.md",
+      "computedHash": "b26dbc91111156c7f345b7e09342c33e8731e92ae1da2519078ad9975a98eb0b"
+    },
+    "infographic-creator": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/infographic-creator/SKILL.md",
+      "computedHash": "7ba6710d1e2eab14018d676a32ad569afca03d52396d75cb772b97de72e88efc"
+    },
+    "narrative-text-visualization": {
+      "source": "antvis/chart-visualization-skills",
+      "sourceType": "github",
+      "skillPath": "skills/narrative-text-visualization/SKILL.md",
+      "computedHash": "1aaec6dd2ec2cf6557876ad74577a6e3ae76bd809f6f08c892f2cd6416eb0fb4"
+    }
+  }
+}

@@ -91,13 +91,13 @@ public sealed class AcademyInstitutionsController(
             cancellationToken);
 
     [HttpPost("{institutionId:guid}/students/{studentId:guid}/wallets")]
-    [ProducesResponseType(typeof(StudentWalletSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(Bff.Api.Models.StudentWalletSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
     public Task<IActionResult> AddStudentWallet(
         Guid institutionId,
         Guid studentId,
-        [FromBody] AddStudentWalletRequest request,
+        [FromBody] Bff.Api.Models.AddStudentWalletRequest request,
         CancellationToken cancellationToken) =>
         SendAcademyAsync(
             CreateJsonRequest(
@@ -135,7 +135,7 @@ public sealed class AcademyInstitutionsController(
             cancellationToken);
 
     [HttpGet("{institutionId:guid}/users")]
-    [ProducesResponseType(typeof(IReadOnlyList<InstitutionUserSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<Bff.Api.Models.InstitutionUserSummary>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
     public Task<IActionResult> ListInstitutionUsers(
         Guid institutionId,
@@ -145,13 +145,13 @@ public sealed class AcademyInstitutionsController(
             cancellationToken);
 
     [HttpPatch("{institutionId:guid}/users/{userId:guid}/role")]
-    [ProducesResponseType(typeof(InstitutionUserSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Bff.Api.Models.InstitutionUserSummary), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
     public Task<IActionResult> UpdateInstitutionUserRole(
         Guid institutionId,
         Guid userId,
-        [FromBody] UpdateInstitutionUserRoleRequest request,
+        [FromBody] Bff.Api.Models.UpdateInstitutionUserRoleRequest request,
         CancellationToken cancellationToken) =>
         SendAcademyAsync(
             CreateJsonRequest(

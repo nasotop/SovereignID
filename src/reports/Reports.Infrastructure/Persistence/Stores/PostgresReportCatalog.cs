@@ -48,7 +48,7 @@ internal sealed class PostgresReportCatalog(ReportsDbContext db, TimeProvider ti
         DateOnly asOf,
         CancellationToken cancellationToken = default)
     {
-        var asOfEnd = asOf.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var asOfEnd = ToTimestamp(asOf.AddDays(1));
         var totalStudents = await db.Students.AsNoTracking()
             .CountAsync(
                 s => s.InstitutionId == institutionId
@@ -112,15 +112,26 @@ internal sealed class PostgresReportCatalog(ReportsDbContext db, TimeProvider ti
         DateOnly asOf,
         CancellationToken cancellationToken = default)
     {
-        var asOfEnd = asOf.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-        var rows = await db.Institutions.AsNoTracking()
+        var asOfEnd = ToTimestamp(asOf.AddDays(1));
+
+        var studentCounts = await db.Students.AsNoTracking()
+            .Where(s => s.IsActive && s.CreatedAt < asOfEnd)
+            .GroupBy(s => s.InstitutionId)
+            .Select(g => new { InstitutionId = g.Key, Total = g.Count() })
+            .ToDictionaryAsync(x => x.InstitutionId, x => x.Total, cancellationToken);
+
+        var institutions = await db.Institutions.AsNoTracking()
             .Where(i => i.IsActive)
+            .Select(i => new { i.Id, i.DisplayName })
+            .ToListAsync(cancellationToken);
+
+        var rows = institutions
             .Select(i => new PlatformStudentsItem(
                 i.Id,
                 i.DisplayName,
-                i.Students.Count(s => s.IsActive && s.CreatedAt < asOfEnd)))
+                studentCounts.GetValueOrDefault(i.Id)))
             .OrderByDescending(i => i.TotalStudents)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return new PlatformStudentsRanking(asOf, rows);
     }
@@ -297,7 +308,12 @@ internal sealed class PostgresReportCatalog(ReportsDbContext db, TimeProvider ti
 
     private static (DateTime Start, DateTime End) DayBounds(DateOnly date)
     {
-        var start = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var start = ToTimestamp(date);
         return (start, start.AddDays(1));
     }
+
+    private static DateTime ToTimestamp(DateOnly date) =>
+        DateTime.SpecifyKind(
+            date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            DateTimeKind.Unspecified);
 }
