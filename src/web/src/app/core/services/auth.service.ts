@@ -13,6 +13,7 @@ import {
   StorageType,
 } from '../models/auth.models';
 import { toThrownError } from '../utils/error.utils';
+import { extractAuthClaimsFromJwt } from '../utils/jwt-claims.util';
 import { AuthApiService } from './auth-api.service';
 import { Web3Service } from './web3.service';
 
@@ -152,18 +153,29 @@ export class AuthService {
   }
 
   private applyVerifyResponse(verifyResponse: VerifyResponse): void {
+    const jwtClaims = extractAuthClaimsFromJwt(verifyResponse.jwt);
+    const membershipsFromResponse = (verifyResponse.memberships ?? []).map(
+      (membership) => ({
+        institutionId: membership.institutionId,
+        role: membership.role,
+      }),
+    );
+
     this.setAuthState({
       isAuthenticated: true,
       jwt: verifyResponse.jwt,
       address: getAddress(verifyResponse.address),
       expiresAt: verifyResponse.expiresAt,
-      userId: verifyResponse.userId ?? null,
-      platformAdmin: verifyResponse.platformAdmin ?? false,
-      holder: verifyResponse.holder ?? false,
-      memberships: (verifyResponse.memberships ?? []).map((membership) => ({
-        institutionId: membership.institutionId,
-        role: membership.role,
-      })),
+      userId: verifyResponse.userId ?? jwtClaims?.userId ?? null,
+      platformAdmin:
+        Boolean(verifyResponse.platformAdmin) ||
+        (jwtClaims?.platformAdmin ?? false),
+      holder:
+        Boolean(verifyResponse.holder) || (jwtClaims?.holder ?? false),
+      memberships:
+        membershipsFromResponse.length > 0
+          ? membershipsFromResponse
+          : [...(jwtClaims?.memberships ?? [])],
     });
   }
 
@@ -266,17 +278,52 @@ export class AuthService {
     }
 
     const memberships = this.parseMemberships(storage.getItem('auth_memberships'));
+    const jwtClaims = extractAuthClaimsFromJwt(jwt);
+    const platformAdmin = this.resolvePlatformAdmin(
+      storage.getItem('auth_platform_admin'),
+      jwtClaims,
+    );
+    const holder = this.resolveHolder(storage.getItem('auth_holder'), jwtClaims);
+    const userId = storage.getItem('auth_user_id') || jwtClaims?.userId || null;
+    const resolvedMemberships =
+      memberships.length > 0 ? memberships : [...(jwtClaims?.memberships ?? [])];
 
     this.setAuthState({
       isAuthenticated: true,
       jwt,
       address: getAddress(address),
       expiresAt,
-      userId: storage.getItem('auth_user_id') || null,
-      platformAdmin: storage.getItem('auth_platform_admin') === 'true',
-      holder: storage.getItem('auth_holder') === 'true',
-      memberships,
+      userId,
+      platformAdmin,
+      holder,
+      memberships: resolvedMemberships,
     });
+
+    if (jwtClaims) {
+      this.saveAuthState();
+    }
+  }
+
+  private resolvePlatformAdmin(
+    stored: string | null,
+    jwtClaims: ReturnType<typeof extractAuthClaimsFromJwt>,
+  ): boolean {
+    if (stored === 'true') {
+      return true;
+    }
+
+    return jwtClaims?.platformAdmin ?? false;
+  }
+
+  private resolveHolder(
+    stored: string | null,
+    jwtClaims: ReturnType<typeof extractAuthClaimsFromJwt>,
+  ): boolean {
+    if (stored === 'true') {
+      return true;
+    }
+
+    return jwtClaims?.holder ?? false;
   }
 
   private parseMemberships(raw: string | null): InstitutionMembership[] {
