@@ -174,40 +174,6 @@ services:
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Academic domain service (institutions, students, invitations)"
 
-  identity-api:
-    build:
-      context: .
-      dockerfile: src/identity/Identity.Api/Dockerfile
-      args:
-        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
-    image: sovereignid-identity:latest
-    container_name: sovereignid-identity
-    restart: unless-stopped
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
-      Persistence__Provider: ${Identity__Persistence__Provider:-InMemory}
-    expose:
-      - "8080"
-    networks:
-      - sovereign-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    labels:
-      com.sovereignid.service: identity-api
-      com.sovereignid.version: "1.0"
-      com.sovereignid.description: "Identity service (health scaffold; business endpoints TBD)"
-
   reports-api:
     build:
       context: .
@@ -264,7 +230,6 @@ services:
       Downstream__Verifier: http://verifier-api:8080
       Downstream__Issuer: http://issuer-api:8080
       Downstream__Academy: http://academy-api:8080
-      Downstream__Identity: http://identity-api:8080
       Downstream__Reports: http://reports-api:8080
     expose:
       - "8080"
@@ -274,8 +239,6 @@ services:
       issuer-api:
         condition: service_started
       academy-api:
-        condition: service_started
-      identity-api:
         condition: service_started
       reports-api:
         condition: service_started

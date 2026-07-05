@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
 using AcademyApiClient = SovereignID.Bff.Clients.Academy.ApiClient;
-using IdentityApiClient = SovereignID.Bff.Clients.Identity.ApiClient;
 using IssuerApiClient = SovereignID.Bff.Clients.Issuer.ApiClient;
 using VerifierApiClient = SovereignID.Bff.Clients.Verifier.ApiClient;
 
@@ -28,7 +27,6 @@ public static class DependencyInjection
         RegisterClient<VerifierApiClient>(services, options.Verifier);
         RegisterClient<IssuerApiClient>(services, options.Issuer);
         RegisterClient<AcademyApiClient>(services, options.Academy);
-        RegisterClient<IdentityApiClient>(services, options.Identity);
         services.AddTransient<AuthorizationForwardingHandler>();
         services.AddHttpClient(
                 AcademyDirectHttpClientName,

@@ -37,7 +37,7 @@ internal static class BffOpenApiExtensions
                     Version = "v1",
                     Description =
                         "Backend-for-Frontend de SovereignID. Expone al portal web un contrato HTTP pass-through "
-                        + "hacia los microservicios internos (verifier, issuer, academy, identity, reports) mediante clientes Kiota y HttpClient directo. "
+                        + "hacia los microservicios internos (verifier, issuer, academy, reports) mediante clientes Kiota y HttpClient directo. "
                         + "El navegador accede vía prefijo `/api/` (nginx strip). Auth SIWE permanece directo en `/auth/`.",
                     Contact = new()
                     {
