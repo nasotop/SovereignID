@@ -14,6 +14,7 @@ public sealed class VerificationsController(VerifierApiClient verifier) : Contro
     [HttpPost]
     [ProducesResponseType(typeof(VerificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(KiotaVerifier.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(KiotaVerifier.ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public Task<IActionResult> Verify(
         [FromBody] VerificationRequest request,
         CancellationToken cancellationToken)

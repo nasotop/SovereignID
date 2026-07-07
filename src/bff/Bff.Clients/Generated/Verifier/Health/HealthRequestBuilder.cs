@@ -33,7 +33,7 @@ namespace SovereignID.Bff.Clients.Verifier.Health
         {
         }
         /// <summary>
-        /// Comprueba que el servicio está operativo (liveness check).
+        /// Comprueba que el servicio estÃ¡ operativo (liveness check).
         /// </summary>
         /// <returns>A <see cref="Stream"/></returns>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
@@ -51,7 +51,7 @@ namespace SovereignID.Bff.Clients.Verifier.Health
             return await RequestAdapter.SendPrimitiveAsync<Stream>(requestInfo, default, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
-        /// Comprueba que el servicio está operativo (liveness check).
+        /// Comprueba que el servicio estÃ¡ operativo (liveness check).
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>

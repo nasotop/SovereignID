@@ -76,7 +76,7 @@ internal static class VerifierOpenApiExtensions
                 {
                     schema.Properties!["validationSource"] = new OpenApiSchema
                     {
-                        Type = JsonSchemaType.String,
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
                         Enum = ValidationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),
@@ -84,7 +84,7 @@ internal static class VerifierOpenApiExtensions
 
                     schema.Properties!["revocationSource"] = new OpenApiSchema
                     {
-                        Type = JsonSchemaType.String,
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
                         Enum = RevocationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),

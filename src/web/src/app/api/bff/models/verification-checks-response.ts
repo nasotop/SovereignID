@@ -7,7 +7,7 @@ export interface VerificationChecksResponse {
   notExpired: (boolean | null);
   notRevoked: (boolean | null);
   onChainExists: (boolean | null);
-  revocationSource: 'bd' | 'on_chain' | 'both';
+  revocationSource: ('bd' | 'on_chain' | 'both' | null);
   signatureValid: (boolean | null);
-  validationSource: 'on_chain' | 'bd_fallback_inconclusive' | 'bd_fallback_rejected' | 'not_evaluated';
+  validationSource: ('on_chain' | 'bd_fallback_inconclusive' | 'bd_fallback_rejected' | 'not_evaluated' | null);
 }
