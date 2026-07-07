@@ -9,9 +9,17 @@ import { toErrorMessage } from '../../../core/utils/error.utils';
 
 type VerifierState = 'idle' | 'loading' | 'result' | 'error';
 
-type CheckKey = keyof VerificationChecksResponse;
+type BooleanCheckKey =
+  | 'found'
+  | 'notRevoked'
+  | 'notExpired'
+  | 'hashMatches'
+  | 'onChainExists'
+  | 'signatureValid';
 
-const CHECK_LABELS: Record<CheckKey, string> = {
+type SourceCheckKey = 'validationSource' | 'revocationSource';
+
+const BOOLEAN_CHECK_LABELS: Record<BooleanCheckKey, string> = {
   found: 'Encontrada en registro',
   notRevoked: 'No revocada',
   notExpired: 'No expirada',
@@ -20,11 +28,36 @@ const CHECK_LABELS: Record<CheckKey, string> = {
   signatureValid: 'Firma válida',
 };
 
+const SOURCE_CHECK_LABELS: Record<SourceCheckKey, string> = {
+  validationSource: 'Fuente de validación de firma',
+  revocationSource: 'Fuente de revocación',
+};
+
+const VALIDATION_SOURCE_LABELS: Record<
+  VerificationChecksResponse['validationSource'],
+  string
+> = {
+  on_chain: 'On-chain',
+  bd_fallback_inconclusive: 'BD (inconcluso)',
+  bd_fallback_rejected: 'BD (rechazado)',
+  not_evaluated: 'No evaluado',
+};
+
+const REVOCATION_SOURCE_LABELS: Record<
+  VerificationChecksResponse['revocationSource'],
+  string
+> = {
+  bd: 'Base de datos',
+  on_chain: 'On-chain',
+  both: 'BD y on-chain',
+};
+
 const RESULT_LABELS: Record<VerificationResponse['result'], string> = {
   valid: 'Credencial válida',
   revoked: 'Credencial revocada',
   expired: 'Credencial expirada',
   not_found: 'Credencial inexistente',
+  integrity_failed: 'Integridad comprometida',
 };
 
 const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
@@ -32,6 +65,7 @@ const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
   revoked: 'bg-red-500/20 text-red-300 border-red-500/40',
   expired: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
   not_found: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  integrity_failed: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
 };
 
 @Component({
@@ -158,13 +192,23 @@ const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
               <div>
                 <h3 class="text-sm font-medium text-slate-300 mb-3">Checks</h3>
                 <ul class="space-y-2">
-                  @for (check of checkEntries; track check.key) {
+                  @for (check of booleanCheckEntries; track check.key) {
                     <li
                       class="flex items-center justify-between rounded-lg bg-slate-900/60 px-4 py-3 text-sm"
                     >
                       <span class="text-slate-300">{{ check.label }}</span>
                       <span [ngClass]="checkValueClass(result.checks[check.key])">
                         {{ formatCheckValue(result.checks[check.key]) }}
+                      </span>
+                    </li>
+                  }
+                  @for (check of sourceCheckEntries; track check.key) {
+                    <li
+                      class="flex items-center justify-between rounded-lg bg-slate-900/60 px-4 py-3 text-sm"
+                    >
+                      <span class="text-slate-300">{{ check.label }}</span>
+                      <span class="text-slate-300">
+                        {{ formatSourceCheckValue(check.key, result.checks[check.key]) }}
                       </span>
                     </li>
                   }
@@ -279,8 +323,12 @@ export class VerifierComponent {
     this.verifierService.isValidCredentialId(this.credentialId()),
   );
 
-  readonly checkEntries = (
-    Object.entries(CHECK_LABELS) as [CheckKey, string][]
+  readonly booleanCheckEntries = (
+    Object.entries(BOOLEAN_CHECK_LABELS) as [BooleanCheckKey, string][]
+  ).map(([key, label]) => ({ key, label }));
+
+  readonly sourceCheckEntries = (
+    Object.entries(SOURCE_CHECK_LABELS) as [SourceCheckKey, string][]
   ).map(([key, label]) => ({ key, label }));
 
   onCredentialIdChange(value: string): void {
@@ -324,16 +372,36 @@ export class VerifierComponent {
     return RESULT_BADGE_CLASSES[result];
   }
 
-  formatCheckValue(value: boolean | null): string {
-    if (value === null) {
+  formatCheckValue(value: boolean | null | undefined): string {
+    if (value === null || value === undefined) {
       return 'No evaluado';
     }
 
     return value ? 'Sí' : 'No';
   }
 
-  checkValueClass(value: boolean | null): string {
-    if (value === null) {
+  formatSourceCheckValue(
+    key: SourceCheckKey,
+    value: VerificationChecksResponse[SourceCheckKey] | null | undefined,
+  ): string {
+    if (value === null || value === undefined) {
+      return '—';
+    }
+
+    switch (key) {
+      case 'validationSource':
+        return VALIDATION_SOURCE_LABELS[
+          value as VerificationChecksResponse['validationSource']
+        ];
+      case 'revocationSource':
+        return REVOCATION_SOURCE_LABELS[
+          value as VerificationChecksResponse['revocationSource']
+        ];
+    }
+  }
+
+  checkValueClass(value: boolean | null | undefined): string {
+    if (value === null || value === undefined) {
       return 'text-slate-400 italic';
     }
 

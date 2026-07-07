@@ -79,5 +79,15 @@ public partial class VerificationLog
     /// </summary>
     public bool? NotExpired { get; set; }
 
+    /// <summary>
+    /// Fuente del veredicto de firma EIP-712
+    /// </summary>
+    public string? SignatureValidationSource { get; set; }
+
+    /// <summary>
+    /// Fuente(s) que reportaron revocación
+    /// </summary>
+    public string? RevocationSource { get; set; }
+
     public virtual Credential? Credential { get; set; }
 }

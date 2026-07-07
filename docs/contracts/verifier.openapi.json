@@ -2,13 +2,18 @@
   "openapi": "3.1.1",
   "info": {
     "title": "SovereignID · Verifier API",
-    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`; los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
+    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`; los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
     "contact": {
       "name": "SovereignID",
       "url": "https://github.com/nasotop/SovereignID"
     },
     "version": "v1"
   },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5196/"
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
@@ -20,7 +25,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -32,7 +37,7 @@
           "Verifications"
         ],
         "summary": "Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).",
-        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`. El único error de protocolo es `invalid_credential_id` (`400`, RFC 7807 Problem Details con extensión `error`) cuando `credentialId` está ausente o no es un UUID válido.",
+        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -73,6 +78,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
           }
         }
       }
@@ -220,7 +228,9 @@
           "notExpired",
           "hashMatches",
           "onChainExists",
-          "signatureValid"
+          "signatureValid",
+          "validationSource",
+          "revocationSource"
         ],
         "type": "object",
         "properties": {
@@ -259,6 +269,23 @@
               "null",
               "boolean"
             ]
+          },
+          "validationSource": {
+            "enum": [
+              "on_chain",
+              "bd_fallback_inconclusive",
+              "bd_fallback_rejected",
+              "not_evaluated"
+            ],
+            "type": "string"
+          },
+          "revocationSource": {
+            "enum": [
+              "bd",
+              "on_chain",
+              "both"
+            ],
+            "type": "string"
           }
         },
         "description": "Booleanos por chequeo; `null` = no evaluado."
@@ -291,7 +318,8 @@
               "valid",
               "revoked",
               "expired",
-              "not_found"
+              "not_found",
+              "integrity_failed"
             ],
             "type": "string"
           },

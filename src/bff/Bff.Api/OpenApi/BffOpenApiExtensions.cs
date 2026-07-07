@@ -16,6 +16,22 @@ internal static class BffOpenApiExtensions
         "revoked",
         "expired",
         "not_found",
+        "integrity_failed",
+    ];
+
+    private static readonly string[] ValidationSourceWireValues =
+    [
+        "on_chain",
+        "bd_fallback_inconclusive",
+        "bd_fallback_rejected",
+        "not_evaluated",
+    ];
+
+    private static readonly string[] RevocationSourceWireValues =
+    [
+        "bd",
+        "on_chain",
+        "both",
     ];
 
     private static readonly string[] CredentialStatusWireValues =
@@ -37,7 +53,7 @@ internal static class BffOpenApiExtensions
                     Version = "v1",
                     Description =
                         "Backend-for-Frontend de SovereignID. Expone al portal web un contrato HTTP pass-through "
-                        + "hacia los microservicios internos (verifier, issuer, academy, identity, reports) mediante clientes Kiota y HttpClient directo. "
+                        + "hacia los microservicios internos (verifier, issuer, academy, reports) mediante clientes Kiota y HttpClient directo. "
                         + "El navegador accede vía prefijo `/api/` (nginx strip). Auth SIWE permanece directo en `/auth/`.",
                     Contact = new()
                     {
@@ -73,6 +89,26 @@ internal static class BffOpenApiExtensions
                     {
                         Type = JsonSchemaType.String,
                         Enum = CredentialStatusWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+                }
+
+                if (context.JsonTypeInfo.Type == typeof(VerificationChecksResponse)
+                    && schema.Properties is not null)
+                {
+                    schema.Properties["validationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = ValidationSourceWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+
+                    schema.Properties["revocationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = RevocationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),
                     };

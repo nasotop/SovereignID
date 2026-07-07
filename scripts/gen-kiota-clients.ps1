@@ -9,7 +9,6 @@ $clients = @(
     @{ Name = "Verifier"; Contract = "docs/contracts/verifier.openapi.json"; Output = "src/bff/Bff.Clients/Generated/Verifier"; Namespace = "SovereignID.Bff.Clients.Verifier" },
     @{ Name = "Issuer";   Contract = "docs/contracts/issuer.openapi.json";   Output = "src/bff/Bff.Clients/Generated/Issuer";   Namespace = "SovereignID.Bff.Clients.Issuer" },
     @{ Name = "Academy";  Contract = "docs/contracts/academy.openapi.json";  Output = "src/bff/Bff.Clients/Generated/Academy";  Namespace = "SovereignID.Bff.Clients.Academy" },
-    @{ Name = "Identity"; Contract = "docs/contracts/identity.openapi.json"; Output = "src/bff/Bff.Clients/Generated/Identity"; Namespace = "SovereignID.Bff.Clients.Identity" },
     @{ Name = "Reports";  Contract = "docs/contracts/reports.openapi.json";  Output = "src/bff/Bff.Clients/Generated/Reports";  Namespace = "SovereignID.Bff.Clients.Reports" }
 )
 

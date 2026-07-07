@@ -16,11 +16,16 @@ public sealed record CredentialAnchors(
 /// </summary>
 public sealed record CredentialReadModel(
     Guid Id,
+    Guid InstitutionId,
     string TypeCode,
     string Status,
     DateTimeOffset IssuedAt,
     DateTimeOffset? ExpiresAt,
     DateTimeOffset? RevokedAt,
     string SubjectDid,
+    string? IssuerWalletAddress,
+    string SubjectWalletAddress,
+    string? Eip712Signature,
+    string IpfsGatewayUrl,
     IssuerReadModel Issuer,
     CredentialAnchors Anchors);

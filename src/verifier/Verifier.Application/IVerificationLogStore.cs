@@ -12,7 +12,12 @@ public sealed record VerificationLogEntry(
     string CredentialIdQuery,
     VerificationResult Result,
     bool? NotRevoked,
-    bool? NotExpired);
+    bool? NotExpired,
+    bool? HashMatches = null,
+    bool? OnChainExists = null,
+    bool? SignatureValid = null,
+    string? SignatureValidationSource = null,
+    string? RevocationSource = null);
 
 /// <summary>Escritura del intento de verificación.</summary>
 public interface IVerificationLogStore

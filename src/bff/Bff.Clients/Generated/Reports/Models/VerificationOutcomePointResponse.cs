@@ -23,9 +23,21 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public string Date { get; set; }
 #endif
         /// <summary>The invalid property</summary>
-        public int? Invalid { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Invalid { get; set; }
+#nullable restore
+#else
+        public UntypedNode Invalid { get; set; }
+#endif
         /// <summary>The valid property</summary>
-        public int? Valid { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Valid { get; set; }
+#nullable restore
+#else
+        public UntypedNode Valid { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.VerificationOutcomePointResponse"/> and sets the default values.
         /// </summary>
@@ -52,8 +64,8 @@ namespace SovereignID.Bff.Clients.Reports.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "date", n => { Date = n.GetStringValue(); } },
-                { "invalid", n => { Invalid = n.GetIntValue(); } },
-                { "valid", n => { Valid = n.GetIntValue(); } },
+                { "invalid", n => { Invalid = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
+                { "valid", n => { Valid = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -64,8 +76,8 @@ namespace SovereignID.Bff.Clients.Reports.Models
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("date", Date);
-            writer.WriteIntValue("invalid", Invalid);
-            writer.WriteIntValue("valid", Valid);
+            writer.WriteObjectValue<UntypedNode>("invalid", Invalid);
+            writer.WriteObjectValue<UntypedNode>("valid", Valid);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

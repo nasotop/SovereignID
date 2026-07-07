@@ -10,7 +10,7 @@ import { RequestBuilder } from '../../request-builder';
 
 export interface ReportsInstitutionsInstitutionIdCredentialsPerStudentGet$Params {
   institutionId: string;
-  asOf: string;
+  asOf?: string;
 }
 
 export function reportsInstitutionsInstitutionIdCredentialsPerStudentGet(http: HttpClient, rootUrl: string, params: ReportsInstitutionsInstitutionIdCredentialsPerStudentGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
