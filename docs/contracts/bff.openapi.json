@@ -9,6 +9,11 @@
     },
     "version": "v1"
   },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5194/"
+    }
+  ],
   "paths": {
     "/academy/holders/me": {
       "get": {
@@ -19,7 +24,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "400": {
@@ -64,7 +69,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "400": {
@@ -819,7 +824,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "404": {
@@ -1267,7 +1272,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1309,7 +1314,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1343,7 +1348,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1385,7 +1390,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1427,7 +1432,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1460,7 +1465,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1485,7 +1490,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -2527,7 +2532,7 @@
           }
         }
       },
-      "JsonElement": {},
+      "JsonElement": { },
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
