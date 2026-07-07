@@ -10,7 +10,7 @@
 #   host:4333  →  contenedor:80
 #
 # auth-api no se publica al host; solo es accesible desde la red interna.
-# postgres expone 5432 al host para exploración del esquema (psql, DBeaver).
+# postgres: schema baked into sovereignid-postgres image (database/Dockerfile).
 # auth-api y web NO dependen de postgres en esta fase.
 
 services:
@@ -34,13 +34,16 @@ services:
       Auth__JwtTtlHours: ${Auth__JwtTtlHours:-24}
       Auth__PlatformAdminAddresses: ${Auth__PlatformAdminAddresses:-}
       Persistence__Provider: ${Persistence__Provider:-InMemory}
-      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:-}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
     expose:
       - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - sovereign-net
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/auth/nonce"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -336,7 +339,10 @@ services:
       - no-new-privileges:true
 
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    image: sovereignid-postgres:latest
     container_name: sovereignid-postgres
     restart: unless-stopped
     environment:
@@ -347,7 +353,6 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/BBDD_SovereignID.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     networks:
       - sovereign-net
     healthcheck:
