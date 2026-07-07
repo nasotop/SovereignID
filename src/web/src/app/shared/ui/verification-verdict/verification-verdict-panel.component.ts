@@ -3,6 +3,7 @@ import { Component, computed, input } from '@angular/core';
 
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
 import { CredentialAnchorsPanelComponent } from '../credential-anchors';
+import { CopyValueComponent } from '../copy-value/copy-value.component';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 import {
   buildVerdictViewModel,
@@ -13,7 +14,12 @@ import {
 @Component({
   selector: 'app-verification-verdict-panel',
   standalone: true,
-  imports: [CommonModule, CredentialAnchorsPanelComponent, StatusBadgeComponent],
+  imports: [
+    CommonModule,
+    CredentialAnchorsPanelComponent,
+    CopyValueComponent,
+    StatusBadgeComponent,
+  ],
   template: `
     @if (viewModel(); as vm) {
       <section class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 space-y-6">
@@ -52,9 +58,11 @@ import {
             <h3 class="text-sm font-medium text-slate-300 mb-3">Credential</h3>
             <div class="rounded-lg bg-slate-900/60 p-4 space-y-4">
               <dl class="grid gap-3 text-sm">
-                <div class="grid grid-cols-[8rem_1fr] gap-2">
+                <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">ID</dt>
-                  <dd class="text-slate-200 break-all">{{ credential.id }}</dd>
+                  <dd>
+                    <app-copy-value [value]="credential.id" />
+                  </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">Type</dt>
@@ -70,13 +78,17 @@ import {
                     {{ credential.issuer.displayName }} ({{ credential.issuer.code }})
                   </dd>
                 </div>
-                <div class="grid grid-cols-[8rem_1fr] gap-2">
+                <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">Issuer DID</dt>
-                  <dd class="text-slate-200 break-all">{{ credential.issuer.did }}</dd>
+                  <dd>
+                    <app-copy-value [value]="credential.issuer.did" />
+                  </dd>
                 </div>
-                <div class="grid grid-cols-[8rem_1fr] gap-2">
+                <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">Subject DID</dt>
-                  <dd class="text-slate-200 break-all">{{ credential.subjectDid }}</dd>
+                  <dd>
+                    <app-copy-value [value]="credential.subjectDid" />
+                  </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">Issued at</dt>

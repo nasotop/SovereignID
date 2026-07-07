@@ -11,6 +11,8 @@ namespace Bff.Api.Controllers;
 [Produces("application/json")]
 public sealed class VerificationsController(VerifierApiClient verifier) : ControllerBase
 {
+    /// <summary>Verifica una Verifiable Credential por su UUID (pass-through al verifier).</summary>
+    /// <remarks>Los veredictos de negocio se devuelven con <c>200</c> y el campo <c>result</c>. Los errores de protocolo usan RFC 7807 Problem Details con extensión <c>error</c>: <c>invalid_credential_id</c> (<c>400</c>) o <c>rate_limit_exceeded</c> (<c>429</c>).</remarks>
     [HttpPost]
     [ProducesResponseType(typeof(VerificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(KiotaVerifier.ProblemDetails), StatusCodes.Status400BadRequest)]

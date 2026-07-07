@@ -2,7 +2,7 @@
   "descriptionHash": "0E85DCF38F05E76BC2D8AA7FA20BBDF9D1AB88733D3B0B6396A52E2EA752E623F33065930EEA81439DB211B3349D09CC17F74F458FEA4BF33024B66E2402D20A",
   "descriptionLocation": "../../../../../docs/contracts/reports.openapi.json",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.32.5",
+  "kiotaVersion": "1.32.4",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
   "clientNamespaceName": "SovereignID.Bff.Clients.Reports",
@@ -30,6 +30,5 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": [],
-  "allowedExternalOrigins": []
+  "disabledValidationRules": []
 }

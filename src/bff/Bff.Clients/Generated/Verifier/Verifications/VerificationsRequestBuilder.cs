@@ -34,7 +34,7 @@ namespace SovereignID.Bff.Clients.Verifier.Verifications
         {
         }
         /// <summary>
-        /// Los veredictos de negocio (vÃ¡lida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensiÃ³n `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).
+        /// Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).
         /// </summary>
         /// <returns>A <see cref="global::SovereignID.Bff.Clients.Verifier.Models.VerificationResponse"/></returns>
         /// <param name="body">Cuerpo de `POST /verifications`.</param>
@@ -59,7 +59,7 @@ namespace SovereignID.Bff.Clients.Verifier.Verifications
             return await RequestAdapter.SendAsync<global::SovereignID.Bff.Clients.Verifier.Models.VerificationResponse>(requestInfo, global::SovereignID.Bff.Clients.Verifier.Models.VerificationResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
-        /// Los veredictos de negocio (vÃ¡lida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensiÃ³n `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).
+        /// Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
         /// <param name="body">Cuerpo de `POST /verifications`.</param>

@@ -119,8 +119,8 @@ internal static class BffOpenApiExtensions
 
             options.AddOperationTransformer((operation, context, _) =>
             {
-                if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
-                    && action == "Verify")
+                if (HttpMethods.IsPost(context.Description.HttpMethod)
+                    && string.Equals(context.Description.RelativePath, "verifications", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Responses ??= new OpenApiResponses();
                     operation.Responses["429"] = new OpenApiResponse

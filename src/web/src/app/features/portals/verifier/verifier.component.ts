@@ -164,9 +164,16 @@ export class VerifierComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    const queryCredentialId = this.route.snapshot.queryParamMap.get('credentialId');
-    if (queryCredentialId) {
-      this.credentialId.set(queryCredentialId);
+    const raw = this.route.snapshot.queryParamMap.get('credentialId');
+    if (!raw) {
+      return;
+    }
+
+    if (this.verifierService.isValidCredentialId(raw)) {
+      this.credentialId.set(raw);
+    } else {
+      this.credentialId.set('');
+      this.validationError.set('El credentialId no es un UUID válido.');
     }
   }
 

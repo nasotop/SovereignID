@@ -93,21 +93,6 @@ internal static class VerifierOpenApiExtensions
 
                 return Task.CompletedTask;
             });
-
-            options.AddOperationTransformer((operation, context, _) =>
-            {
-                if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
-                    && action == "Verify")
-                {
-                    operation.Responses ??= new OpenApiResponses();
-                    operation.Responses["429"] = new OpenApiResponse
-                    {
-                        Description = "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
-                    };
-                }
-
-                return Task.CompletedTask;
-            });
         });
 
         return services;

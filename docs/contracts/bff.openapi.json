@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "SovereignID Â· BFF API",
-    "description": "Backend-for-Frontend de SovereignID. Expone al portal web un contrato HTTP pass-through hacia los microservicios internos (verifier, issuer, academy, reports) mediante clientes Kiota y HttpClient directo. El navegador accede vÃ­a prefijo `/api/` (nginx strip). Auth SIWE permanece directo en `/auth/`.",
+    "title": "SovereignID · BFF API",
+    "description": "Backend-for-Frontend de SovereignID. Expone al portal web un contrato HTTP pass-through hacia los microservicios internos (verifier, issuer, academy, reports) mediante clientes Kiota y HttpClient directo. El navegador accede vía prefijo `/api/` (nginx strip). Auth SIWE permanece directo en `/auth/`.",
     "contact": {
       "name": "SovereignID",
       "url": "https://github.com/nasotop/SovereignID"
@@ -1566,6 +1566,8 @@
         "tags": [
           "Verifications"
         ],
+        "summary": "Verifica una Verifiable Credential por su UUID (pass-through al verifier).",
+        "description": "Los veredictos de negocio se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1608,7 +1610,7 @@
             }
           },
           "429": {
-            "description": "Too Many Requests â€” Problem Details with `error = rate_limit_exceeded`."
+            "description": "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
           }
         }
       }

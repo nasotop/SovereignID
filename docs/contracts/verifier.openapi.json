@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "SovereignID Â· Verifier API",
-    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone la verificaciÃ³n pÃºblica de credenciales (`POST /verifications`) y un health-check (`GET /health`). Los veredictos de negocio (vÃ¡lida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`; los errores de protocolo se devuelven como RFC 7807 Problem Details con un cÃ³digo estable en la extensiÃ³n `error`.",
+    "title": "SovereignID · Verifier API",
+    "description": "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`; los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
     "contact": {
       "name": "SovereignID",
       "url": "https://github.com/nasotop/SovereignID"
@@ -15,7 +15,7 @@
         "tags": [
           "Health"
         ],
-        "summary": "Comprueba que el servicio estÃ¡ operativo (liveness check).",
+        "summary": "Comprueba que el servicio está operativo (liveness check).",
         "responses": {
           "200": {
             "description": "OK",
@@ -31,8 +31,8 @@
         "tags": [
           "Verifications"
         ],
-        "summary": "Verifica una Verifiable Credential por su UUID (verificaciÃ³n pÃºblica, sin autenticaciÃ³n).",
-        "description": "Los veredictos de negocio (vÃ¡lida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensiÃ³n `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).",
+        "summary": "Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).",
+        "description": "Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -75,7 +75,7 @@
             }
           },
           "429": {
-            "description": "Too Many Requests â€” Problem Details with `error = rate_limit_exceeded`."
+            "description": "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
           }
         }
       }

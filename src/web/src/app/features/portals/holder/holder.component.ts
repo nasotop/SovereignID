@@ -17,7 +17,22 @@ import { CredentialAnchorsPanelComponent } from '../../../shared/ui/credential-a
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 
 type HolderLoadState = 'loading' | 'loaded' | 'error';
-type AnchorsModalState = 'idle' | 'loading' | 'loaded' | 'error';
+
+interface AnchorsModalModel {
+  open: boolean;
+  state: 'idle' | 'loading' | 'loaded' | 'error';
+  credentialId: string | null;
+  detail: HolderCredentialDetail | null;
+  error: string | null;
+}
+
+const CLOSED_ANCHORS_MODAL: AnchorsModalModel = {
+  open: false,
+  state: 'idle',
+  credentialId: null,
+  detail: null,
+  error: null,
+};
 
 const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
   active: 'Activa',
@@ -341,18 +356,18 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
       </app-modal>
 
       <app-modal
-        [isOpen]="isAnchorsModalOpen()"
+        [isOpen]="anchorsModal().open"
         title="Anclas on-chain"
         description="Datos verificables registrados por el emisor."
         size="lg"
         (closed)="closeAnchorsModal()"
       >
-        @if (anchorsModalState() === 'loading') {
+        @if (anchorsModal().state === 'loading') {
           <p class="text-sm text-slate-300">Cargando anclas...</p>
         }
 
-        @if (anchorsModalState() === 'error') {
-          <p class="text-sm text-red-300" role="alert">{{ anchorsModalError() }}</p>
+        @if (anchorsModal().state === 'error') {
+          <p class="text-sm text-red-300" role="alert">{{ anchorsModal().error }}</p>
           <button
             type="button"
             class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
@@ -362,7 +377,7 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
           </button>
         }
 
-        @if (anchorsModalState() === 'loaded' && anchorsModalDetail(); as detail) {
+        @if (anchorsModal().state === 'loaded' && anchorsModal().detail; as detail) {
           <app-credential-anchors-panel
             [anchors]="detail.anchors"
             [credentialId]="detail.id"
@@ -387,11 +402,7 @@ export class HolderComponent implements OnInit {
   readonly feedback = signal<string | null>(null);
   readonly feedbackType = signal<'success' | 'error'>('success');
   readonly isProfileModalOpen = signal(false);
-  readonly isAnchorsModalOpen = signal(false);
-  readonly anchorsModalState = signal<AnchorsModalState>('idle');
-  readonly anchorsModalCredentialId = signal<string | null>(null);
-  readonly anchorsModalDetail = signal<HolderCredentialDetail | null>(null);
-  readonly anchorsModalError = signal<string | null>(null);
+  readonly anchorsModal = signal<AnchorsModalModel>(CLOSED_ANCHORS_MODAL);
   readonly isSavingProfile = signal(false);
   readonly actionCredentialId = signal<string | null>(null);
 
@@ -514,17 +525,16 @@ export class HolderComponent implements OnInit {
   }
 
   async openAnchorsModal(credentialId: string): Promise<void> {
-    this.anchorsModalCredentialId.set(credentialId);
-    this.isAnchorsModalOpen.set(true);
+    this.anchorsModal.set({
+      ...CLOSED_ANCHORS_MODAL,
+      open: true,
+      credentialId,
+    });
     await this.loadAnchorsModalDetail();
   }
 
   closeAnchorsModal(): void {
-    this.isAnchorsModalOpen.set(false);
-    this.anchorsModalState.set('idle');
-    this.anchorsModalDetail.set(null);
-    this.anchorsModalError.set(null);
-    this.anchorsModalCredentialId.set(null);
+    this.anchorsModal.set(CLOSED_ANCHORS_MODAL);
   }
 
   async retryAnchorsModal(): Promise<void> {
@@ -597,22 +607,31 @@ export class HolderComponent implements OnInit {
   }
 
   private async loadAnchorsModalDetail(): Promise<void> {
-    const credentialId = this.anchorsModalCredentialId();
+    const credentialId = this.anchorsModal().credentialId;
     if (!credentialId) {
       return;
     }
 
-    this.anchorsModalState.set('loading');
-    this.anchorsModalError.set(null);
-    this.anchorsModalDetail.set(null);
+    this.anchorsModal.update((modal) => ({
+      ...modal,
+      state: 'loading',
+      error: null,
+      detail: null,
+    }));
 
     try {
       const detail = await this.getCredentialDetail(credentialId);
-      this.anchorsModalDetail.set(detail);
-      this.anchorsModalState.set('loaded');
+      this.anchorsModal.update((modal) => ({
+        ...modal,
+        detail,
+        state: 'loaded',
+      }));
     } catch (error: unknown) {
-      this.anchorsModalError.set(toErrorMessage(error));
-      this.anchorsModalState.set('error');
+      this.anchorsModal.update((modal) => ({
+        ...modal,
+        error: toErrorMessage(error),
+        state: 'error',
+      }));
     }
   }
 }

@@ -1,7 +1,7 @@
 import { VerificationChecksResponse } from '../../../api/bff/models/verification-checks-response';
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
 
-export type VerdictPresentationPreset = 'verifierFull' | 'holderCompact' | 'issuerPreview';
+export type VerdictPresentationPreset = 'verifierFull';
 
 export interface VerdictPresentation {
   preset: VerdictPresentationPreset;
@@ -96,7 +96,7 @@ const RESULT_TONES: Record<VerificationResponse['result'], VerdictResultTone> = 
   revoked: 'danger',
   expired: 'warning',
   not_found: 'neutral',
-  integrity_failed: 'warning',
+  integrity_failed: 'danger',
 };
 
 const EVIDENCE_DISABLED_BANNER_MESSAGE =
@@ -162,9 +162,9 @@ function buildBooleanRows(
 export function buildVerdictViewModel(
   response: VerificationResponse,
   presentation: VerdictPresentation = VERIFIER_FULL_PRESENTATION,
-): VerdictViewModel | null {
+): VerdictViewModel {
   if (presentation.preset !== 'verifierFull') {
-    return null;
+    throw new Error(`Unsupported verdict presentation preset: ${presentation.preset}`);
   }
 
   const { checks } = response;

@@ -39,7 +39,7 @@ describe('buildVerdictViewModel', () => {
       }),
     );
 
-    const localRows = viewModel?.groups.find((group) => group.title === 'Registro local')?.rows;
+    const localRows = viewModel.groups.find((group) => group.title === 'Registro local')?.rows;
     expect(localRows?.some((row) => row.key === 'revocationSource')).toBe(true);
     expect(
       localRows?.find((row) => row.key === 'revocationSource')?.displayValue,
@@ -54,7 +54,7 @@ describe('buildVerdictViewModel', () => {
       }),
     );
 
-    const allRows = viewModel?.groups.flatMap((group) => group.rows) ?? [];
+    const allRows = viewModel.groups.flatMap((group) => group.rows);
     expect(allRows.some((row) => row.key === 'revocationSource')).toBe(false);
   });
 
@@ -70,8 +70,8 @@ describe('buildVerdictViewModel', () => {
       }),
     );
 
-    expect(viewModel?.evidenceBanner.visible).toBe(true);
-    expect(viewModel?.groups.find((group) => group.title === 'Evidencia on-chain')?.rows).toEqual(
+    expect(viewModel.evidenceBanner.visible).toBe(true);
+    expect(viewModel.groups.find((group) => group.title === 'Evidencia on-chain')?.rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ displayValue: 'No evaluado' }),
       ]),
@@ -91,10 +91,27 @@ describe('buildVerdictViewModel', () => {
     );
 
     const evidenceRows =
-      viewModel?.groups.find((group) => group.title === 'Evidencia on-chain')?.rows ?? [];
+      viewModel.groups.find((group) => group.title === 'Evidencia on-chain')?.rows ?? [];
     const hashRow = evidenceRows.find((row) => row.key === 'hashMatches');
 
     expect(hashRow?.displayValue).toBe('No evaluado');
     expect(hashRow?.tone).toBe('muted');
+  });
+
+  it('uses danger tone for integrity_failed result', () => {
+    const viewModel = buildVerdictViewModel(
+      makeResponse({
+        result: 'integrity_failed',
+        checks: {
+          hashMatches: false,
+          onChainExists: true,
+          signatureValid: false,
+          validationSource: 'on_chain',
+        },
+      }),
+    );
+
+    expect(viewModel.resultLabel).toBe('Integridad comprometida');
+    expect(viewModel.resultTone).toBe('danger');
   });
 });
