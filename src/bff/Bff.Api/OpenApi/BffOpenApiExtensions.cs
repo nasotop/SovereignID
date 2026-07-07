@@ -119,7 +119,8 @@ internal static class BffOpenApiExtensions
 
             options.AddOperationTransformer((operation, context, _) =>
             {
-                if (HttpMethods.IsPost(context.Description.HttpMethod)
+                if (context.Description.HttpMethod is not null
+                    && HttpMethods.IsPost(context.Description.HttpMethod)
                     && string.Equals(context.Description.RelativePath, "verifications", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Responses ??= new OpenApiResponses();
