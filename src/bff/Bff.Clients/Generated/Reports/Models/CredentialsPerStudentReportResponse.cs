@@ -23,11 +23,29 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public string AsOf { get; set; }
 #endif
         /// <summary>The averageCredentialsPerStudent property</summary>
-        public double? AverageCredentialsPerStudent { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? AverageCredentialsPerStudent { get; set; }
+#nullable restore
+#else
+        public UntypedNode AverageCredentialsPerStudent { get; set; }
+#endif
         /// <summary>The totalCredentials property</summary>
-        public int? TotalCredentials { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? TotalCredentials { get; set; }
+#nullable restore
+#else
+        public UntypedNode TotalCredentials { get; set; }
+#endif
         /// <summary>The totalStudents property</summary>
-        public int? TotalStudents { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? TotalStudents { get; set; }
+#nullable restore
+#else
+        public UntypedNode TotalStudents { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.CredentialsPerStudentReportResponse"/> and sets the default values.
         /// </summary>
@@ -54,9 +72,9 @@ namespace SovereignID.Bff.Clients.Reports.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "asOf", n => { AsOf = n.GetStringValue(); } },
-                { "averageCredentialsPerStudent", n => { AverageCredentialsPerStudent = n.GetDoubleValue(); } },
-                { "totalCredentials", n => { TotalCredentials = n.GetIntValue(); } },
-                { "totalStudents", n => { TotalStudents = n.GetIntValue(); } },
+                { "averageCredentialsPerStudent", n => { AverageCredentialsPerStudent = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
+                { "totalCredentials", n => { TotalCredentials = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
+                { "totalStudents", n => { TotalStudents = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -67,9 +85,9 @@ namespace SovereignID.Bff.Clients.Reports.Models
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("asOf", AsOf);
-            writer.WriteDoubleValue("averageCredentialsPerStudent", AverageCredentialsPerStudent);
-            writer.WriteIntValue("totalCredentials", TotalCredentials);
-            writer.WriteIntValue("totalStudents", TotalStudents);
+            writer.WriteObjectValue<UntypedNode>("averageCredentialsPerStudent", AverageCredentialsPerStudent);
+            writer.WriteObjectValue<UntypedNode>("totalCredentials", TotalCredentials);
+            writer.WriteObjectValue<UntypedNode>("totalStudents", TotalStudents);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

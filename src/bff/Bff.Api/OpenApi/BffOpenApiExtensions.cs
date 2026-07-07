@@ -16,6 +16,22 @@ internal static class BffOpenApiExtensions
         "revoked",
         "expired",
         "not_found",
+        "integrity_failed",
+    ];
+
+    private static readonly string[] ValidationSourceWireValues =
+    [
+        "on_chain",
+        "bd_fallback_inconclusive",
+        "bd_fallback_rejected",
+        "not_evaluated",
+    ];
+
+    private static readonly string[] RevocationSourceWireValues =
+    [
+        "bd",
+        "on_chain",
+        "both",
     ];
 
     private static readonly string[] CredentialStatusWireValues =
@@ -73,6 +89,26 @@ internal static class BffOpenApiExtensions
                     {
                         Type = JsonSchemaType.String,
                         Enum = CredentialStatusWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+                }
+
+                if (context.JsonTypeInfo.Type == typeof(VerificationChecksResponse)
+                    && schema.Properties is not null)
+                {
+                    schema.Properties["validationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = ValidationSourceWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+
+                    schema.Properties["revocationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = RevocationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),
                     };

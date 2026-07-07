@@ -19,7 +19,9 @@ internal static class KiotaWireMappers
                 checks?.NotExpired,
                 checks?.HashMatches,
                 checks?.OnChainExists,
-                checks?.SignatureValid),
+                checks?.SignatureValid,
+                ToValidationSourceWire(checks?.ValidationSource),
+                ToRevocationSourceWire(checks?.RevocationSource)),
             credential is null
                 ? null
                 : new CredentialResponse(
@@ -163,7 +165,27 @@ internal static class KiotaWireMappers
             KiotaVerifier.VerificationResponse_result.Revoked => "revoked",
             KiotaVerifier.VerificationResponse_result.Expired => "expired",
             KiotaVerifier.VerificationResponse_result.Not_found => "not_found",
+            KiotaVerifier.VerificationResponse_result.Integrity_failed => "integrity_failed",
             _ => "not_found",
+        };
+
+    private static string? ToValidationSourceWire(KiotaVerifier.VerificationChecksResponse_validationSource? source) =>
+        source switch
+        {
+            KiotaVerifier.VerificationChecksResponse_validationSource.On_chain => "on_chain",
+            KiotaVerifier.VerificationChecksResponse_validationSource.Bd_fallback_inconclusive => "bd_fallback_inconclusive",
+            KiotaVerifier.VerificationChecksResponse_validationSource.Bd_fallback_rejected => "bd_fallback_rejected",
+            KiotaVerifier.VerificationChecksResponse_validationSource.Not_evaluated => "not_evaluated",
+            _ => null,
+        };
+
+    private static string? ToRevocationSourceWire(KiotaVerifier.VerificationChecksResponse_revocationSource? source) =>
+        source switch
+        {
+            KiotaVerifier.VerificationChecksResponse_revocationSource.Bd => "bd",
+            KiotaVerifier.VerificationChecksResponse_revocationSource.On_chain => "on_chain",
+            KiotaVerifier.VerificationChecksResponse_revocationSource.Both => "both",
+            _ => null,
         };
 
     private static string ToCredentialStatusWire(KiotaIssuer.HolderCredentialSummary_status? status) =>

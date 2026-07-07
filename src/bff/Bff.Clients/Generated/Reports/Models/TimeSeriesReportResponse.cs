@@ -30,7 +30,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
 #else
         public List<global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesPointResponse> Series { get; set; }
 #endif
-        /// <summary>snapshot | live | hybrid</summary>
+        /// <summary>The source property</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
         public string? Source { get; set; }
@@ -39,7 +39,13 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public string Source { get; set; }
 #endif
         /// <summary>The total property</summary>
-        public int? Total { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Total { get; set; }
+#nullable restore
+#else
+        public UntypedNode Total { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesReportResponse"/> and sets the default values.
         /// </summary>
@@ -68,7 +74,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
                 { "period", n => { Period = n.GetObjectValue<global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse>(global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse.CreateFromDiscriminatorValue); } },
                 { "series", n => { Series = n.GetCollectionOfObjectValues<global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesPointResponse>(global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesPointResponse.CreateFromDiscriminatorValue)?.AsList(); } },
                 { "source", n => { Source = n.GetStringValue(); } },
-                { "total", n => { Total = n.GetIntValue(); } },
+                { "total", n => { Total = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -81,7 +87,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
             writer.WriteObjectValue<global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse>("period", Period);
             writer.WriteCollectionOfObjectValues<global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesPointResponse>("series", Series);
             writer.WriteStringValue("source", Source);
-            writer.WriteIntValue("total", Total);
+            writer.WriteObjectValue<UntypedNode>("total", Total);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

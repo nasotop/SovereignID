@@ -23,18 +23,24 @@ namespace SovereignID.Bff.Clients.Reports.Models
 #else
         public string Detail { get; set; }
 #endif
-        /// <summary>The error property</summary>
+        /// <summary>The instance property</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
-        public string? Error { get; set; }
+        public string? Instance { get; set; }
 #nullable restore
 #else
-        public string Error { get; set; }
+        public string Instance { get; set; }
 #endif
         /// <summary>The primary error message.</summary>
         public override string Message { get => base.Message; }
         /// <summary>The status property</summary>
-        public int? Status { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Status { get; set; }
+#nullable restore
+#else
+        public UntypedNode Status { get; set; }
+#endif
         /// <summary>The title property</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -77,8 +83,8 @@ namespace SovereignID.Bff.Clients.Reports.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "detail", n => { Detail = n.GetStringValue(); } },
-                { "error", n => { Error = n.GetStringValue(); } },
-                { "status", n => { Status = n.GetIntValue(); } },
+                { "instance", n => { Instance = n.GetStringValue(); } },
+                { "status", n => { Status = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
                 { "title", n => { Title = n.GetStringValue(); } },
                 { "type", n => { Type = n.GetStringValue(); } },
             };
@@ -91,8 +97,8 @@ namespace SovereignID.Bff.Clients.Reports.Models
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("detail", Detail);
-            writer.WriteStringValue("error", Error);
-            writer.WriteIntValue("status", Status);
+            writer.WriteStringValue("instance", Instance);
+            writer.WriteObjectValue<UntypedNode>("status", Status);
             writer.WriteStringValue("title", Title);
             writer.WriteStringValue("type", Type);
             writer.WriteAdditionalData(AdditionalData);
