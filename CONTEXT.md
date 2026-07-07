@@ -24,7 +24,7 @@ SovereignID/
 │   ├── bff/                 # Backend-for-Frontend (Kiota → microservicios)
 │   │   ├── Bff.Api/         # Interfaz HTTP pública hacia el portal web
 │   │   └── Bff.Clients/     # Clientes Kiota generados (Generated/)
-│   └── …                    # verifier, issuer, academy, identity, web
+│   └── …                    # verifier, issuer, academy, reports, web
 └── tests/
     └── auth/
         └── Auth.IntegrationTests/  # AC-01…AC-07
@@ -182,6 +182,23 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Verificaciones (R-I2)** | Intentos de verificación registrados en `verification_logs` para credenciales de la institución; en UI no usar el término "leídas". |
 | **Fuente del reporte (`source`)** | Metadato del backend: `snapshot` (día pre-agregado), `live` (query en tiempo real), `hybrid` (mezcla). |
 | **Período de reporte** | Rango `{from, to}` compartido por todos los reportes de un portal; presets 7/30/90 días (default 30). Reportes puntuales usan `asOf = to`. |
+| **Reparto identitario v1** | Sin microservicio `identity` en MVP. Identidad criptográfica en `auth`; datos académicos/tenant y perfil holder en `academy`; credenciales en `issuer`. Ver [ADR-0006](docs/adr/0006-consolidate-identity-into-academy-auth.md). |
+| **Usuario (`users`)** | Fila por wallet/DID. Usuarios institucionales (invitaciones) y, lazy, holders que editan perfil off-chain. Distinto de `students` (registro anónimo por institución). |
+| **Wallet dual-role** | Una misma address puede ser holder (`student_wallets` primaria) y usuario institucional (`institution_users`) a la vez; JWT incluye ambos claims. |
+
+## Reparto identitario v1
+
+El documento inicial del proyecto contemplaba `Identity.API` para CRUD de instituciones y alumnos. En el monorepo greenfield ese alcance vive en **`academy`**; no existe contenedor `identity-api` en MVP ([ADR-0006](docs/adr/0006-consolidate-identity-into-academy-auth.md)).
+
+| Concern | Módulo | Rutas / mecanismo |
+|---------|--------|-------------------|
+| SIWE + JWT + RBAC | `auth` | `/auth/*`; enriquece JWT con `user_id`, `platform_admin`, `holder`, `membership` |
+| Instituciones, carreras, estudiantes, invitaciones, usuarios institucionales | `academy` | `/academy/*` |
+| Perfil off-chain del titular | `academy` | `GET/PUT /academy/holders/me` |
+| Credenciales del titular | `issuer` | `/issuer/holders/me/credentials` |
+| Políticas JWT downstream | `SovereignID.Authorization` | Cada API consumidora |
+
+**Huecos MVP pendientes** (alcance original de Identity, hoy en academy): update/delete de instituciones, list/get/update de carreras, update de estudiantes, auditoría administrativa (`audit_logs`).
 
 ## Configuración relevante
 
@@ -282,7 +299,7 @@ Backend-for-Frontend entre el portal web y los microservicios internos. Decisió
 | Contrato público | `docs/contracts/bff.openapi.json` (pass-through v1) |
 | Prefijo browser | `/api/` (nginx strip → `bff-api:8080`) |
 | Auth SIWE | **Fuera del BFF** — `/auth/` directo a `auth-api` |
-| Downstream v1 | verifier, issuer (holder + admin), academy, identity (health), reports |
+| Downstream v1 | verifier, issuer (holder + admin), academy, reports |
 | JWT holder | Reenvío del header `Authorization`; validación en `issuer-api` |
 
 Rutas issuer admin expuestas en v1: `POST /issuer/institutions/{id}/wallet`, `POST /issuer/students/{id}/title`, `GET /issuer/credentials/{id}`.

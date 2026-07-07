@@ -68,7 +68,6 @@ services:
       - Downstream__Verifier=http://verifier-api:8080
       - Downstream__Issuer=http://issuer-api:8080
       - Downstream__Academy=http://academy-api:8080
-      - Downstream__Identity=http://identity-api:8080
       - Downstream__Reports=http://reports-api:8080
     ports:
       - "8082:8080"
@@ -84,18 +83,6 @@ services:
       - ASPNETCORE_URLS=http://+:8080
     ports:
       - "8083:8080"
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"
-
-  identity-api:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-    ports:
-      - "8084:8080"
     logging:
       driver: json-file
       options:
