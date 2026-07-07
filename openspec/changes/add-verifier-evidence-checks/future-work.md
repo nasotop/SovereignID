@@ -8,4 +8,4 @@ Registro de ítems explícitamente fuera de alcance del cambio `add-verifier-evi
 
 ## UX del portal verifier
 
-**Cambio de frontend posterior:** presentar el badge `integrity_failed` y exponer `validationSource` / `revocationSource` en la UI del portal (cliente Angular vía BFF). El backend y el contrato OpenAPI ya soportan los campos; la regeneración mecánica del cliente no sustituye el diseño visual.
+**Completado** en el cambio `frontend-onchain-verification-ui`: badge `integrity_failed`, checks agrupados, fuentes `validationSource`/`revocationSource`, banner de evidencia deshabilitada, anclas compartidas (`CredentialAnchorsPanel`) y ciclo holder → verifier vía query param.
