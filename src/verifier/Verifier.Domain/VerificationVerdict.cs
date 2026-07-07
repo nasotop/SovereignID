@@ -11,7 +11,9 @@ public sealed record VerificationChecks(
     bool? NotExpired,
     bool? HashMatches,
     bool? OnChainExists,
-    bool? SignatureValid);
+    bool? SignatureValid,
+    string? ValidationSource = null,
+    string? RevocationSource = null);
 
 /// <summary>Resultado completo de una verificación: el <see cref="Result"/> resumido más el detalle por chequeo.</summary>
 public sealed record VerificationVerdict(VerificationResult Result, VerificationChecks Checks);

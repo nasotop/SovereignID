@@ -6,9 +6,9 @@ namespace Verifier.Application;
 public sealed record VerificationOutcome(VerificationVerdict Verdict, CredentialReadModel? Credential);
 
 /// <summary>
-/// Verifica una credencial por su UUID. Computa los chequeos sin dependencia externa
-/// (<c>found</c>, <c>notRevoked</c>, <c>notExpired</c>), aplica la precedencia
-/// <c>not_found &gt; revoked &gt; expired &gt; valid</c> y registra el intento en <c>verification_logs</c>.
+/// Verifica una credencial por su UUID. Combina chequeos de BD con evidencia externa opcional
+/// (on-chain, IPFS, firma EIP-712) y aplica la precedencia
+/// <c>not_found &gt; revoked &gt; expired &gt; integrity_failed &gt; valid</c>.
 /// </summary>
 public sealed class VerifyCredentialUseCase
 {
@@ -16,15 +16,18 @@ public sealed class VerifyCredentialUseCase
     private const string StatusExpired = "expired";
 
     private readonly ICredentialReadStore _credentialReadStore;
+    private readonly ICredentialEvidenceVerifier _evidenceVerifier;
     private readonly IVerificationLogStore _verificationLogStore;
     private readonly TimeProvider _timeProvider;
 
     public VerifyCredentialUseCase(
         ICredentialReadStore credentialReadStore,
+        ICredentialEvidenceVerifier evidenceVerifier,
         IVerificationLogStore verificationLogStore,
         TimeProvider timeProvider)
     {
         _credentialReadStore = credentialReadStore;
+        _evidenceVerifier = evidenceVerifier;
         _verificationLogStore = verificationLogStore;
         _timeProvider = timeProvider;
     }
@@ -35,61 +38,122 @@ public sealed class VerifyCredentialUseCase
 
         if (credential is null)
         {
-            var notFoundVerdict = new VerificationVerdict(
-                VerificationResult.NotFound,
-                new VerificationChecks(
-                    Found: false,
-                    NotRevoked: null,
-                    NotExpired: null,
-                    HashMatches: null,
-                    OnChainExists: null,
-                    SignatureValid: null));
-
-            await _verificationLogStore.RecordAsync(
-                new VerificationLogEntry(
-                    CredentialId: null,
-                    CredentialIdQuery: credentialId.ToString(),
-                    Result: VerificationResult.NotFound,
-                    NotRevoked: null,
-                    NotExpired: null),
+            return await RecordAndReturnAsync(
+                credentialId,
+                null,
+                new VerificationVerdict(
+                    VerificationResult.NotFound,
+                    new VerificationChecks(
+                        Found: false,
+                        NotRevoked: null,
+                        NotExpired: null,
+                        HashMatches: null,
+                        OnChainExists: null,
+                        SignatureValid: null)),
                 cancellationToken);
-
-            return new VerificationOutcome(notFoundVerdict, Credential: null);
         }
 
         var now = _timeProvider.GetUtcNow();
+        var bdRevoked = IsBdRevoked(credential);
+        var isExpired = IsExpired(credential, now);
 
-        var isRevoked = string.Equals(credential.Status, StatusRevoked, StringComparison.OrdinalIgnoreCase)
-            || credential.RevokedAt is not null;
+        var evidence = await _evidenceVerifier.VerifyAsync(
+            new CredentialEvidence(
+                credential.Id,
+                credential.InstitutionId,
+                credential.Anchors.ContentHash,
+                credential.Anchors.IpfsCid,
+                credential.IpfsGatewayUrl,
+                credential.IssuerWalletAddress,
+                credential.SubjectWalletAddress,
+                credential.Eip712Signature,
+                credential.Anchors.ChainId),
+            cancellationToken);
 
-        var isExpired = (credential.ExpiresAt is { } expiresAt && expiresAt < now)
-            || string.Equals(credential.Status, StatusExpired, StringComparison.OrdinalIgnoreCase);
+        var onChainRevoked = evidence.OnChainRevoked == true;
+        var isRevoked = bdRevoked || onChainRevoked;
+        var revocationSource = ResolveRevocationSource(bdRevoked, onChainRevoked);
 
-        var result = isRevoked
-            ? VerificationResult.Revoked
-            : isExpired
-                ? VerificationResult.Expired
-                : VerificationResult.Valid;
+        var checks = new VerificationChecks(
+            Found: true,
+            NotRevoked: !isRevoked,
+            NotExpired: !isExpired,
+            HashMatches: evidence.HashMatches,
+            OnChainExists: evidence.OnChainExists,
+            SignatureValid: evidence.SignatureValid,
+            ValidationSource: evidence.ValidationSource,
+            RevocationSource: revocationSource);
 
-        var verdict = new VerificationVerdict(
-            result,
-            new VerificationChecks(
-                Found: true,
-                NotRevoked: !isRevoked,
-                NotExpired: !isExpired,
-                HashMatches: null,
-                OnChainExists: null,
-                SignatureValid: null));
+        var result = ResolveResult(isRevoked, isExpired, checks);
+
+        return await RecordAndReturnAsync(
+            credentialId,
+            credential,
+            new VerificationVerdict(result, checks),
+            cancellationToken);
+    }
+
+    private async Task<VerificationOutcome> RecordAndReturnAsync(
+        Guid credentialId,
+        CredentialReadModel? credential,
+        VerificationVerdict verdict,
+        CancellationToken cancellationToken)
+    {
+        var checks = verdict.Checks;
 
         await _verificationLogStore.RecordAsync(
             new VerificationLogEntry(
-                CredentialId: credential.Id,
+                CredentialId: credential?.Id,
                 CredentialIdQuery: credentialId.ToString(),
-                Result: result,
-                NotRevoked: !isRevoked,
-                NotExpired: !isExpired),
+                Result: verdict.Result,
+                NotRevoked: checks.NotRevoked,
+                NotExpired: checks.NotExpired,
+                HashMatches: checks.HashMatches,
+                OnChainExists: checks.OnChainExists,
+                SignatureValid: checks.SignatureValid,
+                SignatureValidationSource: checks.ValidationSource,
+                RevocationSource: checks.RevocationSource),
             cancellationToken);
 
         return new VerificationOutcome(verdict, credential);
     }
+
+    private static bool IsBdRevoked(CredentialReadModel credential) =>
+        string.Equals(credential.Status, StatusRevoked, StringComparison.OrdinalIgnoreCase)
+        || credential.RevokedAt is not null;
+
+    private static bool IsExpired(CredentialReadModel credential, DateTimeOffset now) =>
+        (credential.ExpiresAt is { } expiresAt && expiresAt < now)
+        || string.Equals(credential.Status, StatusExpired, StringComparison.OrdinalIgnoreCase);
+
+    private static string? ResolveRevocationSource(bool bdRevoked, bool onChainRevoked) => (bdRevoked, onChainRevoked) switch
+    {
+        (true, true) => RevocationSource.Both.ToWireValue(),
+        (true, false) => RevocationSource.Bd.ToWireValue(),
+        (false, true) => RevocationSource.OnChain.ToWireValue(),
+        _ => null
+    };
+
+    private static VerificationResult ResolveResult(bool isRevoked, bool isExpired, VerificationChecks checks)
+    {
+        if (isRevoked)
+        {
+            return VerificationResult.Revoked;
+        }
+
+        if (isExpired)
+        {
+            return VerificationResult.Expired;
+        }
+
+        if (HasIntegrityFailure(checks))
+        {
+            return VerificationResult.IntegrityFailed;
+        }
+
+        return VerificationResult.Valid;
+    }
+
+    private static bool HasIntegrityFailure(VerificationChecks checks) =>
+        checks.OnChainExists == false || checks.HashMatches == false || checks.SignatureValid == false;
 }

@@ -23,7 +23,13 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public string Date { get; set; }
 #endif
         /// <summary>The value property</summary>
-        public int? Value { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Value { get; set; }
+#nullable restore
+#else
+        public UntypedNode Value { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.TimeSeriesPointResponse"/> and sets the default values.
         /// </summary>
@@ -50,7 +56,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
             return new Dictionary<string, Action<IParseNode>>
             {
                 { "date", n => { Date = n.GetStringValue(); } },
-                { "value", n => { Value = n.GetIntValue(); } },
+                { "value", n => { Value = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -61,7 +67,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("date", Date);
-            writer.WriteIntValue("value", Value);
+            writer.WriteObjectValue<UntypedNode>("value", Value);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

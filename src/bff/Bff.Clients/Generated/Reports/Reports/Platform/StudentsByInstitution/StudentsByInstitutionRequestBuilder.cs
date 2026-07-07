@@ -22,7 +22,7 @@ namespace SovereignID.Bff.Clients.Reports.Reports.Platform.StudentsByInstitution
         /// </summary>
         /// <param name="pathParameters">Path parameters for the request</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public StudentsByInstitutionRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/reports/platform/students-by-institution?asOf={asOf}", pathParameters)
+        public StudentsByInstitutionRequestBuilder(Dictionary<string, object> pathParameters, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/reports/platform/students-by-institution{?asOf*}", pathParameters)
         {
         }
         /// <summary>
@@ -30,7 +30,7 @@ namespace SovereignID.Bff.Clients.Reports.Reports.Platform.StudentsByInstitution
         /// </summary>
         /// <param name="rawUrl">The raw URL to use for the request builder.</param>
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
-        public StudentsByInstitutionRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/reports/platform/students-by-institution?asOf={asOf}", rawUrl)
+        public StudentsByInstitutionRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/reports/platform/students-by-institution{?asOf*}", rawUrl)
         {
         }
         /// <summary>
@@ -39,6 +39,7 @@ namespace SovereignID.Bff.Clients.Reports.Reports.Platform.StudentsByInstitution
         /// <returns>A <see cref="global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse"/></returns>
         /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
         /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+        /// <exception cref="global::SovereignID.Bff.Clients.Reports.Models.ProblemDetails">When receiving a 403 status code</exception>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
         public async Task<global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse?> GetAsync(Action<RequestConfiguration<global::SovereignID.Bff.Clients.Reports.Reports.Platform.StudentsByInstitution.StudentsByInstitutionRequestBuilder.StudentsByInstitutionRequestBuilderGetQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
@@ -49,7 +50,11 @@ namespace SovereignID.Bff.Clients.Reports.Reports.Platform.StudentsByInstitution
         {
 #endif
             var requestInfo = ToGetRequestInformation(requestConfiguration);
-            return await RequestAdapter.SendAsync<global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse>(requestInfo, global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse.CreateFromDiscriminatorValue, default, cancellationToken).ConfigureAwait(false);
+            var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>
+            {
+                { "403", global::SovereignID.Bff.Clients.Reports.Models.ProblemDetails.CreateFromDiscriminatorValue },
+            };
+            return await RequestAdapter.SendAsync<global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse>(requestInfo, global::SovereignID.Bff.Clients.Reports.Models.PlatformStudentsByInstitutionResponse.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
         /// Alumnos activos por institución a una fecha (R-P2).

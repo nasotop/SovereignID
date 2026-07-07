@@ -30,6 +30,11 @@ internal sealed class EfVerificationLogStore : IVerificationLogStore
             Result = ToEntityResult(entry.Result),
             NotRevoked = entry.NotRevoked,
             NotExpired = entry.NotExpired,
+            HashMatches = entry.HashMatches,
+            OnChainExists = entry.OnChainExists,
+            SignatureValid = entry.SignatureValid,
+            SignatureValidationSource = entry.SignatureValidationSource,
+            RevocationSource = entry.RevocationSource,
             VerifierIp = _requestContext.ClientIp ?? IPAddress.Loopback,
             VerifierUserAgent = ResolveUserAgent(_requestContext.UserAgent)
         };
@@ -44,6 +49,7 @@ internal sealed class EfVerificationLogStore : IVerificationLogStore
         DomainVerificationResult.Revoked => VerificationResultEnum.Revoked,
         DomainVerificationResult.Expired => VerificationResultEnum.Expired,
         DomainVerificationResult.NotFound => VerificationResultEnum.NotFound,
+        DomainVerificationResult.IntegrityFailed => VerificationResultEnum.IntegrityFailed,
         _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unknown verification result.")
     };
 

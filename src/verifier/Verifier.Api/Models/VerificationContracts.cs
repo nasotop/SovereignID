@@ -10,7 +10,9 @@ public sealed record VerificationChecksResponse(
     bool? NotExpired,
     bool? HashMatches,
     bool? OnChainExists,
-    bool? SignatureValid);
+    bool? SignatureValid,
+    string? ValidationSource,
+    string? RevocationSource);
 
 /// <summary>Emisor de la credencial (datos de <c>institutions</c>).</summary>
 public sealed record IssuerResponse(string Did, string DisplayName, string Code);

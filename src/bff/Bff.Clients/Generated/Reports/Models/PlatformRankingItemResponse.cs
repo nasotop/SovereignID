@@ -25,7 +25,13 @@ namespace SovereignID.Bff.Clients.Reports.Models
         /// <summary>The institutionId property</summary>
         public Guid? InstitutionId { get; set; }
         /// <summary>The total property</summary>
-        public int? Total { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? Total { get; set; }
+#nullable restore
+#else
+        public UntypedNode Total { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.PlatformRankingItemResponse"/> and sets the default values.
         /// </summary>
@@ -53,7 +59,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
             {
                 { "displayName", n => { DisplayName = n.GetStringValue(); } },
                 { "institutionId", n => { InstitutionId = n.GetGuidValue(); } },
-                { "total", n => { Total = n.GetIntValue(); } },
+                { "total", n => { Total = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -65,7 +71,7 @@ namespace SovereignID.Bff.Clients.Reports.Models
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
             writer.WriteStringValue("displayName", DisplayName);
             writer.WriteGuidValue("institutionId", InstitutionId);
-            writer.WriteIntValue("total", Total);
+            writer.WriteObjectValue<UntypedNode>("total", Total);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

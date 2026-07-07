@@ -22,7 +22,8 @@ CREATE TYPE "verification_result" AS ENUM (
   'revoked',
   'expired',
   'not_found',
-  'ipfs_unreachable'
+  'ipfs_unreachable',
+  'integrity_failed'
 );
 
 CREATE TYPE "wallet_status" AS ENUM (
@@ -186,7 +187,9 @@ CREATE TABLE "verification_logs" (
   "hash_matches" boolean,
   "on_chain_exists" boolean,
   "not_revoked" boolean,
-  "not_expired" boolean
+  "not_expired" boolean,
+  "signature_validation_source" varchar(32),
+  "revocation_source" varchar(16)
 );
 
 CREATE TABLE "audit_logs" (

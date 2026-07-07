@@ -9,11 +9,11 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface ReportsPlatformCredentialsByInstitutionGet$Params {
-  from: string;
-  to: string;
+  from?: string;
+  to?: string;
 }
 
-export function reportsPlatformCredentialsByInstitutionGet(http: HttpClient, rootUrl: string, params: ReportsPlatformCredentialsByInstitutionGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
+export function reportsPlatformCredentialsByInstitutionGet(http: HttpClient, rootUrl: string, params?: ReportsPlatformCredentialsByInstitutionGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
   const rb = new RequestBuilder(rootUrl, reportsPlatformCredentialsByInstitutionGet.PATH, 'get');
   if (params) {
     rb.query('from', params.from, {});
