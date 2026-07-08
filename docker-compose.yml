@@ -157,6 +157,15 @@ services:
       Persistence__Provider: ${Academy__Persistence__Provider:-InMemory}
       Academy__InvitationBaseUrl: ${Academy__InvitationBaseUrl:-http://localhost:4333/institution-invitations/accept}
       Academy__InvitationTtlHours: ${Academy__InvitationTtlHours:-72}
+      Academy__Email__Provider: ${Academy__Email__Provider:-Logging}
+      Academy__Email__Smtp__Host: ${Academy__Email__Smtp__Host:-}
+      Academy__Email__Smtp__Port: ${Academy__Email__Smtp__Port:-587}
+      Academy__Email__Smtp__UseStartTls: ${Academy__Email__Smtp__UseStartTls:-true}
+      Academy__Email__Smtp__Username: ${Academy__Email__Smtp__Username:-}
+      Academy__Email__Smtp__Password: ${Academy__Email__Smtp__Password:-}
+      Academy__Email__Smtp__FromAddress: ${Academy__Email__Smtp__FromAddress:-}
+      Academy__Email__Smtp__FromDisplayName: ${Academy__Email__Smtp__FromDisplayName:-SovereignID}
+      Academy__Email__Smtp__Subject: ${Academy__Email__Smtp__Subject:-Invitación a SovereignID}
     expose:
       - "8080"
     networks:

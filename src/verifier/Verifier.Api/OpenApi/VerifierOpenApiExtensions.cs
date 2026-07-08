@@ -76,7 +76,7 @@ internal static class VerifierOpenApiExtensions
                 {
                     schema.Properties!["validationSource"] = new OpenApiSchema
                     {
-                        Type = JsonSchemaType.String,
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
                         Enum = ValidationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),
@@ -84,7 +84,7 @@ internal static class VerifierOpenApiExtensions
 
                     schema.Properties!["revocationSource"] = new OpenApiSchema
                     {
-                        Type = JsonSchemaType.String,
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
                         Enum = RevocationSourceWireValues
                             .Select(value => (JsonNode)JsonValue.Create(value))
                             .ToList(),
@@ -96,8 +96,9 @@ internal static class VerifierOpenApiExtensions
 
             options.AddOperationTransformer((operation, context, _) =>
             {
-                if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
-                    && action == "Verify")
+                if (context.Description.HttpMethod is not null
+                    && HttpMethods.IsPost(context.Description.HttpMethod)
+                    && string.Equals(context.Description.RelativePath, "verifications", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Responses ??= new OpenApiResponses();
                     operation.Responses["429"] = new OpenApiResponse

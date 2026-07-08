@@ -277,7 +277,10 @@
               "bd_fallback_rejected",
               "not_evaluated"
             ],
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "revocationSource": {
             "enum": [
@@ -285,7 +288,10 @@
               "on_chain",
               "both"
             ],
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "Booleanos por chequeo; `null` = no evaluado."

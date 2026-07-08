@@ -1571,6 +1571,8 @@
         "tags": [
           "Verifications"
         ],
+        "summary": "Verifica una Verifiable Credential por su UUID (pass-through al verifier).",
+        "description": "Los veredictos de negocio se devuelven con `200` y el campo `result`. Los errores de protocolo usan RFC 7807 Problem Details con extensión `error`: `invalid_credential_id` (`400`) o `rate_limit_exceeded` (`429`).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1611,6 +1613,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
           }
         }
       }
@@ -3002,7 +3007,10 @@
               "bd_fallback_rejected",
               "not_evaluated"
             ],
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "revocationSource": {
             "enum": [
@@ -3010,7 +3018,10 @@
               "on_chain",
               "both"
             ],
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

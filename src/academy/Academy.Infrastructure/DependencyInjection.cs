@@ -16,7 +16,7 @@ public static class DependencyInjection
         services.Configure<AcademyOptions>(configuration.GetSection(AcademyOptions.SectionName));
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IInvitationTokenService, Sha256InvitationTokenService>();
-        services.AddSingleton<IInstitutionInvitationEmailSender, LoggingInstitutionInvitationEmailSender>();
+        services.AddAcademyEmail(configuration);
         services.AddScoped<AcademyService>();
         services.AddAcademyPersistence(configuration);
         services.AddAcademyJwtAuthentication(configuration);
@@ -35,6 +35,8 @@ public static class DependencyInjection
             throw new InvalidOperationException(
                 "ConnectionStrings:DefaultConnection is required when Persistence:Provider is Postgres.");
         }
+
+        EmailServiceCollectionExtensions.ValidateAcademyEmailConfiguration(configuration);
     }
 }
 
