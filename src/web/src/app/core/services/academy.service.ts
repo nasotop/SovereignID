@@ -17,12 +17,15 @@ import { InstitutionSummary } from '../../api/bff/models/institution-summary';
 import { BFF_API_BASE } from '../constants/api.constants';
 import {
   AddStudentWalletPayload,
+  CareerSummary,
+  CreateCareerPayload,
   CreateStudentPayload,
   InstitutionSummary as AcademyInstitutionSummary,
   InstitutionUserSummary,
   InviteInstitutionUserPayload,
   StudentSummary,
   StudentWalletSummary,
+  UpdateCareerPayload,
   UpdateInstitutionUserRolePayload,
 } from '../models/academy.models';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
@@ -123,6 +126,59 @@ export class AcademyService {
       `${BFF_API_BASE}/academy/institutions/${institutionId}/students`,
       'No se pudieron listar los estudiantes',
     );
+  }
+
+  async listCareers(institutionId: string): Promise<readonly CareerSummary[]> {
+    this.requireJwt();
+
+    return this.getJson<readonly CareerSummary[]>(
+      `${BFF_API_BASE}/academy/institutions/${institutionId}/careers`,
+      'No se pudieron listar las carreras',
+    );
+  }
+
+  async createCareer(
+    institutionId: string,
+    body: CreateCareerPayload,
+  ): Promise<CareerSummary> {
+    this.requireJwt();
+
+    return this.postJson<CareerSummary>(
+      `${BFF_API_BASE}/academy/institutions/${institutionId}/careers`,
+      body,
+      'No se pudo crear la carrera',
+    );
+  }
+
+  async updateCareer(
+    institutionId: string,
+    careerId: string,
+    body: UpdateCareerPayload,
+  ): Promise<CareerSummary> {
+    this.requireJwt();
+
+    return this.patchJson<CareerSummary>(
+      `${BFF_API_BASE}/academy/institutions/${institutionId}/careers/${careerId}`,
+      body,
+      'No se pudo actualizar la carrera',
+    );
+  }
+
+  async deactivateCareer(
+    institutionId: string,
+    careerId: string,
+  ): Promise<CareerSummary> {
+    this.requireJwt();
+
+    try {
+      return await firstValueFrom(
+        this.http.delete<CareerSummary>(
+          `${BFF_API_BASE}/academy/institutions/${institutionId}/careers/${careerId}`,
+        ),
+      );
+    } catch (error: unknown) {
+      throw this.mapApiError(error, 'No se pudo desactivar la carrera');
+    }
   }
 
   async getStudent(

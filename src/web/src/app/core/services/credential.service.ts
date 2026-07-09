@@ -77,6 +77,7 @@ function mapSummaryToIssuedCredential(
     credentialId: summary.credentialId,
     institutionId: summary.institutionId,
     studentId: summary.studentId,
+    careerId: summary.careerId ?? null,
     studentLabel: summary.studentLabel ?? summary.studentId,
     documentType: summary.credentialTypeCode,
     issuedDate: summary.issuedAt.slice(0, 10),

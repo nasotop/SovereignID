@@ -41,7 +41,7 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
         CancellationToken cancellationToken)
     {
         if (command.StudentId != StudentId
-            || command.CareerId != CareerId
+            || command.CareerId is null
             || !string.Equals(command.CredentialTypeCode, "TITULO", StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult<StudentTitleLinked?>(null);
@@ -52,7 +52,7 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
             Id = command.CredentialId ?? Guid.NewGuid(),
             InstitutionId = InstitutionId,
             StudentId = StudentId,
-            CareerId = CareerId,
+            CareerId = command.CareerId,
             SubjectDid = "did:ethr:sepolia:0x2222222222222222222222222222222222222222",
             IssuerDid = "did:ethr:sepolia:0x1111111111111111111111111111111111111111",
             IpfsCid = command.IpfsCid,
@@ -73,7 +73,7 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
             entity.Id,
             InstitutionId,
             StudentId,
-            CareerId,
+            command.CareerId,
             WalletId,
             entity.SubjectDid,
             entity.IssuerDid,

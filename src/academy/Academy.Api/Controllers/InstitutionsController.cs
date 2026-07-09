@@ -84,6 +84,67 @@ public sealed class InstitutionsController : ControllerBase
         return FromResult(result, success => Created($"/academy/institutions/{institutionId}/careers/{success.Id}", success));
     }
 
+    /// <summary>Lista carreras de una institucion.</summary>
+    [HttpGet("{institutionId:guid}/careers")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
+    [ProducesResponseType(typeof(IReadOnlyList<CareerSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<CareerSummary>>> ListCareers(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.ListCareersAsync(institutionId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Consulta una carrera de una institucion.</summary>
+    [HttpGet("{institutionId:guid}/careers/{careerId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.PlatformOrInstitutionMember)]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CareerSummary>> GetCareer(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.GetCareerAsync(institutionId, careerId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Actualiza codigo y nombre de una carrera.</summary>
+    [HttpPatch("{institutionId:guid}/careers/{careerId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CareerSummary>> UpdateCareer(
+        Guid institutionId,
+        Guid careerId,
+        [FromBody] UpdateCareerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.UpdateCareerAsync(
+            new UpdateCareerCommand(institutionId, careerId, request.Code, request.Name),
+            cancellationToken);
+
+        return FromResult(result, success => Ok(success));
+    }
+
+    /// <summary>Desactiva una carrera sin borrar su historial.</summary>
+    [HttpDelete("{institutionId:guid}/careers/{careerId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CareerSummary>> DeactivateCareer(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.DeactivateCareerAsync(institutionId, careerId, cancellationToken);
+        return FromResult(result, success => Ok(success));
+    }
+
     /// <summary>Crea un estudiante y, si se informa, vincula su wallet MetaMask existente como primaria.</summary>
     [HttpPost("{institutionId:guid}/students")]
     [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]

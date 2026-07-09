@@ -54,6 +54,8 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
       subtitle="Perfil personal, instituciones vinculadas y credenciales verificables."
       accent="blue"
       layoutWidth="full"
+      [userName]="displayName()"
+      userRole="holder"
       (logout)="handleLogout()"
     >
       @if (loadState() === 'loading') {

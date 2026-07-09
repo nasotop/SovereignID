@@ -41,6 +41,8 @@ El valor historico `student` puede existir en el enum por compatibilidad, pero n
 | Listar instituciones | Si | No | No | No |
 | Ver institucion propia | Si | Si | Si | Si |
 | Crear carrera | Si | Si | No | No |
+| Listar/ver carreras | Si | Si | Si | Si |
+| Editar/desactivar carrera | Si | Si | No | No |
 | Crear estudiante | Si | Si | No | No |
 | Listar/ver estudiantes | Si | Si | Si | Si |
 | Vincular wallet manual a estudiante | Si | Si | No | No |

@@ -12,6 +12,10 @@ public sealed record CreateCareerRequest(
     string Code,
     string Name);
 
+public sealed record UpdateCareerRequest(
+    string Code,
+    string Name);
+
 public sealed record CreateStudentRequest(
     string? ExternalReference,
     int? EnrollmentYear,

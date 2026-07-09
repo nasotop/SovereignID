@@ -40,6 +40,12 @@ public sealed record CreateCareerCommand(
     string Code,
     string Name);
 
+public sealed record UpdateCareerCommand(
+    Guid InstitutionId,
+    Guid CareerId,
+    string Code,
+    string Name);
+
 public sealed record CareerSummary(
     Guid Id,
     Guid InstitutionId,

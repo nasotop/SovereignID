@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
+  CareerSummary,
   InstitutionRole,
   InstitutionSummary,
   InstitutionUserSummary,
@@ -19,7 +20,7 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
 import { IssuerTabComponent } from '../issuer/issuer-tab.component';
 import { AcademyReportsTabComponent } from './academy-reports-tab.component';
 
-type AcademyTab = 'students' | 'users' | 'reports' | 'issuer';
+type AcademyTab = 'students' | 'careers' | 'users' | 'reports' | 'issuer';
 type AcademyInfoPanelTab = 'summary' | 'institution';
 
 const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewer'];
@@ -48,6 +49,8 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       subtitle="Instituciones, estudiantes, usuarios y wallets segun tu rol"
       layoutWidth="full"
       [hideHeader]="true"
+      [userName]="activeUserName()"
+      [userRole]="activeRoleLabel()"
       (logout)="handleLogout()"
     >
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -77,7 +80,15 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
             <h3 class="mt-1 truncate text-xl font-bold text-white">
               {{ selectedInstitution()!.displayName }}
             </h3>
-            <p class="truncate text-sm text-slate-400">{{ selectedInstitution()!.legalName }}</p>
+            <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+              <p class="truncate text-sm text-slate-400">{{ selectedInstitution()!.legalName }}</p>
+              <span
+                class="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold"
+                [ngClass]="activeRoleBadgeClass()"
+              >
+                {{ activeRoleLabel() }}
+              </span>
+            </div>
           </div>
 
           <div class="flex flex-wrap justify-start gap-3 lg:justify-end">
@@ -106,6 +117,15 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 Crear estudiante
               </button>
             }
+            @if (activeTab() === 'careers' && canManageInstitution()) {
+              <button
+                type="button"
+                class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+                (click)="openCareerModal()"
+              >
+                Crear carrera
+              </button>
+            }
             @if (activeTab() === 'users' && canManageInstitution()) {
               <button
                 type="button"
@@ -129,6 +149,18 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               (click)="setActiveTab('students')"
             >
               Estudiantes
+            </button>
+          }
+          @if (canViewAcademyManagement()) {
+            <button
+              type="button"
+              class="border-b-2 px-4 py-3 text-sm font-medium"
+              [ngClass]="activeTab() === 'careers'
+                ? 'border-blue-500 text-blue-300'
+                : 'border-transparent text-slate-400 hover:text-white'"
+              (click)="setActiveTab('careers')"
+            >
+              Carreras
             </button>
           }
           @if (canManageInstitution()) {
@@ -316,6 +348,143 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
             </aside>
           }
 
+          @if (activeTab() === 'careers') {
+            <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
+              <div class="border-b border-slate-700 p-4">
+                <h3 class="text-base font-semibold text-white">Pool de carreras</h3>
+                <p class="text-xs text-slate-400">{{ careers().length }} carreras institucionales</p>
+              </div>
+              <div class="min-h-0 flex-1 overflow-auto">
+                @for (career of careers(); track career.id) {
+                  <button
+                    type="button"
+                    class="w-full border-b border-slate-700/70 p-4 text-left transition hover:bg-slate-700/40"
+                    [class.bg-slate-700]="selectedCareer()?.id === career.id"
+                    (click)="selectCareer(career)"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-white">{{ career.name }}</p>
+                        <p class="mt-1 font-mono text-xs text-slate-500">{{ career.code }}</p>
+                      </div>
+                      <app-status-badge
+                        [label]="career.isActive ? 'Activa' : 'Inactiva'"
+                        [tone]="career.isActive ? 'success' : 'danger'"
+                      />
+                    </div>
+                    <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                      <span class="h-1.5 w-1.5 rounded-full" [ngClass]="career.isActive ? 'bg-emerald-400' : 'bg-red-400'"></span>
+                      <span>{{ career.isActive ? 'Disponible para futuras emisiones' : 'Fuera del flujo de emision' }}</span>
+                    </div>
+                  </button>
+                } @empty {
+                  <div class="p-10 text-center">
+                    <p class="text-sm font-medium text-white">
+                      {{ loading() ? 'Cargando carreras...' : 'Aun no hay carreras en esta institucion.' }}
+                    </p>
+                    @if (!loading() && canManageInstitution()) {
+                      <button
+                        type="button"
+                        class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                        (click)="openCareerModal()"
+                      >
+                        Crear primera carrera
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </section>
+
+            <aside class="detail-panel min-h-0 overflow-auto rounded-lg border border-slate-700 bg-slate-800 p-6">
+              @if (selectedCareer()) {
+                <div class="space-y-6">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="text-xs font-medium uppercase text-blue-300">Carrera seleccionada</p>
+                      <h3 class="mt-1 truncate text-xl font-semibold text-white">
+                        {{ selectedCareer()!.name }}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
+                      aria-label="Cerrar detalle"
+                      (click)="selectedCareer.set(null)"
+                    >
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                    <p class="text-xs text-slate-500">Estado operativo</p>
+                    <p class="mt-2 text-sm font-semibold" [ngClass]="selectedCareer()!.isActive ? 'text-emerald-300' : 'text-red-300'">
+                      {{ selectedCareer()!.isActive ? 'Activa para emision' : 'Inactiva' }}
+                    </p>
+                  </div>
+                  <dl class="space-y-4 text-sm">
+                    <div>
+                      <dt class="text-slate-500">Codigo</dt>
+                      <dd class="font-mono text-slate-200">{{ selectedCareer()!.code }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-slate-500">ID</dt>
+                      <dd><app-copy-value [value]="selectedCareer()!.id" /></dd>
+                    </div>
+                    <div>
+                      <dt class="text-slate-500">Creada</dt>
+                      <dd class="text-slate-200">{{ selectedCareer()!.createdAt | date: 'mediumDate' }}</dd>
+                    </div>
+                  </dl>
+
+                  @if (canManageInstitution()) {
+                    <div class="space-y-3 border-t border-slate-700 pt-5">
+                      <button
+                        type="button"
+                        class="w-full rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
+                        (click)="openCareerModal(selectedCareer()!)"
+                      >
+                        Editar carrera
+                      </button>
+                      @if (selectedCareer()!.isActive) {
+                        <button
+                          type="button"
+                          class="w-full rounded-lg border border-red-500/40 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10"
+                          (click)="handleDeactivateCareer(selectedCareer()!)"
+                          [disabled]="submitting()"
+                        >
+                          Desactivar carrera
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="space-y-6">
+                  <div>
+                    <p class="text-xs font-medium uppercase text-blue-300">Catalogo academico</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">Carreras institucionales</h3>
+                    <p class="mt-1 text-sm text-slate-400">
+                      Este pool alimentara el flujo de emision de titulos en el modulo issuer.
+                    </p>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                      <p class="text-xs text-slate-500">Activas</p>
+                      <p class="mt-2 text-2xl font-bold text-emerald-300">{{ activeCareersCount() }}</p>
+                    </article>
+                    <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+                      <p class="text-xs text-slate-500">Inactivas</p>
+                      <p class="mt-2 text-2xl font-bold text-red-300">{{ inactiveCareersCount() }}</p>
+                    </article>
+                  </div>
+                  <ng-container [ngTemplateOutlet]="institutionContextPanel" />
+                </div>
+              }
+            </aside>
+          }
+
           @if (activeTab() === 'users' && canManageInstitution()) {
             <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
               <div class="border-b border-slate-700 p-4">
@@ -458,6 +627,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 [institutionId]="selectedInstitutionId()"
                 [institution]="selectedInstitution()"
                 [students]="students()"
+                [careers]="careers()"
                 [canIssue]="canIssueCredentials()"
                 [canRevoke]="canIssueCredentials()"
                 [showHeader]="false"
@@ -571,6 +741,24 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       </ng-template>
 
       <app-modal
+        [isOpen]="careerModalOpen()"
+        [title]="editingCareer() ? 'Editar carrera' : 'Crear carrera'"
+        description="Administra el catalogo academico que luego usara issuer para emitir titulos."
+        (closed)="closeCareerModal()"
+      >
+        <form class="grid gap-4" (submit)="handleSaveCareer($event)">
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white" placeholder="Codigo, ej: ING-SW" [ngModel]="careerCode()" name="careerCode" (ngModelChange)="careerCode.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Nombre de carrera" [ngModel]="careerName()" name="careerName" (ngModelChange)="careerName.set($event)" />
+          <div class="flex justify-end gap-3">
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCareerModal()">Cancelar</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting() || !careerCode().trim() || !careerName().trim()">
+              {{ submitting() ? 'Guardando...' : (editingCareer() ? 'Guardar cambios' : 'Crear carrera') }}
+            </button>
+          </div>
+        </form>
+      </app-modal>
+
+      <app-modal
         [isOpen]="createStudentModalOpen()"
         title="Crear estudiante"
         description="Registra un estudiante dentro de la institucion activa. La wallet es opcional."
@@ -630,6 +818,22 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       </app-modal>
     </app-portal-shell>
   `,
+  styles: `
+    .detail-panel {
+      animation: panel-in 180ms ease-out;
+    }
+
+    @keyframes panel-in {
+      from {
+        opacity: 0;
+        transform: translateX(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  `,
 })
 export class AcademyComponent implements OnInit {
   readonly authService = inject(AuthService);
@@ -648,15 +852,21 @@ export class AcademyComponent implements OnInit {
   readonly institutions = signal<readonly InstitutionSummary[]>([]);
   readonly selectedInstitutionId = signal('');
   readonly selectedInstitution = signal<InstitutionSummary | null>(null);
+  readonly careers = signal<readonly CareerSummary[]>([]);
   readonly students = signal<readonly StudentSummary[]>([]);
   readonly institutionUsers = signal<readonly InstitutionUserSummary[]>([]);
+  readonly selectedCareer = signal<CareerSummary | null>(null);
   readonly selectedStudent = signal<StudentSummary | null>(null);
   readonly selectedUser = signal<InstitutionUserSummary | null>(null);
 
+  readonly careerModalOpen = signal(false);
+  readonly editingCareer = signal<CareerSummary | null>(null);
   readonly createStudentModalOpen = signal(false);
   readonly walletModalOpen = signal(false);
   readonly inviteUserModalOpen = signal(false);
 
+  readonly careerCode = signal('');
+  readonly careerName = signal('');
   readonly studentReference = signal('');
   readonly studentYear = signal<number | null>(null);
   readonly studentWallet = signal('');
@@ -675,6 +885,14 @@ export class AcademyComponent implements OnInit {
 
   readonly activeStudentsCount = computed(
     () => this.students().filter((student) => student.isActive).length,
+  );
+
+  readonly activeCareersCount = computed(
+    () => this.careers().filter((career) => career.isActive).length,
+  );
+
+  readonly inactiveCareersCount = computed(
+    () => this.careers().length - this.activeCareersCount(),
   );
 
   readonly institutionAdminCount = computed(
@@ -724,6 +942,10 @@ export class AcademyComponent implements OnInit {
       return;
     }
 
+    if (tab === 'careers' && !this.canViewAcademyManagement()) {
+      return;
+    }
+
     if (tab === 'users' && !this.canManageInstitution()) {
       return;
     }
@@ -737,8 +959,18 @@ export class AcademyComponent implements OnInit {
     }
 
     this.activeTab.set(tab);
+    this.selectedCareer.set(null);
     this.selectedStudent.set(null);
     this.selectedUser.set(null);
+  }
+
+  selectCareer(career: CareerSummary): void {
+    if (this.selectedCareer()?.id === career.id) {
+      this.selectedCareer.set(null);
+      return;
+    }
+
+    this.selectedCareer.set(career);
   }
 
   selectStudent(student: StudentSummary): void {
@@ -761,6 +993,22 @@ export class AcademyComponent implements OnInit {
 
   openCreateStudentModal(): void {
     this.createStudentModalOpen.set(true);
+  }
+
+  openCareerModal(career?: CareerSummary): void {
+    this.editingCareer.set(career ?? null);
+    this.careerCode.set(career?.code ?? '');
+    this.careerName.set(career?.name ?? '');
+    this.careerModalOpen.set(true);
+  }
+
+  closeCareerModal(force = false): void {
+    if (force || !this.submitting()) {
+      this.careerModalOpen.set(false);
+      this.editingCareer.set(null);
+      this.careerCode.set('');
+      this.careerName.set('');
+    }
   }
 
   closeCreateStudentModal(): void {
@@ -801,6 +1049,7 @@ export class AcademyComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.selectedCareer.set(null);
     this.selectedStudent.set(null);
     this.selectedUser.set(null);
 
@@ -808,7 +1057,12 @@ export class AcademyComponent implements OnInit {
       const institution = await this.academyService.getInstitution(institutionId);
       this.selectedInstitution.set(institution as InstitutionSummary);
       this.ensureActiveTabAllowed();
-      this.students.set(await this.academyService.listStudents(institutionId));
+      const [careers, students] = await Promise.all([
+        this.academyService.listCareers(institutionId),
+        this.academyService.listStudents(institutionId),
+      ]);
+      this.careers.set(careers);
+      this.students.set(students);
 
       if (this.canManageInstitution()) {
         this.institutionUsers.set(
@@ -832,6 +1086,40 @@ export class AcademyComponent implements OnInit {
     return this.currentInstitutionRole() ?? 'sin rol';
   }
 
+  activeUserName(): string {
+    const currentAddress = this.authService.getAddress()?.toLowerCase();
+    if (!currentAddress) {
+      return this.authService.getUserDisplayName();
+    }
+
+    const user = this.institutionUsers().find(
+      (item) => item.walletAddress?.toLowerCase() === currentAddress,
+    );
+
+    return user?.displayName || user?.email || this.authService.getUserDisplayName();
+  }
+
+  activeRoleBadgeClass(): string {
+    const role = this.activeRoleLabel();
+    if (role === 'platform_admin') {
+      return 'border-violet-500/40 bg-violet-500/10 text-violet-200';
+    }
+
+    if (role === 'admin') {
+      return 'border-blue-500/40 bg-blue-500/10 text-blue-200';
+    }
+
+    if (role === 'issuer') {
+      return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+    }
+
+    if (role === 'viewer') {
+      return 'border-slate-500/50 bg-slate-700/40 text-slate-200';
+    }
+
+    return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
+  }
+
   canManageInstitution(): boolean {
     return this.authService.hasPlatformAdmin()
       || this.currentInstitutionRole() === 'admin';
@@ -839,7 +1127,7 @@ export class AcademyComponent implements OnInit {
 
   canViewAcademyManagement(): boolean {
     return this.authService.hasPlatformAdmin()
-      || ['admin', 'viewer'].includes(this.currentInstitutionRole() ?? '');
+      || ['admin', 'issuer', 'viewer'].includes(this.currentInstitutionRole() ?? '');
   }
 
   canUseIssuerTab(): boolean {
@@ -849,6 +1137,58 @@ export class AcademyComponent implements OnInit {
 
   canIssueCredentials(): boolean {
     return this.canUseIssuerTab();
+  }
+
+  async handleSaveCareer(event: Event): Promise<void> {
+    event.preventDefault();
+    const institutionId = this.selectedInstitutionId().trim();
+    const code = this.careerCode().trim();
+    const name = this.careerName().trim();
+    if (!institutionId || !code || !name) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const editing = this.editingCareer();
+      const career = editing
+        ? await this.academyService.updateCareer(institutionId, editing.id, { code, name })
+        : await this.academyService.createCareer(institutionId, { code, name });
+
+      this.careers.set(await this.academyService.listCareers(institutionId));
+      this.selectedCareer.set(career);
+      this.closeCareerModal(true);
+      this.successMessage.set(`Carrera ${career.code} guardada correctamente.`);
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
+  async handleDeactivateCareer(career: CareerSummary): Promise<void> {
+    const institutionId = this.selectedInstitutionId().trim();
+    if (!institutionId || !career.isActive) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const updatedCareer = await this.academyService.deactivateCareer(institutionId, career.id);
+      this.careers.set(await this.academyService.listCareers(institutionId));
+      this.selectedCareer.set(updatedCareer);
+      this.successMessage.set(`Carrera ${updatedCareer.code} desactivada.`);
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   async handleCreateStudent(event: Event): Promise<void> {
@@ -1033,12 +1373,14 @@ export class AcademyComponent implements OnInit {
   private ensureActiveTabAllowed(): void {
     const tab = this.activeTab();
     const isAllowed = (tab === 'students' && this.canViewAcademyManagement())
+      || (tab === 'careers' && this.canViewAcademyManagement())
       || (tab === 'users' && this.canManageInstitution())
       || (tab === 'reports' && this.canViewAcademyManagement())
       || (tab === 'issuer' && this.canUseIssuerTab());
 
     if (!isAllowed) {
       this.activeTab.set(this.defaultTab());
+      this.selectedCareer.set(null);
       this.selectedStudent.set(null);
       this.selectedUser.set(null);
     }

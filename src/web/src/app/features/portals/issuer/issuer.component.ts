@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import {
+  CareerSummary,
   InstitutionSummary,
   StudentSummary,
 } from '../../../core/models/academy.models';
@@ -29,6 +30,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
       title="Emision institucional"
       subtitle="Gestion de titulos y certificados verificables."
       layoutWidth="full"
+      [userRole]="activeRoleLabel()"
       (logout)="handleLogout()"
     >
       @if (errorMessage()) {
@@ -46,6 +48,11 @@ import { IssuerTabComponent } from './issuer-tab.component';
           <p class="text-sm text-slate-400">
             Esta ruta usa el mismo modulo de emision disponible en Academy.
           </p>
+          <span
+            class="mt-2 inline-flex rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-200"
+          >
+            {{ activeRoleLabel() }}
+          </span>
         </div>
 
         <div class="flex flex-wrap gap-3">
@@ -95,6 +102,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
           [institutionId]="selectedInstitutionId()"
           [institution]="selectedInstitution()"
           [students]="students()"
+          [careers]="careers()"
           [canIssue]="true"
           [canRevoke]="true"
         />
@@ -118,6 +126,19 @@ export class IssuerComponent implements OnInit {
   readonly selectedInstitutionId = signal('');
   readonly selectedInstitution = signal<InstitutionSummary | null>(null);
   readonly students = signal<readonly StudentSummary[]>([]);
+  readonly careers = signal<readonly CareerSummary[]>([]);
+
+  activeRoleLabel(): string {
+    if (this.authService.hasPlatformAdmin()) {
+      return 'platform_admin';
+    }
+
+    const institutionId = this.selectedInstitutionId();
+    return this.authService
+      .getMemberships()
+      .find((membership) => membership.institutionId === institutionId)
+      ?.role ?? 'issuer';
+  }
 
   ngOnInit(): void {
     this.selectedInstitutionId.set(this.authService.getMemberships()[0]?.institutionId ?? '');
@@ -140,12 +161,14 @@ export class IssuerComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
     try {
-      const [institution, students] = await Promise.all([
+      const [institution, students, careers] = await Promise.all([
         this.academyService.getInstitution(institutionId),
         this.academyService.listStudents(institutionId),
+        this.academyService.listCareers(institutionId),
       ]);
       this.selectedInstitution.set(institution as InstitutionSummary);
       this.students.set(students);
+      this.careers.set(careers);
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {

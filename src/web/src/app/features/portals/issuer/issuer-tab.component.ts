@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 
 import {
+  CareerSummary,
   InstitutionSummary,
   StudentSummary,
 } from '../../../core/models/academy.models';
@@ -113,6 +114,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             <thead class="sticky top-0 bg-slate-800 text-xs uppercase text-slate-400">
               <tr class="border-b border-slate-700">
                 <th class="px-4 py-3">Estudiante</th>
+                <th class="px-4 py-3">Carrera</th>
                 <th class="px-4 py-3">Tipo</th>
                 <th class="px-4 py-3">Emitida</th>
                 <th class="px-4 py-3">Estado</th>
@@ -130,6 +132,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
                     <p class="text-sm font-semibold text-white">{{ credential.studentLabel }}</p>
                     <p class="font-mono text-xs text-slate-500">{{ credential.studentId }}</p>
                   </td>
+                  <td class="px-4 py-4">
+                    <p class="text-sm text-slate-200">{{ careerNameForCredential(credential) }}</p>
+                    <p class="font-mono text-xs text-slate-500">{{ credential.careerId || '-' }}</p>
+                  </td>
                   <td class="px-4 py-4 text-sm text-slate-200">{{ credential.documentType }}</td>
                   <td class="px-4 py-4 text-sm text-slate-400">{{ credential.issuedDate }}</td>
                   <td class="px-4 py-4">
@@ -142,7 +148,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="px-4 py-12 text-center text-sm text-slate-400">
+                  <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
                     {{ isBusy() ? 'Cargando credenciales...' : 'No hay credenciales emitidas para este filtro.' }}
                   </td>
                 </tr>
@@ -182,6 +188,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               <div>
                 <dt class="text-slate-500">Estudiante</dt>
                 <dd class="text-slate-200">{{ selectedCredential()!.studentLabel }}</dd>
+              </div>
+              <div>
+                <dt class="text-slate-500">Carrera</dt>
+                <dd class="text-slate-200">{{ careerNameForCredential(selectedCredential()!) }}</dd>
               </div>
               <div>
                 <dt class="text-slate-500">Estado</dt>
@@ -265,7 +275,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               </dl>
               @if (!canOpenIssueModal()) {
                 <p class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
-                  Para emitir, la institucion debe tener wallet/DID emisor y debe existir al menos un estudiante con wallet primaria.
+                  Para emitir, la institucion debe tener wallet/DID emisor, al menos un estudiante con wallet primaria y una carrera activa.
                 </p>
               }
             </div>
@@ -329,14 +339,19 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
         </div>
 
         <label class="grid gap-1 text-sm text-slate-200">
-          Carrera ID opcional
-          <input
-            class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white"
-            placeholder="UUID de carrera si aplica"
+          Carrera
+          <select
+            class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
             [ngModel]="issueCareerId()"
             name="issueCareerId"
             (ngModelChange)="issueCareerId.set($event)"
-          />
+            required
+          >
+            <option value="">Seleccionar carrera</option>
+            @for (career of activeCareers(); track career.id) {
+              <option [value]="career.id">{{ career.code }} - {{ career.name }}</option>
+            }
+          </select>
         </label>
 
         @if (selectedIssueStudent()) {
@@ -354,6 +369,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               <div>
                 <dt class="text-slate-500">DID emisor</dt>
                 <dd class="break-all font-mono text-xs text-slate-200">{{ issuerDid() }}</dd>
+              </div>
+              <div>
+                <dt class="text-slate-500">Carrera seleccionada</dt>
+                <dd class="text-slate-200">{{ selectedIssueCareer()?.name || '-' }}</dd>
               </div>
             </dl>
           </div>
@@ -419,6 +438,7 @@ export class IssuerTabComponent {
   readonly institutionId = input.required<string>();
   readonly institution = input<InstitutionSummary | null>(null);
   readonly students = input<readonly StudentSummary[]>([]);
+  readonly careers = input<readonly CareerSummary[]>([]);
   readonly canIssue = input(true);
   readonly canRevoke = input(true);
   readonly showHeader = input(true);
@@ -455,6 +475,14 @@ export class IssuerTabComponent {
       && Boolean(student.primaryWalletDid)),
   );
 
+  readonly activeCareers = computed(() =>
+    this.careers().filter((career) => career.isActive),
+  );
+
+  readonly selectedIssueCareer = computed(() =>
+    this.activeCareers().find((career) => career.id === this.issueCareerId()) ?? null,
+  );
+
   readonly filteredCredentials = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
     const filter = this.statusFilter();
@@ -464,6 +492,7 @@ export class IssuerTabComponent {
       const matchesTerm = !term
         || credential.studentLabel.toLowerCase().includes(term)
         || credential.documentType.toLowerCase().includes(term)
+        || this.careerNameForCredential(credential).toLowerCase().includes(term)
         || credential.credentialId.toLowerCase().includes(term)
         || credential.studentId.toLowerCase().includes(term);
 
@@ -514,7 +543,8 @@ export class IssuerTabComponent {
     return Boolean(this.institutionId())
       && Boolean(this.issuerDid())
       && Boolean(this.institution()?.issuerWalletAddress)
-      && this.eligibleStudents().length > 0;
+      && this.eligibleStudents().length > 0
+      && this.activeCareers().length > 0;
   }
 
   openIssueModal(): void {
@@ -522,7 +552,7 @@ export class IssuerTabComponent {
     this.successMessage.set(null);
     this.issueDate.set(new Date().toISOString().slice(0, 10));
     this.issueDocumentType.set(DOCUMENT_TYPE_OPTIONS[0].code);
-    this.issueCareerId.set('');
+    this.issueCareerId.set(this.activeCareers()[0]?.id ?? '');
     const firstStudent = this.eligibleStudents()[0] ?? null;
     this.selectedIssueStudent.set(firstStudent);
     this.issueStudentId.set(firstStudent?.id ?? '');
@@ -548,6 +578,7 @@ export class IssuerTabComponent {
       && Boolean(student?.primaryWalletAddress)
       && Boolean(student?.primaryWalletDid)
       && Boolean(this.issuerDid())
+      && Boolean(this.selectedIssueCareer())
       && Boolean(this.issueDocumentType())
       && Boolean(this.issueDate());
   }
@@ -555,7 +586,8 @@ export class IssuerTabComponent {
   async handleIssueSubmit(event: Event): Promise<void> {
     event.preventDefault();
     const student = this.selectedIssueStudent();
-    if (!student || !this.canSubmitIssue()) {
+    const career = this.selectedIssueCareer();
+    if (!student || !career || !this.canSubmitIssue()) {
       return;
     }
 
@@ -567,7 +599,8 @@ export class IssuerTabComponent {
       await this.credentialService.issueCredential({
         institutionId: this.institutionId(),
         studentId: student.id,
-        careerId: this.issueCareerId().trim(),
+        careerId: career.id,
+        careerName: career.name,
         studentLabel: student.externalReference || student.id,
         documentType: this.issueDocumentType(),
         issuedDate: this.issueDate(),
@@ -576,7 +609,7 @@ export class IssuerTabComponent {
         issuerDid: this.issuerDid(),
       });
       this.issueModalOpen.set(false);
-      this.successMessage.set('Credencial emitida correctamente.');
+      this.successMessage.set(`Titulo emitido para ${student.externalReference || student.id} en ${career.name}.`);
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -631,6 +664,15 @@ export class IssuerTabComponent {
       default:
         return status;
     }
+  }
+
+  careerNameForCredential(credential: IssuedCredential): string {
+    if (!credential.careerId) {
+      return 'Sin carrera';
+    }
+
+    return this.careers().find((career) => career.id === credential.careerId)?.name
+      ?? credential.careerId;
   }
 
   statusTone(status: string): 'success' | 'danger' | 'warning' | 'info' {

@@ -111,6 +111,65 @@ public sealed class AcademyService
         return new AcademySuccess<CareerSummary>(career);
     }
 
+    public async Task<AcademyResult<IReadOnlyList<CareerSummary>>> ListCareersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        if (await _repository.GetInstitutionAsync(institutionId, cancellationToken) is null)
+        {
+            return Fail<IReadOnlyList<CareerSummary>>("institution_not_found", 404, "Institution was not found.");
+        }
+
+        var careers = await _repository.ListCareersAsync(institutionId, cancellationToken);
+        return new AcademySuccess<IReadOnlyList<CareerSummary>>(careers);
+    }
+
+    public async Task<AcademyResult<CareerSummary>> GetCareerAsync(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var career = await _repository.GetCareerAsync(institutionId, careerId, cancellationToken);
+        return career is null
+            ? Fail<CareerSummary>("career_not_found", 404, "Career was not found.")
+            : new AcademySuccess<CareerSummary>(career);
+    }
+
+    public async Task<AcademyResult<CareerSummary>> UpdateCareerAsync(
+        UpdateCareerCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (IsBlank(command.Code) || IsBlank(command.Name))
+        {
+            return Fail<CareerSummary>("invalid_career", 400, "Career code and name are required.");
+        }
+
+        var code = command.Code.Trim().ToUpperInvariant();
+        if (await _repository.CareerCodeExistsAsync(command.InstitutionId, code, command.CareerId, cancellationToken))
+        {
+            return Fail<CareerSummary>("career_code_exists", 409, "A career with that code already exists for this institution.");
+        }
+
+        var updated = await _repository.UpdateCareerAsync(
+            command with { Code = code, Name = command.Name.Trim() },
+            cancellationToken);
+
+        return updated is null
+            ? Fail<CareerSummary>("career_not_found", 404, "Career was not found.")
+            : new AcademySuccess<CareerSummary>(updated);
+    }
+
+    public async Task<AcademyResult<CareerSummary>> DeactivateCareerAsync(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var career = await _repository.DeactivateCareerAsync(institutionId, careerId, cancellationToken);
+        return career is null
+            ? Fail<CareerSummary>("career_not_found", 404, "Career was not found.")
+            : new AcademySuccess<CareerSummary>(career);
+    }
+
     public async Task<AcademyResult<StudentSummary>> CreateStudentAsync(
         CreateStudentCommand command,
         CancellationToken cancellationToken)

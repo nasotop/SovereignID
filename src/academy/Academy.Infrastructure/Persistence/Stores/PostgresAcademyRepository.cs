@@ -82,6 +82,45 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             .AsNoTracking()
             .AnyAsync(c => c.InstitutionId == institutionId && c.Code == code, cancellationToken);
 
+    public Task<bool> CareerCodeExistsAsync(
+        Guid institutionId,
+        string code,
+        Guid excludingCareerId,
+        CancellationToken cancellationToken) =>
+        _dbContext.Careers
+            .AsNoTracking()
+            .AnyAsync(
+                c => c.InstitutionId == institutionId
+                    && c.Id != excludingCareerId
+                    && c.Code == code,
+                cancellationToken);
+
+    public async Task<IReadOnlyList<CareerSummary>> ListCareersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var entities = await _dbContext.Careers
+            .AsNoTracking()
+            .Where(c => c.InstitutionId == institutionId)
+            .OrderByDescending(c => c.IsActive)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(ToSummary).ToList();
+    }
+
+    public async Task<CareerSummary?> GetCareerAsync(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Careers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == careerId && c.InstitutionId == institutionId, cancellationToken);
+
+        return entity is null ? null : ToSummary(entity);
+    }
+
     public async Task<CareerSummary> CreateCareerAsync(
         CreateCareerCommand command,
         DateTimeOffset now,
@@ -98,6 +137,45 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         };
 
         _dbContext.Careers.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToSummary(entity);
+    }
+
+    public async Task<CareerSummary?> UpdateCareerAsync(
+        UpdateCareerCommand command,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Careers
+            .SingleOrDefaultAsync(
+                c => c.Id == command.CareerId && c.InstitutionId == command.InstitutionId,
+                cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.Code = command.Code;
+        entity.Name = command.Name;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToSummary(entity);
+    }
+
+    public async Task<CareerSummary?> DeactivateCareerAsync(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Careers
+            .SingleOrDefaultAsync(c => c.Id == careerId && c.InstitutionId == institutionId, cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.IsActive = false;
         await _dbContext.SaveChangesAsync(cancellationToken);
         return ToSummary(entity);
     }

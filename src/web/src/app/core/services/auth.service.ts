@@ -95,6 +95,19 @@ export class AuthService {
     return this.authState().address;
   }
 
+  getShortAddress(): string {
+    const address = this.getAddress();
+    if (!address) {
+      return 'Sin wallet';
+    }
+
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  getUserDisplayName(): string {
+    return this.getShortAddress();
+  }
+
   hasPlatformAdmin(): boolean {
     return this.authState().platformAdmin;
   }

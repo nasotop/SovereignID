@@ -1,13 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
+import { UserMenuComponent } from '../user-menu/user-menu.component';
+
 type PortalAccent = 'blue' | 'violet';
 type PortalLayoutWidth = 'contained' | 'full';
 
 @Component({
   selector: 'app-portal-shell',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UserMenuComponent],
   host: {
     class: 'block h-full',
   },
@@ -46,13 +48,11 @@ type PortalLayoutWidth = 'contained' | 'full';
             </div>
           </div>
 
-          <button
-            type="button"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
-            (click)="logout.emit()"
-          >
-            Cerrar sesion
-          </button>
+          <app-user-menu
+            [displayName]="userName()"
+            [role]="userRole()"
+            (logout)="logout.emit()"
+          />
         </div>
       </nav>
 
@@ -80,6 +80,8 @@ export class PortalShellComponent {
   readonly accent = input<PortalAccent>('blue');
   readonly layoutWidth = input<PortalLayoutWidth>('contained');
   readonly hideHeader = input(false);
+  readonly userName = input<string | null>(null);
+  readonly userRole = input<string | null>(null);
   readonly logout = output<void>();
 
   accentClass(): string {

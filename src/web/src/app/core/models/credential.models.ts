@@ -15,6 +15,7 @@ export interface IssuedCredential {
   readonly credentialId: string;
   readonly institutionId: string;
   readonly studentId: string;
+  readonly careerId: string | null;
   readonly studentLabel: string;
   readonly documentType: string;
   readonly issuedDate: string;
@@ -26,6 +27,7 @@ export interface IssueCredentialModel {
   institutionId: string;
   studentId: string;
   careerId: string;
+  careerName: string;
   studentLabel: string;
   documentType: string;
   issuedDate: string;
@@ -96,6 +98,7 @@ export interface VerifiableCredentialDocument {
     degree?: string;
     studentLabel?: string;
     careerId?: string;
+    careerName?: string;
   };
   credentialSchema?: {
     id: string;

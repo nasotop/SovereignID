@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { UserMenuComponent } from '../../../shared/ui/user-menu/user-menu.component';
 import { PlatformInstitutionsTabComponent } from './platform-institutions-tab.component';
 import { PlatformReportsTabComponent } from './platform-reports-tab.component';
 
@@ -13,6 +14,7 @@ type PlatformTab = 'institutions' | 'reports';
   standalone: true,
   imports: [
     CommonModule,
+    UserMenuComponent,
     PlatformInstitutionsTabComponent,
     PlatformReportsTabComponent,
   ],
@@ -32,13 +34,7 @@ type PlatformTab = 'institutions' | 'reports';
             </div>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex items-center rounded-lg border border-slate-600 bg-slate-700/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
-            (click)="handleLogout()"
-          >
-            Cerrar sesion
-          </button>
+          <app-user-menu role="platform_admin" (logout)="handleLogout()" />
         </div>
       </nav>
 
