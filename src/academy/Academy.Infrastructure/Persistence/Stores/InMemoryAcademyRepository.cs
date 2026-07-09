@@ -28,7 +28,10 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
         lock (_lock)
         {
             return Task.FromResult<IReadOnlyList<InstitutionSummary>>(
-                _institutions.Values.OrderBy(i => i.Code, StringComparer.OrdinalIgnoreCase).ToList());
+                _institutions.Values
+                    .OrderBy(i => i.Code, StringComparer.OrdinalIgnoreCase)
+                    .Select(EnrichInstitutionSummary)
+                    .ToList());
         }
     }
 
@@ -36,7 +39,12 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
     {
         lock (_lock)
         {
-            return Task.FromResult(_institutions.GetValueOrDefault(institutionId));
+            if (!_institutions.TryGetValue(institutionId, out var institution))
+            {
+                return Task.FromResult<InstitutionSummary?>(null);
+            }
+
+            return Task.FromResult<InstitutionSummary?>(EnrichInstitutionSummary(institution));
         }
     }
 
@@ -292,7 +300,7 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
         }
     }
 
-    public Task<InstitutionInvitationAccepted?> AcceptInvitationAsync(
+    public Task<InvitationAcceptResult> AcceptInvitationAsync(
         string tokenHash,
         string walletAddress,
         string did,
@@ -309,15 +317,40 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
 
             if (state is null)
             {
-                return Task.FromResult<InstitutionInvitationAccepted?>(null);
+                return Task.FromResult(new InvitationAcceptResult(null, null));
             }
 
-            var userId = _usersByWallet.TryGetValue(walletAddress, out var existingUserId)
-                ? existingUserId
-                : Guid.NewGuid();
+            var userByEmail = _users.Values.SingleOrDefault(user =>
+                user.Email is not null
+                && string.Equals(user.Email, state.Invitation.Email, StringComparison.OrdinalIgnoreCase));
 
-            _usersByWallet[walletAddress] = userId;
-            _users[userId] = new UserState(userId, walletAddress, did, state.Invitation.Email, displayName);
+            Guid userId;
+            if (_usersByWallet.TryGetValue(walletAddress, out var existingUserId))
+            {
+                userId = existingUserId;
+                var existingUser = _users[userId];
+                _users[userId] = existingUser with
+                {
+                    Email = existingUser.Email ?? state.Invitation.Email,
+                    DisplayName = existingUser.DisplayName ?? displayName
+                };
+            }
+            else if (userByEmail is not null)
+            {
+                if (!string.Equals(userByEmail.WalletAddress, walletAddress, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Task.FromResult(new InvitationAcceptResult(null, "invitation_wallet_email_mismatch"));
+                }
+
+                userId = userByEmail.Id;
+            }
+            else
+            {
+                userId = Guid.NewGuid();
+                _usersByWallet[walletAddress] = userId;
+                _users[userId] = new UserState(userId, walletAddress, did, state.Invitation.Email, displayName);
+            }
+
             var institutionUser = new InstitutionUserSummary(
                 Guid.NewGuid(),
                 state.Invitation.InstitutionId,
@@ -331,6 +364,20 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
                 null);
             _institutionUsers[institutionUser.Id] = institutionUser;
 
+            if (string.Equals(state.Invitation.Role, InstitutionRoles.Admin, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(state.Invitation.Role, InstitutionRoles.Issuer, StringComparison.OrdinalIgnoreCase))
+            {
+                if (_institutions.TryGetValue(state.Invitation.InstitutionId, out var institution)
+                    && string.IsNullOrEmpty(institution.IssuerWalletAddress))
+                {
+                    _institutions[state.Invitation.InstitutionId] = institution with
+                    {
+                        IssuerWalletAddress = walletAddress,
+                        Did = institution.Did ?? did
+                    };
+                }
+            }
+
             var accepted = new InstitutionInvitationAccepted(
                 state.Invitation.InstitutionId,
                 userId,
@@ -339,7 +386,7 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
                 state.Invitation.Role);
 
             _invitations[state.Invitation.Id] = state with { Accepted = true, AcceptedByUserId = userId };
-            return Task.FromResult<InstitutionInvitationAccepted?>(accepted);
+            return Task.FromResult(new InvitationAcceptResult(accepted, null));
         }
     }
 
@@ -437,6 +484,39 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
             profile?.CountryCode,
             profile?.PhoneNumber,
             profile?.UpdatedAt);
+    }
+
+    private InstitutionSummary EnrichInstitutionSummary(InstitutionSummary institution)
+    {
+        if (!string.IsNullOrEmpty(institution.IssuerWalletAddress))
+        {
+            return institution;
+        }
+
+        var fallback = FindIssuerWalletFallback(institution.Id);
+        return fallback is null
+            ? institution
+            : institution with
+            {
+                IssuerWalletAddress = fallback.Value.WalletAddress,
+                Did = fallback.Value.Did ?? institution.Did
+            };
+    }
+
+    private (string WalletAddress, string Did)? FindIssuerWalletFallback(Guid institutionId)
+    {
+        var institutionUser = _institutionUsers.Values
+            .Where(user =>
+                user.InstitutionId == institutionId
+                && user.RevokedAt is null
+                && (string.Equals(user.Role, InstitutionRoles.Admin, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(user.Role, InstitutionRoles.Issuer, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(user => user.GrantedAt)
+            .FirstOrDefault();
+
+        return institutionUser is null
+            ? null
+            : (institutionUser.WalletAddress, institutionUser.Did);
     }
 
     private sealed record HolderProfileState(

@@ -143,6 +143,10 @@ public sealed record InstitutionInvitationAccepted(
     string Did,
     string Role);
 
+public sealed record InvitationAcceptResult(
+    InstitutionInvitationAccepted? Accepted,
+    string? ErrorCode);
+
 public sealed record InstitutionUserSummary(
     Guid Id,
     Guid InstitutionId,

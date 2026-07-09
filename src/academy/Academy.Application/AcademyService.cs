@@ -328,7 +328,7 @@ public sealed class AcademyService
             return Fail<InstitutionInvitationAccepted>("invalid_wallet_address", 400, "walletAddress must be a valid Ethereum address.");
         }
 
-        var accepted = await _repository.AcceptInvitationAsync(
+        var result = await _repository.AcceptInvitationAsync(
             _tokenService.HashToken(command.Token),
             walletAddress,
             BlockchainIdentity.CreateDid(walletAddress),
@@ -336,9 +336,22 @@ public sealed class AcademyService
             _timeProvider.GetUtcNow(),
             cancellationToken);
 
-        return accepted is null
-            ? Fail<InstitutionInvitationAccepted>("invitation_not_usable", 404, "Invitation was not found, has expired, or was already accepted.")
-            : new AcademySuccess<InstitutionInvitationAccepted>(accepted);
+        if (result.Accepted is not null)
+        {
+            return new AcademySuccess<InstitutionInvitationAccepted>(result.Accepted);
+        }
+
+        return result.ErrorCode switch
+        {
+            "invitation_wallet_email_mismatch" => Fail<InstitutionInvitationAccepted>(
+                "invitation_wallet_email_mismatch",
+                409,
+                "The invitation email is already associated with a different wallet."),
+            _ => Fail<InstitutionInvitationAccepted>(
+                "invitation_not_usable",
+                404,
+                "Invitation was not found, has expired, or was already accepted.")
+        };
     }
 
     private async Task<AcademyResult<InstitutionInvitationCreated>> CreateInvitationInternalAsync(
