@@ -25,7 +25,16 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             .OrderBy(i => i.Code)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(ToSummary).ToList();
+        var fallbackWallets = await LoadIssuerWalletFallbacksAsync(
+            entities
+                .Where(i => string.IsNullOrEmpty(i.IssuerWalletAddress))
+                .Select(i => i.Id)
+                .ToList(),
+            cancellationToken);
+
+        return entities
+            .Select(entity => ToSummary(entity, fallbackWallets.GetValueOrDefault(entity.Id)))
+            .ToList();
     }
 
     public async Task<InstitutionSummary?> GetInstitutionAsync(Guid institutionId, CancellationToken cancellationToken)
@@ -34,7 +43,16 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(i => i.Id == institutionId, cancellationToken);
 
-        return entity is null ? null : ToSummary(entity);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        var fallbackWallet = string.IsNullOrEmpty(entity.IssuerWalletAddress)
+            ? await FindIssuerWalletFallbackAsync(entity.Id, cancellationToken)
+            : null;
+
+        return ToSummary(entity, fallbackWallet);
     }
 
     public async Task<InstitutionSummary> CreateInstitutionAsync(
@@ -345,7 +363,7 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         return ToInvitation(entity);
     }
 
-    public async Task<InstitutionInvitationAccepted?> AcceptInvitationAsync(
+    public async Task<InvitationAcceptResult> AcceptInvitationAsync(
         string tokenHash,
         string walletAddress,
         string did,
@@ -365,24 +383,41 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
 
         if (invitation is null)
         {
-            return null;
+            return new InvitationAcceptResult(null, null);
         }
 
         var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.WalletAddress == walletAddress, cancellationToken);
         if (user is null)
         {
-            user = new UserEntity
+            var userByEmail = await _dbContext.Users
+                .SingleOrDefaultAsync(
+                    u => u.Email != null && u.Email.ToLower() == invitation.Email.ToLower(),
+                    cancellationToken);
+
+            if (userByEmail is not null)
             {
-                Id = Guid.NewGuid(),
-                WalletAddress = walletAddress,
-                Did = did,
-                Email = invitation.Email,
-                DisplayName = displayName,
-                IsActive = true,
-                CreatedAt = nowDateTime
-            };
-            _dbContext.Users.Add(user);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+                if (!string.Equals(userByEmail.WalletAddress, walletAddress, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new InvitationAcceptResult(null, "invitation_wallet_email_mismatch");
+                }
+
+                user = userByEmail;
+            }
+            else
+            {
+                user = new UserEntity
+                {
+                    Id = Guid.NewGuid(),
+                    WalletAddress = walletAddress,
+                    Did = did,
+                    Email = invitation.Email,
+                    DisplayName = displayName,
+                    IsActive = true,
+                    CreatedAt = nowDateTime
+                };
+                _dbContext.Users.Add(user);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
         }
         else
         {
@@ -410,18 +445,32 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
             });
         }
 
+        if (invitation.Role is UserRole.admin or UserRole.issuer)
+        {
+            var institution = await _dbContext.Institutions
+                .SingleAsync(i => i.Id == invitation.InstitutionId, cancellationToken);
+
+            if (string.IsNullOrEmpty(institution.IssuerWalletAddress))
+            {
+                institution.IssuerWalletAddress = walletAddress;
+                institution.Did ??= did;
+            }
+        }
+
         invitation.AcceptedAt = nowDateTime;
         invitation.AcceptedByUserId = user.Id;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new InstitutionInvitationAccepted(
-            invitation.InstitutionId,
-            user.Id,
-            walletAddress,
-            did,
-            invitation.Role.ToString());
+        return new InvitationAcceptResult(
+            new InstitutionInvitationAccepted(
+                invitation.InstitutionId,
+                user.Id,
+                walletAddress,
+                did,
+                invitation.Role.ToString()),
+            null);
     }
 
     public async Task<IReadOnlyList<InstitutionUserSummary>> ListInstitutionUsersAsync(
@@ -489,18 +538,75 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         return affected > 0;
     }
 
-    private static InstitutionSummary ToSummary(InstitutionEntity entity) =>
+    private static InstitutionSummary ToSummary(
+        InstitutionEntity entity,
+        IssuerWalletFallback? issuerWalletFallback = null) =>
         new(
             entity.Id,
             entity.Code,
             entity.LegalName,
             entity.DisplayName,
-            entity.Did,
-            entity.IssuerWalletAddress,
+            issuerWalletFallback?.Did ?? entity.Did,
+            issuerWalletFallback?.WalletAddress ?? entity.IssuerWalletAddress,
             entity.CountryCode,
             entity.WebsiteUrl,
             entity.IsActive,
             ToDateTimeOffset(entity.RegisteredAt));
+
+    private sealed record IssuerWalletFallback(string WalletAddress, string? Did);
+
+    private async Task<Dictionary<Guid, IssuerWalletFallback>> LoadIssuerWalletFallbacksAsync(
+        IReadOnlyList<Guid> institutionIds,
+        CancellationToken cancellationToken)
+    {
+        if (institutionIds.Count == 0)
+        {
+            return [];
+        }
+
+        var candidates = await (
+                from institutionUser in _dbContext.InstitutionUsers.AsNoTracking()
+                join user in _dbContext.Users.AsNoTracking() on institutionUser.UserId equals user.Id
+                where institutionIds.Contains(institutionUser.InstitutionId)
+                      && institutionUser.RevokedAt == null
+                      && (institutionUser.Role == UserRole.admin || institutionUser.Role == UserRole.issuer)
+                orderby institutionUser.GrantedAt
+                select new
+                {
+                    institutionUser.InstitutionId,
+                    user.WalletAddress,
+                    user.Did,
+                    institutionUser.GrantedAt
+                })
+            .ToListAsync(cancellationToken);
+
+        return candidates
+            .GroupBy(candidate => candidate.InstitutionId)
+            .ToDictionary(
+                group => group.Key,
+                group =>
+                {
+                    var first = group.OrderBy(candidate => candidate.GrantedAt).First();
+                    return new IssuerWalletFallback(first.WalletAddress, first.Did);
+                });
+    }
+
+    private async Task<IssuerWalletFallback?> FindIssuerWalletFallbackAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken)
+    {
+        var fallback = await (
+                from institutionUser in _dbContext.InstitutionUsers.AsNoTracking()
+                join user in _dbContext.Users.AsNoTracking() on institutionUser.UserId equals user.Id
+                where institutionUser.InstitutionId == institutionId
+                      && institutionUser.RevokedAt == null
+                      && (institutionUser.Role == UserRole.admin || institutionUser.Role == UserRole.issuer)
+                orderby institutionUser.GrantedAt
+                select new IssuerWalletFallback(user.WalletAddress, user.Did))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return fallback;
+    }
 
     private static CareerSummary ToSummary(CareerEntity entity) =>
         new(

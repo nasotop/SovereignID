@@ -77,12 +77,18 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         Assert.Equal(HttpStatusCode.OK, acceptResponse.StatusCode);
         using var acceptedJson = await JsonDocument.ParseAsync(await acceptResponse.Content.ReadAsStreamAsync());
         var acceptedUserId = acceptedJson.RootElement.GetProperty("userId").GetGuid();
+        const string acceptedWalletAddress = "0x1111111111111111111111111111111111111111";
 
         var listInstitutionsResponse = await SendAuthorizedGetAsync(
             "/academy/institutions",
             JwtTestHelper.CreatePlatformAdminToken());
 
         Assert.Equal(HttpStatusCode.OK, listInstitutionsResponse.StatusCode);
+        using var institutionsJson = await JsonDocument.ParseAsync(await listInstitutionsResponse.Content.ReadAsStreamAsync());
+        var institutionSummary = institutionsJson.RootElement
+            .EnumerateArray()
+            .Single(institution => institution.GetProperty("id").GetGuid() == institutionId);
+        Assert.Equal(acceptedWalletAddress, institutionSummary.GetProperty("issuerWalletAddress").GetString());
 
         var adminToken = JwtTestHelper.CreateInstitutionAdminToken(institutionId);
         var listUsersResponse = await SendAuthorizedGetAsync(
@@ -222,6 +228,123 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var problemJson = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         Assert.Equal("invalid_wallet_address", problemJson.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_WithEmailLinkedToDifferentWallet_ReturnsConflict()
+    {
+        const string sharedEmail = "shared-admin@demo.test";
+        const string firstWallet = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const string secondWallet = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+        var firstInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = $"INST-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Uno SpA",
+            displayName = "Institucion Uno",
+            contactEmail = sharedEmail,
+            countryCode = "CL"
+        });
+        firstInstitutionResponse.EnsureSuccessStatusCode();
+        using var firstInstitutionJson = await JsonDocument.ParseAsync(await firstInstitutionResponse.Content.ReadAsStreamAsync());
+        var firstInvitationUrl = firstInstitutionJson.RootElement
+            .GetProperty("invitation")
+            .GetProperty("invitationUrl")
+            .GetString();
+
+        var firstAcceptResponse = await _client.PostAsJsonAsync("/academy/invitations/accept", new
+        {
+            token = ExtractToken(firstInvitationUrl),
+            walletAddress = firstWallet,
+            displayName = "Admin Uno"
+        });
+        Assert.Equal(HttpStatusCode.OK, firstAcceptResponse.StatusCode);
+
+        var secondInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = $"INST-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Dos SpA",
+            displayName = "Institucion Dos",
+            contactEmail = sharedEmail,
+            countryCode = "CL"
+        });
+        secondInstitutionResponse.EnsureSuccessStatusCode();
+        using var secondInstitutionJson = await JsonDocument.ParseAsync(await secondInstitutionResponse.Content.ReadAsStreamAsync());
+        var secondInvitationUrl = secondInstitutionJson.RootElement
+            .GetProperty("invitation")
+            .GetProperty("invitationUrl")
+            .GetString();
+
+        var secondAcceptResponse = await _client.PostAsJsonAsync("/academy/invitations/accept", new
+        {
+            token = ExtractToken(secondInvitationUrl),
+            walletAddress = secondWallet,
+            displayName = "Admin Dos"
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, secondAcceptResponse.StatusCode);
+        using var problemJson = await JsonDocument.ParseAsync(await secondAcceptResponse.Content.ReadAsStreamAsync());
+        Assert.Equal(
+            "invitation_wallet_email_mismatch",
+            problemJson.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task AcceptInvitation_WithExistingEmailAndSameWallet_ReusesUser()
+    {
+        const string sharedEmail = "reuse-admin@demo.test";
+        const string walletAddress = "0xcccccccccccccccccccccccccccccccccccccccc";
+
+        var firstInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = $"INST-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Reuse Uno SpA",
+            displayName = "Institucion Reuse Uno",
+            contactEmail = sharedEmail,
+            countryCode = "CL"
+        });
+        firstInstitutionResponse.EnsureSuccessStatusCode();
+        using var firstInstitutionJson = await JsonDocument.ParseAsync(await firstInstitutionResponse.Content.ReadAsStreamAsync());
+        var firstInvitationUrl = firstInstitutionJson.RootElement
+            .GetProperty("invitation")
+            .GetProperty("invitationUrl")
+            .GetString();
+
+        var firstAcceptResponse = await _client.PostAsJsonAsync("/academy/invitations/accept", new
+        {
+            token = ExtractToken(firstInvitationUrl),
+            walletAddress,
+            displayName = "Admin Reuse"
+        });
+        firstAcceptResponse.EnsureSuccessStatusCode();
+        using var firstAcceptedJson = await JsonDocument.ParseAsync(await firstAcceptResponse.Content.ReadAsStreamAsync());
+        var firstUserId = firstAcceptedJson.RootElement.GetProperty("userId").GetGuid();
+
+        var secondInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = $"INST-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Reuse Dos SpA",
+            displayName = "Institucion Reuse Dos",
+            contactEmail = sharedEmail,
+            countryCode = "CL"
+        });
+        secondInstitutionResponse.EnsureSuccessStatusCode();
+        using var secondInstitutionJson = await JsonDocument.ParseAsync(await secondInstitutionResponse.Content.ReadAsStreamAsync());
+        var secondInvitationUrl = secondInstitutionJson.RootElement
+            .GetProperty("invitation")
+            .GetProperty("invitationUrl")
+            .GetString();
+
+        var secondAcceptResponse = await _client.PostAsJsonAsync("/academy/invitations/accept", new
+        {
+            token = ExtractToken(secondInvitationUrl),
+            walletAddress,
+            displayName = "Admin Reuse"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, secondAcceptResponse.StatusCode);
+        using var secondAcceptedJson = await JsonDocument.ParseAsync(await secondAcceptResponse.Content.ReadAsStreamAsync());
+        Assert.Equal(firstUserId, secondAcceptedJson.RootElement.GetProperty("userId").GetGuid());
     }
 
     private Task<HttpResponseMessage> SendPlatformAdminPostAsync(string url, object body) =>

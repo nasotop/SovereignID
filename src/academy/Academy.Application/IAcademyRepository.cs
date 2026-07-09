@@ -79,7 +79,7 @@ public interface IAcademyRepository
         DateTimeOffset now,
         CancellationToken cancellationToken);
 
-    Task<InstitutionInvitationAccepted?> AcceptInvitationAsync(
+    Task<InvitationAcceptResult> AcceptInvitationAsync(
         string tokenHash,
         string walletAddress,
         string did,
