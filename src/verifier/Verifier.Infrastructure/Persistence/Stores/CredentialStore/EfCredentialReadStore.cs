@@ -13,18 +13,24 @@ internal sealed class EfCredentialReadStore : ICredentialReadStore
 
     public async Task<CredentialReadModel?> GetByIdAsync(Guid credentialId, CancellationToken cancellationToken)
     {
-        var row = await _db.Credentials
-            .AsNoTracking()
-            .Where(c => c.Id == credentialId)
-            .Select(c => new
+        var row = await (
+            from c in _db.Credentials.AsNoTracking()
+            join w in _db.StudentWallets.AsNoTracking() on c.IssuedToWalletId equals w.Id
+            where c.Id == credentialId
+            select new
             {
                 c.Id,
+                c.InstitutionId,
                 TypeCode = c.CredentialType.Code,
                 c.Status,
                 c.IssuedAt,
                 c.ExpiresAt,
                 c.RevokedAt,
                 c.SubjectDid,
+                IssuerWalletAddress = c.Institution.IssuerWalletAddress,
+                SubjectWalletAddress = w.WalletAddress,
+                c.Eip712Signature,
+                c.IpfsGatewayUrl,
                 IssuerDid = c.Institution.Did,
                 IssuerDisplayName = c.Institution.DisplayName,
                 IssuerCode = c.Institution.Code,
@@ -32,8 +38,7 @@ internal sealed class EfCredentialReadStore : ICredentialReadStore
                 c.ContentHash,
                 c.TransactionHash,
                 c.ChainId
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            }).FirstOrDefaultAsync(cancellationToken);
 
         if (row is null)
         {
@@ -42,12 +47,17 @@ internal sealed class EfCredentialReadStore : ICredentialReadStore
 
         return new CredentialReadModel(
             row.Id,
+            row.InstitutionId,
             row.TypeCode,
             ToStatusWireValue(row.Status),
             ToUtcOffset(row.IssuedAt),
             ToUtcOffset(row.ExpiresAt),
             ToUtcOffset(row.RevokedAt),
             row.SubjectDid,
+            row.IssuerWalletAddress,
+            row.SubjectWalletAddress,
+            row.Eip712Signature,
+            row.IpfsGatewayUrl,
             new IssuerReadModel(row.IssuerDid, row.IssuerDisplayName, row.IssuerCode),
             new CredentialAnchors(row.IpfsCid, row.ContentHash, row.TransactionHash, row.ChainId));
     }

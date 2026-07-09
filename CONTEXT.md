@@ -24,7 +24,7 @@ SovereignID/
 │   ├── bff/                 # Backend-for-Frontend (Kiota → microservicios)
 │   │   ├── Bff.Api/         # Interfaz HTTP pública hacia el portal web
 │   │   └── Bff.Clients/     # Clientes Kiota generados (Generated/)
-│   └── …                    # verifier, issuer, academy, identity, web
+│   └── …                    # verifier, issuer, academy, reports, web
 └── tests/
     └── auth/
         └── Auth.IntegrationTests/  # AC-01…AC-07
@@ -64,7 +64,7 @@ El OpenAPI es la **fuente de verdad** para nombres y tipos de campos JSON (`jwt`
 
 **Frontend (web) — sistema de diseño:** el mapa UX/UI y la propuesta de sistema de diseño viven en [`docs/web-design-system.md`](docs/web-design-system.md). El roadmap Academy/roles vive en [`docs/web-academy-ui-todo.md`](docs/web-academy-ui-todo.md). La app usa Angular standalone + Tailwind; hoy los patrones visuales están embebidos en templates y deben formalizarse gradualmente en `shared/ui`.
 
-**Frontend (web) — portales verifier/holder:** el cliente HTTP se **genera desde `docs/contracts/bff.openapi.json`** con `ng-openapi-gen` → `src/app/api/bff/` (`npm run gen:api:bff`, `rootUrl = '/api'`). Las fachadas `VerifierService` y `HolderService` envuelven el cliente BFF y aplican el seam de Problem Details (`error.utils.ts`). Ver [ADR-0004](docs/adr/0004-openapi-client-codegen.md) y [ADR-0005](docs/adr/0005-bff-kiota.md).
+**Frontend (web) — portales verifier/holder:** el cliente HTTP se **genera desde `docs/contracts/bff.openapi.json`** con `ng-openapi-gen` → `src/app/api/bff/` (`npm run gen:api:bff`, `rootUrl = '/api'`). Las fachadas `VerifierService` y `HolderService` envuelven el cliente BFF y aplican el seam de Problem Details (`error.utils.ts`). El portal **verifier** delega la presentación del veredicto a `shared/ui/verification-verdict/` (`VerificationVerdictPanel`, preset `verifierFull`, checks agrupados, banner de evidencia deshabilitada). El portal **holder** expone anclas on-chain en modal lazy (`CredentialAnchorsPanel` en `shared/ui/credential-anchors/`) con CTA a `/verifier?credentialId=`. Ver [ADR-0004](docs/adr/0004-openapi-client-codegen.md) y [ADR-0005](docs/adr/0005-bff-kiota.md).
 
 ## Servicio `verifier`
 
@@ -82,11 +82,11 @@ Contratos del servicio verifier (dos capas, igual que auth):
 | **Contrato HTTP (forma JSON)** | OpenAPI generado por `Verifier.Api` → `docs/contracts/verifier.openapi.json` | Rutas, DTOs, códigos HTTP |
 | **Contrato de dominio (semántica)** | [`docs/verifier-backend-contract.md`](docs/verifier-backend-contract.md) | Reglas de veredicto, precedencia, errores, criterios VER-01… |
 
-**Modelo de respuesta:** un **veredicto de negocio** (credencial revocada, expirada o inexistente) es un resultado legítimo y se devuelve como **`200 OK` con campo `result`** ∈ { `valid`, `revoked`, `expired`, `not_found` }. Problem Details (RFC 7807) se reserva **solo** para errores de entrada/protocolo → `400` con `error = invalid_credential_id`. Esto matiza la sección transversal «Modelo de errores HTTP» para el verifier (ver `docs/verifier-backend-contract.md`).
+**Modelo de respuesta:** un **veredicto de negocio** (credencial revocada, expirada, inexistente o con integridad fallida) es un resultado legítimo y se devuelve como **`200 OK` con campo `result`** ∈ { `valid`, `revoked`, `expired`, `not_found`, `integrity_failed` }. Problem Details (RFC 7807) cubre errores de entrada/protocolo → `400` (`invalid_credential_id`) y `429` (`rate_limit_exceeded`). Ver [`docs/verifier-backend-contract.md`](docs/verifier-backend-contract.md).
 
-**Veredicto escalonado v1:** se computan contra la BD los chequeos sin red (`found`, `notRevoked`, `notExpired`); los chequeos con dependencia externa (`hashMatches`, `onChainExists`, `signatureValid`) se devuelven `null` (reservados). La expiración se computa desde `expires_at` vía `TimeProvider` (no se confía solo en `status`). Precedencia: `not_found` > `revoked` > `expired` > `valid`. Cada intento se registra en `verification_logs` (incluido `not_found`, con `credential_id = NULL`).
+**Veredicto escalonado:** se computan contra la BD los chequeos locales (`found`, `notRevoked`, `notExpired`). Los chequeos de evidencia (`hashMatches`, `onChainExists`, `signatureValid`) se activan por configuración (`Verifier:Evidence:*CheckEnabled`, todos `false` por defecto) y pueden devolver `null` cuando están deshabilitados o la infraestructura externa no responde. Precedencia: `not_found` > `revoked` > `expired` > `integrity_failed` > `valid`. Revocación on-chain puede elevar a `revoked` aunque BD diga activa; `revocationSource` y `validationSource` trazan la procedencia. Cada intento se registra en `verification_logs` con todos los chequeos y fuentes.
 
-**Portal web del verifier:** la entrada en v1 es el **UUID** (`credentialId`) introducido en un campo de texto (el escáner QR queda para un cambio posterior; el QR codifica el UUID en crudo, no una URL navegable). El componente habla solo con una **fachada `VerifierService`** que envuelve el cliente HTTP generado (`ng-openapi-gen`) y aplica el seam de Problem Details (`error.utils.ts`). El veredicto se renderiza completo: badge de `result`, lista de `checks` (los `null` como "no evaluado") y bloque `credential` (emisor, fechas, anclas). El front llega al backend vía **`/api/verifications`** (nginx strip → `bff-api` → Kiota → `verifier-api`). El campo `result` del contrato se modela como `enum` para que el cliente generado lo tipe como unión.
+**Portal web del verifier:** la entrada en v1 es el **UUID** (`credentialId`) introducido en un campo de texto (el escáner QR queda para un cambio posterior; el QR codifica el UUID en crudo, no una URL navegable). El componente habla solo con una **fachada `VerifierService`** que envuelve el cliente HTTP generado (`ng-openapi-gen`) y aplica el seam de Problem Details (`error.utils.ts`, incluyendo `rate_limit_exceeded` → `429`). El veredicto se renderiza con **`VerificationVerdictPanel`** (`shared/ui/verification-verdict/`): badge de `result`, checks agrupados (registro local / evidencia on-chain), fuentes `validationSource`/`revocationSource`, banner cuando la evidencia on-chain está deshabilitada, y bloque `credential` con **`CredentialAnchorsPanel`**. Query param `?credentialId=` pre-rellena el input sin auto-verificar. El front llega al backend vía **`/api/verifications`** (nginx strip → `bff-api` → Kiota → `verifier-api`). El campo `result` del contrato se modela como `enum` para que el cliente generado lo tipe como unión.
 
 ## Modelo de errores HTTP (transversal)
 
@@ -182,6 +182,23 @@ Connection string desde contenedor: `Host=postgres;Port=5432;Database=sovereigni
 | **Verificaciones (R-I2)** | Intentos de verificación registrados en `verification_logs` para credenciales de la institución; en UI no usar el término "leídas". |
 | **Fuente del reporte (`source`)** | Metadato del backend: `snapshot` (día pre-agregado), `live` (query en tiempo real), `hybrid` (mezcla). |
 | **Período de reporte** | Rango `{from, to}` compartido por todos los reportes de un portal; presets 7/30/90 días (default 30). Reportes puntuales usan `asOf = to`. |
+| **Reparto identitario v1** | Sin microservicio `identity` en MVP. Identidad criptográfica en `auth`; datos académicos/tenant y perfil holder en `academy`; credenciales en `issuer`. Ver [ADR-0006](docs/adr/0006-consolidate-identity-into-academy-auth.md). |
+| **Usuario (`users`)** | Fila por wallet/DID. Usuarios institucionales (invitaciones) y, lazy, holders que editan perfil off-chain. Distinto de `students` (registro anónimo por institución). |
+| **Wallet dual-role** | Una misma address puede ser holder (`student_wallets` primaria) y usuario institucional (`institution_users`) a la vez; JWT incluye ambos claims. |
+
+## Reparto identitario v1
+
+El documento inicial del proyecto contemplaba `Identity.API` para CRUD de instituciones y alumnos. En el monorepo greenfield ese alcance vive en **`academy`**; no existe contenedor `identity-api` en MVP ([ADR-0006](docs/adr/0006-consolidate-identity-into-academy-auth.md)).
+
+| Concern | Módulo | Rutas / mecanismo |
+|---------|--------|-------------------|
+| SIWE + JWT + RBAC | `auth` | `/auth/*`; enriquece JWT con `user_id`, `platform_admin`, `holder`, `membership` |
+| Instituciones, carreras, estudiantes, invitaciones, usuarios institucionales | `academy` | `/academy/*` |
+| Perfil off-chain del titular | `academy` | `GET/PUT /academy/holders/me` |
+| Credenciales del titular | `issuer` | `/issuer/holders/me/credentials` |
+| Políticas JWT downstream | `SovereignID.Authorization` | Cada API consumidora |
+
+**Huecos MVP pendientes** (alcance original de Identity, hoy en academy): update/delete de instituciones, list/get/update de carreras, update de estudiantes, auditoría administrativa (`audit_logs`).
 
 ## Configuración relevante
 
@@ -248,7 +265,7 @@ Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincu
 
 Contrato HTTP: OpenAPI generado por `Issuer.Api` → `docs/contracts/issuer.openapi.json` (incluye `bearerAuth` en operaciones holder y `status` como `enum` tipado). Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
 
-**Portal web del holder:** `/holder` requiere sesión SIWE (`authGuard`) y carga credenciales reales con `GET /issuer/holders/me/credentials`. El componente habla solo con **`HolderService`**, fachada sobre el cliente generado (`ng-openapi-gen` → `src/app/api/issuer/`). El JWT se adjunta vía interceptor global y la fachada falla temprano si no hay sesión. Estados UI: `loading` / `loaded` / `empty` / `error`; badge de `status` (`active|revoked|expired`); icono por `typeCode` (`TITULO` → degree). Download JSON usa el detalle holder; Share QR v1 copia el UUID al portapapeles. El front llega al backend vía **`/api/issuer/…`** (nginx strip → `bff-api` → Kiota → `issuer-api`; JWT reenviado sin validar en BFF v1).
+**Portal web del holder:** `/holder` requiere sesión SIWE (`authGuard`) y carga credenciales reales con `GET /issuer/holders/me/credentials`. El componente habla solo con **`HolderService`**, fachada sobre el cliente generado (`ng-openapi-gen` → `src/app/api/bff/`). El JWT se adjunta vía interceptor global y la fachada falla temprano si no hay sesión. Estados UI: `loading` / `loaded` / `empty` / `error`; badge de `status` (`active|revoked|expired`); icono por `typeCode` (`TITULO` → degree). Download JSON usa el detalle holder (con caché local en componente); Share v1 copia el UUID al portapapeles; **«Ver anclas»** abre modal lazy con **`CredentialAnchorsPanel`** y enlace al verifier público. El front llega al backend vía **`/api/issuer/…`** (nginx strip → `bff-api` → Kiota → `issuer-api`; JWT reenviado sin validar en BFF v1).
 
 ## Servicio `reports`
 
@@ -282,7 +299,7 @@ Backend-for-Frontend entre el portal web y los microservicios internos. Decisió
 | Contrato público | `docs/contracts/bff.openapi.json` (pass-through v1) |
 | Prefijo browser | `/api/` (nginx strip → `bff-api:8080`) |
 | Auth SIWE | **Fuera del BFF** — `/auth/` directo a `auth-api` |
-| Downstream v1 | verifier, issuer (holder + admin), academy, identity (health), reports |
+| Downstream v1 | verifier, issuer (holder + admin), academy, reports |
 | JWT holder | Reenvío del header `Authorization`; validación en `issuer-api` |
 
 Rutas issuer admin expuestas en v1: `POST /issuer/institutions/{id}/wallet`, `POST /issuer/students/{id}/title`, `GET /issuer/credentials/{id}`.

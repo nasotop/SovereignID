@@ -89,10 +89,6 @@ export type { IssuerInstitutionsInstitutionIdCredentialsGet$Params as IssuerInst
 export { issuerInstitutionsInstitutionIdCredentialsGet as issuerInstitutionsInstitutionIdCredentialsGet } from './fn/institution-credentials/issuer-institutions-institution-id-credentials-get';
 export type { IssuerInstitutionsInstitutionIdWalletPost$Params as IssuerInstitutionsInstitutionIdWalletPost$Params } from './fn/institution-issuer-wallet/issuer-institutions-institution-id-wallet-post';
 export { issuerInstitutionsInstitutionIdWalletPost as issuerInstitutionsInstitutionIdWalletPost } from './fn/institution-issuer-wallet/issuer-institutions-institution-id-wallet-post';
-export type { IssuerStudentsStudentIdTitlePost$Params as IssuerStudentsStudentIdTitlePost$Params } from './fn/student-titles/issuer-students-student-id-title-post';
-export { issuerStudentsStudentIdTitlePost as issuerStudentsStudentIdTitlePost } from './fn/student-titles/issuer-students-student-id-title-post';
-export type { VerificationsPost$Params as VerificationsPost$Params } from './fn/verifications/verifications-post';
-export { verificationsPost as verificationsPost } from './fn/verifications/verifications-post';
 export type { ReportsInstitutionsInstitutionIdCredentialsIssuedGet$Params as ReportsInstitutionsInstitutionIdCredentialsIssuedGet$Params } from './fn/reports/reports-institutions-institution-id-credentials-issued-get';
 export { reportsInstitutionsInstitutionIdCredentialsIssuedGet as reportsInstitutionsInstitutionIdCredentialsIssuedGet } from './fn/reports/reports-institutions-institution-id-credentials-issued-get';
 export type { ReportsInstitutionsInstitutionIdCredentialReadsGet$Params as ReportsInstitutionsInstitutionIdCredentialReadsGet$Params } from './fn/reports/reports-institutions-institution-id-credential-reads-get';
@@ -107,3 +103,7 @@ export type { ReportsPlatformCredentialsByInstitutionGet$Params as ReportsPlatfo
 export { reportsPlatformCredentialsByInstitutionGet as reportsPlatformCredentialsByInstitutionGet } from './fn/reports/reports-platform-credentials-by-institution-get';
 export type { ReportsPlatformStudentsByInstitutionGet$Params as ReportsPlatformStudentsByInstitutionGet$Params } from './fn/reports/reports-platform-students-by-institution-get';
 export { reportsPlatformStudentsByInstitutionGet as reportsPlatformStudentsByInstitutionGet } from './fn/reports/reports-platform-students-by-institution-get';
+export type { IssuerStudentsStudentIdTitlePost$Params as IssuerStudentsStudentIdTitlePost$Params } from './fn/student-titles/issuer-students-student-id-title-post';
+export { issuerStudentsStudentIdTitlePost as issuerStudentsStudentIdTitlePost } from './fn/student-titles/issuer-students-student-id-title-post';
+export type { VerificationsPost$Params as VerificationsPost$Params } from './fn/verifications/verifications-post';
+export { verificationsPost as verificationsPost } from './fn/verifications/verifications-post';

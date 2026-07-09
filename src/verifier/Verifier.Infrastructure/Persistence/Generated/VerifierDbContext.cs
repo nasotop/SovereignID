@@ -325,6 +325,12 @@ internal partial class VerifierDbContext : DbContext
             entity.Property(e => e.VerifierUserAgent)
                 .HasMaxLength(500)
                 .HasColumnName("verifier_user_agent");
+            entity.Property(e => e.SignatureValidationSource)
+                .HasMaxLength(32)
+                .HasColumnName("signature_validation_source");
+            entity.Property(e => e.RevocationSource)
+                .HasMaxLength(16)
+                .HasColumnName("revocation_source");
 
             entity.HasOne(d => d.Credential).WithMany(p => p.VerificationLogs)
                 .HasForeignKey(d => d.CredentialId)

@@ -24,5 +24,9 @@ namespace SovereignID.Bff.Clients.Verifier.Models
         #pragma warning disable CS1591
         Not_found,
         #pragma warning restore CS1591
+        [EnumMember(Value = "integrity_failed")]
+        #pragma warning disable CS1591
+        Integrity_failed,
+        #pragma warning restore CS1591
     }
 }

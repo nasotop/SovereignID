@@ -15,7 +15,13 @@ namespace SovereignID.Bff.Clients.Reports.Models
         /// <summary>Stores additional data not described in the OpenAPI description found when deserializing. Can be used for serialization as well.</summary>
         public IDictionary<string, object> AdditionalData { get; set; }
         /// <summary>The invalidTotal property</summary>
-        public int? InvalidTotal { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? InvalidTotal { get; set; }
+#nullable restore
+#else
+        public UntypedNode InvalidTotal { get; set; }
+#endif
         /// <summary>The period property</summary>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
 #nullable enable
@@ -41,7 +47,13 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public string Source { get; set; }
 #endif
         /// <summary>The validTotal property</summary>
-        public int? ValidTotal { get; set; }
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public UntypedNode? ValidTotal { get; set; }
+#nullable restore
+#else
+        public UntypedNode ValidTotal { get; set; }
+#endif
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Reports.Models.VerificationOutcomesReportResponse"/> and sets the default values.
         /// </summary>
@@ -67,11 +79,11 @@ namespace SovereignID.Bff.Clients.Reports.Models
         {
             return new Dictionary<string, Action<IParseNode>>
             {
-                { "invalidTotal", n => { InvalidTotal = n.GetIntValue(); } },
+                { "invalidTotal", n => { InvalidTotal = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
                 { "period", n => { Period = n.GetObjectValue<global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse>(global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse.CreateFromDiscriminatorValue); } },
                 { "series", n => { Series = n.GetCollectionOfObjectValues<global::SovereignID.Bff.Clients.Reports.Models.VerificationOutcomePointResponse>(global::SovereignID.Bff.Clients.Reports.Models.VerificationOutcomePointResponse.CreateFromDiscriminatorValue)?.AsList(); } },
                 { "source", n => { Source = n.GetStringValue(); } },
-                { "validTotal", n => { ValidTotal = n.GetIntValue(); } },
+                { "validTotal", n => { ValidTotal = n.GetObjectValue<UntypedNode>(UntypedNode.CreateFromDiscriminatorValue); } },
             };
         }
         /// <summary>
@@ -81,11 +93,11 @@ namespace SovereignID.Bff.Clients.Reports.Models
         public virtual void Serialize(ISerializationWriter writer)
         {
             if(ReferenceEquals(writer, null)) throw new ArgumentNullException(nameof(writer));
-            writer.WriteIntValue("invalidTotal", InvalidTotal);
+            writer.WriteObjectValue<UntypedNode>("invalidTotal", InvalidTotal);
             writer.WriteObjectValue<global::SovereignID.Bff.Clients.Reports.Models.ReportPeriodResponse>("period", Period);
             writer.WriteCollectionOfObjectValues<global::SovereignID.Bff.Clients.Reports.Models.VerificationOutcomePointResponse>("series", Series);
             writer.WriteStringValue("source", Source);
-            writer.WriteIntValue("validTotal", ValidTotal);
+            writer.WriteObjectValue<UntypedNode>("validTotal", ValidTotal);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

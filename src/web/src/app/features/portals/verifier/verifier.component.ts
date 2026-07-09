@@ -1,43 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
-import { VerificationChecksResponse } from '../../../api/bff/models/verification-checks-response';
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
 import { VerifierService } from '../../../core/services/verifier.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { VerificationVerdictPanelComponent } from '../../../shared/ui/verification-verdict';
 
 type VerifierState = 'idle' | 'loading' | 'result' | 'error';
-
-type CheckKey = keyof VerificationChecksResponse;
-
-const CHECK_LABELS: Record<CheckKey, string> = {
-  found: 'Encontrada en registro',
-  notRevoked: 'No revocada',
-  notExpired: 'No expirada',
-  hashMatches: 'Hash coincide',
-  onChainExists: 'Existe on-chain',
-  signatureValid: 'Firma válida',
-};
-
-const RESULT_LABELS: Record<VerificationResponse['result'], string> = {
-  valid: 'Credencial válida',
-  revoked: 'Credencial revocada',
-  expired: 'Credencial expirada',
-  not_found: 'Credencial inexistente',
-};
-
-const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
-  valid: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-  revoked: 'bg-red-500/20 text-red-300 border-red-500/40',
-  expired: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-  not_found: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
-};
 
 @Component({
   selector: 'app-verifier',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VerificationVerdictPanelComponent],
   template: `
     <div class="min-h-screen bg-slate-900 flex flex-col">
       <header class="pt-12 pb-8 px-6 text-center">
@@ -144,100 +120,7 @@ const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
           </section>
 
           @if (state() === 'result' && verificationResult(); as result) {
-            <section class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 space-y-6">
-              <div class="flex items-center justify-between gap-4">
-                <h2 class="text-lg font-semibold text-white">Verification result</h2>
-                <span
-                  class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium"
-                  [ngClass]="resultBadgeClass(result.result)"
-                >
-                  {{ resultLabel(result.result) }}
-                </span>
-              </div>
-
-              <div>
-                <h3 class="text-sm font-medium text-slate-300 mb-3">Checks</h3>
-                <ul class="space-y-2">
-                  @for (check of checkEntries; track check.key) {
-                    <li
-                      class="flex items-center justify-between rounded-lg bg-slate-900/60 px-4 py-3 text-sm"
-                    >
-                      <span class="text-slate-300">{{ check.label }}</span>
-                      <span [ngClass]="checkValueClass(result.checks[check.key])">
-                        {{ formatCheckValue(result.checks[check.key]) }}
-                      </span>
-                    </li>
-                  }
-                </ul>
-              </div>
-
-              @if (result.credential; as credential) {
-                <div>
-                  <h3 class="text-sm font-medium text-slate-300 mb-3">Credential</h3>
-                  <dl class="grid gap-3 rounded-lg bg-slate-900/60 p-4 text-sm">
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">ID</dt>
-                      <dd class="text-slate-200 break-all">{{ credential.id }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Type</dt>
-                      <dd class="text-slate-200">{{ credential.type }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Status</dt>
-                      <dd class="text-slate-200">{{ credential.status }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Issuer</dt>
-                      <dd class="text-slate-200">
-                        {{ credential.issuer.displayName }}
-                        ({{ credential.issuer.code }})
-                      </dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Issuer DID</dt>
-                      <dd class="text-slate-200 break-all">{{ credential.issuer.did }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Subject DID</dt>
-                      <dd class="text-slate-200 break-all">{{ credential.subjectDid }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Issued at</dt>
-                      <dd class="text-slate-200">{{ credential.issuedAt }}</dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Expires at</dt>
-                      <dd class="text-slate-200">
-                        {{ credential.expiresAt ?? '—' }}
-                      </dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">IPFS CID</dt>
-                      <dd class="text-slate-200 break-all">
-                        {{ credential.anchors.ipfsCid }}
-                      </dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Content hash</dt>
-                      <dd class="text-slate-200 break-all">
-                        {{ credential.anchors.contentHash }}
-                      </dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Transaction</dt>
-                      <dd class="text-slate-200 break-all">
-                        {{ credential.anchors.transactionHash }}
-                      </dd>
-                    </div>
-                    <div class="grid grid-cols-[8rem_1fr] gap-2">
-                      <dt class="text-slate-500">Chain ID</dt>
-                      <dd class="text-slate-200">{{ credential.anchors.chainId }}</dd>
-                    </div>
-                  </dl>
-                </div>
-              }
-            </section>
+            <app-verification-verdict-panel [response]="result" />
           }
 
           @if (state() === 'error') {
@@ -266,7 +149,8 @@ const RESULT_BADGE_CLASSES: Record<VerificationResponse['result'], string> = {
     </div>
   `,
 })
-export class VerifierComponent {
+export class VerifierComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   private readonly verifierService = inject(VerifierService);
 
   readonly credentialId = signal('');
@@ -279,9 +163,19 @@ export class VerifierComponent {
     this.verifierService.isValidCredentialId(this.credentialId()),
   );
 
-  readonly checkEntries = (
-    Object.entries(CHECK_LABELS) as [CheckKey, string][]
-  ).map(([key, label]) => ({ key, label }));
+  ngOnInit(): void {
+    const raw = this.route.snapshot.queryParamMap.get('credentialId');
+    if (!raw) {
+      return;
+    }
+
+    if (this.verifierService.isValidCredentialId(raw)) {
+      this.credentialId.set(raw);
+    } else {
+      this.credentialId.set('');
+      this.validationError.set('El credentialId no es un UUID válido.');
+    }
+  }
 
   onCredentialIdChange(value: string): void {
     this.credentialId.set(value);
@@ -314,29 +208,5 @@ export class VerifierComponent {
   resetError(): void {
     this.state.set('idle');
     this.errorMessage.set(null);
-  }
-
-  resultLabel(result: VerificationResponse['result']): string {
-    return RESULT_LABELS[result];
-  }
-
-  resultBadgeClass(result: VerificationResponse['result']): string {
-    return RESULT_BADGE_CLASSES[result];
-  }
-
-  formatCheckValue(value: boolean | null): string {
-    if (value === null) {
-      return 'No evaluado';
-    }
-
-    return value ? 'Sí' : 'No';
-  }
-
-  checkValueClass(value: boolean | null): string {
-    if (value === null) {
-      return 'text-slate-400 italic';
-    }
-
-    return value ? 'text-emerald-400 font-medium' : 'text-red-400 font-medium';
   }
 }

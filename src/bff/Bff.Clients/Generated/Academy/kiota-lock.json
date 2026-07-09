@@ -2,7 +2,7 @@
   "descriptionHash": "B736C15E89E367AAF725614C53DCF6C49C79FADF818A6CFC75617A4EC712A2BC54504CD2FAD0C3B939185968765C0C7A40F476CDD60AFE8E11521D3253F45A88",
   "descriptionLocation": "../../../../../docs/contracts/academy.openapi.json",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.32.5",
+  "kiotaVersion": "1.32.4",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
   "clientNamespaceName": "SovereignID.Bff.Clients.Academy",
@@ -30,6 +30,5 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": [],
-  "allowedExternalOrigins": []
+  "disabledValidationRules": []
 }

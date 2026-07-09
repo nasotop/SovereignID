@@ -9,10 +9,10 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface ReportsPlatformStudentsByInstitutionGet$Params {
-  asOf: string;
+  asOf?: string;
 }
 
-export function reportsPlatformStudentsByInstitutionGet(http: HttpClient, rootUrl: string, params: ReportsPlatformStudentsByInstitutionGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
+export function reportsPlatformStudentsByInstitutionGet(http: HttpClient, rootUrl: string, params?: ReportsPlatformStudentsByInstitutionGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
   const rb = new RequestBuilder(rootUrl, reportsPlatformStudentsByInstitutionGet.PATH, 'get');
   if (params) {
     rb.query('asOf', params.asOf, {});

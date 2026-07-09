@@ -1,8 +1,8 @@
 {
-  "descriptionHash": "FDDEFBD6DACAE7D70EC8AF44078A63A727CB1FA5FE074849ECBE09380565B2FA9D1034B944FCFB433586EA0BD8B0AF5FBCB7D4812D40682E1ECE9471CB81F522",
+  "descriptionHash": "47011E4C000B79E41D630D22E42DD5B409F55B2A5F2DE0FC38A69D53C9C12853486DBF3F6055638AC9585342E926A941B6C78CDCD7384FC5BBA5C2F307D99C44",
   "descriptionLocation": "../../../../../docs/contracts/verifier.openapi.json",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.32.5",
+  "kiotaVersion": "1.32.4",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
   "clientNamespaceName": "SovereignID.Bff.Clients.Verifier",
@@ -30,6 +30,5 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": [],
-  "allowedExternalOrigins": []
+  "disabledValidationRules": []
 }

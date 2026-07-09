@@ -10,7 +10,8 @@ public enum VerificationResult
     Valid,
     Revoked,
     Expired,
-    NotFound
+    NotFound,
+    IntegrityFailed
 }
 
 public static class VerificationResultExtensions
@@ -22,6 +23,7 @@ public static class VerificationResultExtensions
         VerificationResult.Revoked => "revoked",
         VerificationResult.Expired => "expired",
         VerificationResult.NotFound => "not_found",
+        VerificationResult.IntegrityFailed => "integrity_failed",
         _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unknown verification result.")
     };
 }

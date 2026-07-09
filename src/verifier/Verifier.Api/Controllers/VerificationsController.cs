@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Verifier.Api.Models;
 using Verifier.Application;
 using Verifier.Domain;
@@ -16,10 +17,12 @@ public sealed class VerificationsController : ControllerBase
         _verifyCredentialUseCase = verifyCredentialUseCase;
 
     /// <summary>Verifica una Verifiable Credential por su UUID (verificación pública, sin autenticación).</summary>
-    /// <remarks>Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con <c>200</c> y el campo <c>result</c>. El único error de protocolo es <c>invalid_credential_id</c> (<c>400</c>, RFC 7807 Problem Details con extensión <c>error</c>) cuando <c>credentialId</c> está ausente o no es un UUID válido.</remarks>
+    /// <remarks>Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con <c>200</c> y el campo <c>result</c>. Los errores de protocolo usan RFC 7807 Problem Details con extensión <c>error</c>: <c>invalid_credential_id</c> (<c>400</c>) o <c>rate_limit_exceeded</c> (<c>429</c>).</remarks>
     [HttpPost]
+    [EnableRateLimiting(VerifierRateLimitingExtensions.VerificationsPolicyName)]
     [ProducesResponseType(typeof(VerificationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<VerificationResponse>> Verify(
         [FromBody] VerificationRequest request,
         CancellationToken cancellationToken)
@@ -51,7 +54,9 @@ public sealed class VerificationsController : ControllerBase
                 checks.NotExpired,
                 checks.HashMatches,
                 checks.OnChainExists,
-                checks.SignatureValid),
+                checks.SignatureValid,
+                checks.ValidationSource,
+                checks.RevocationSource),
             outcome.Credential is { } credential
                 ? new CredentialResponse(
                     credential.Id,

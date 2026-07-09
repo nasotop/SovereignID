@@ -6,5 +6,5 @@ import { VerificationChecksResponse } from '../models/verification-checks-respon
 export interface VerificationResponse {
   checks: VerificationChecksResponse;
   credential: (null | CredentialResponse);
-  result: 'valid' | 'revoked' | 'expired' | 'not_found';
+  result: 'valid' | 'revoked' | 'expired' | 'not_found' | 'integrity_failed';
 }

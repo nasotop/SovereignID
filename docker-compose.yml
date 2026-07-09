@@ -157,6 +157,15 @@ services:
       Persistence__Provider: ${Academy__Persistence__Provider:-InMemory}
       Academy__InvitationBaseUrl: ${Academy__InvitationBaseUrl:-http://localhost:4333/institution-invitations/accept}
       Academy__InvitationTtlHours: ${Academy__InvitationTtlHours:-72}
+      Academy__Email__Provider: ${Academy__Email__Provider:-Logging}
+      Academy__Email__Smtp__Host: ${Academy__Email__Smtp__Host:-}
+      Academy__Email__Smtp__Port: ${Academy__Email__Smtp__Port:-587}
+      Academy__Email__Smtp__UseStartTls: ${Academy__Email__Smtp__UseStartTls:-true}
+      Academy__Email__Smtp__Username: ${Academy__Email__Smtp__Username:-}
+      Academy__Email__Smtp__Password: ${Academy__Email__Smtp__Password:-}
+      Academy__Email__Smtp__FromAddress: ${Academy__Email__Smtp__FromAddress:-}
+      Academy__Email__Smtp__FromDisplayName: ${Academy__Email__Smtp__FromDisplayName:-SovereignID}
+      Academy__Email__Smtp__Subject: ${Academy__Email__Smtp__Subject:-Invitación a SovereignID}
     expose:
       - "8080"
     networks:
@@ -176,40 +185,6 @@ services:
       com.sovereignid.service: academy-api
       com.sovereignid.version: "1.0"
       com.sovereignid.description: "Academic domain service (institutions, students, invitations)"
-
-  identity-api:
-    build:
-      context: .
-      dockerfile: src/identity/Identity.Api/Dockerfile
-      args:
-        BUILD_CONFIGURATION: ${BUILD_CONFIGURATION:-Release}
-    image: sovereignid-identity:latest
-    container_name: sovereignid-identity
-    restart: unless-stopped
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
-      Persistence__Provider: ${Identity__Persistence__Provider:-InMemory}
-    expose:
-      - "8080"
-    networks:
-      - sovereign-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "/dev/null", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    labels:
-      com.sovereignid.service: identity-api
-      com.sovereignid.version: "1.0"
-      com.sovereignid.description: "Identity service (health scaffold; business endpoints TBD)"
 
   reports-api:
     build:
@@ -267,7 +242,6 @@ services:
       Downstream__Verifier: http://verifier-api:8080
       Downstream__Issuer: http://issuer-api:8080
       Downstream__Academy: http://academy-api:8080
-      Downstream__Identity: http://identity-api:8080
       Downstream__Reports: http://reports-api:8080
     expose:
       - "8080"
@@ -277,8 +251,6 @@ services:
       issuer-api:
         condition: service_started
       academy-api:
-        condition: service_started
-      identity-api:
         condition: service_started
       reports-api:
         condition: service_started

@@ -2,7 +2,7 @@
   "descriptionHash": "ED1ACC2A74F55656D3BBFEDE47AB31A04011F13A7D524EBFAD9307EEC599B755ABED2B42EC2DD130FBD5E7A726EF7D91C00E5F3575095F6131DA7D07CD16D55A",
   "descriptionLocation": "../../../../../docs/contracts/issuer.openapi.json",
   "lockFileVersion": "1.0.0",
-  "kiotaVersion": "1.32.5",
+  "kiotaVersion": "1.32.4",
   "clientClassName": "ApiClient",
   "typeAccessModifier": "Public",
   "clientNamespaceName": "SovereignID.Bff.Clients.Issuer",
@@ -30,6 +30,5 @@
   ],
   "includePatterns": [],
   "excludePatterns": [],
-  "disabledValidationRules": [],
-  "allowedExternalOrigins": []
+  "disabledValidationRules": []
 }

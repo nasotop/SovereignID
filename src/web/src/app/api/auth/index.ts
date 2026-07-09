@@ -6,6 +6,7 @@ export { RequestBuilder } from './request-builder';
 export type { StrictHttpResponse } from './strict-http-response';
 export { Api } from './api';
 
+export type { MembershipResponse } from './models/membership-response';
 export type { NonceResponse } from './models/nonce-response';
 export type { ProblemDetails } from './models/problem-details';
 export type { VerifyRequest } from './models/verify-request';

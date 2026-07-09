@@ -35,8 +35,8 @@ Introducir **`bff-api`** (`src/bff/`) como **Backend-for-Frontend**:
 | `bff-api` | sí | sí (vía `/api/`) |
 | `verifier-api` | sí | no (solo red interna) |
 | `issuer-api` | sí | no |
-| `academy-api` | sí | no (vía BFF cuando se consuma) |
-| `identity-api` | sí | no (scaffold; solo health) |
+| `academy-api` | sí | no (vía BFF) |
+| `reports-api` | sí | no (vía BFF) |
 
 ### Rutas BFF v1 (pass-through)
 
@@ -52,7 +52,7 @@ Introducir **`bff-api`** (`src/bff/`) como **Backend-for-Frontend**:
 - Un seam server-side con profundidad: orquestación, agregación y políticas transversales tienen hogar en `Bff.Api` / futuro `Bff.Application`.
 - El navegador deja de conocer la topología interna de microservicios (salvo auth SIWE, deliberado en v1).
 - Kiota tipa las llamadas downstream; los snapshots OpenAPI siguen siendo fuente de verdad compartida con CI.
-- `academy` e `identity` entran en compose sin nuevos `location` nginx.
+- `academy` y `reports` entran en compose sin nuevos `location` nginx.
 
 ### Negativas
 
@@ -66,4 +66,4 @@ Introducir **`bff-api`** (`src/bff/`) como **Backend-for-Frontend**:
 - [ADR-0004](0004-openapi-client-codegen.md) — codegen frontend
 - [ADR-0001](0001-problem-details-errors.md) — Problem Details reenviados sin reinterpretar
 - [`scripts/gen-kiota-clients.ps1`](../../scripts/gen-kiota-clients.ps1)
-- [`src/bff/`](../../src/bff/)
+- [ADR-0006](0006-consolidate-identity-into-academy-auth.md) — sin microservicio identity en MVP

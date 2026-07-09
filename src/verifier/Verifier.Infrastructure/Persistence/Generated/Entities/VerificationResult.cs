@@ -12,5 +12,6 @@ public enum VerificationResult
     Revoked,
     Expired,
     NotFound,
-    IpfsUnreachable
+    IpfsUnreachable,
+    IntegrityFailed
 }

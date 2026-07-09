@@ -14,6 +14,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IVerifierRequestContext, HttpVerifierRequestContext>();
 builder.Services.AddVerifierOpenApiDocumentation();
 builder.Services.AddVerifierInfrastructure(builder.Configuration);
+builder.Services.AddVerifierRateLimiting(builder.Configuration);
+builder.Services.AddVerifierForwardedHeaders(builder.Configuration);
 
 var app = builder.Build();
 
@@ -24,8 +26,11 @@ if (app.Environment.IsDevelopment())
     app.MapVerifierOpenApiDocumentation();
 }
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();

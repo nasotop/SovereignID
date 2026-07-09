@@ -10,7 +10,5 @@ public sealed class DownstreamOptions
 
     public string Academy { get; set; } = "http://localhost:5195";
 
-    public string Identity { get; set; } = "http://localhost:5198";
-
     public string Reports { get; set; } = "http://localhost:5193";
 }

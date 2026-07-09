@@ -1,9 +1,14 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { Api } from '../../api/bff/api';
 import { verificationsPost } from '../../api/bff/fn/verifications/verifications-post';
 import { VerificationResponse } from '../../api/bff/models/verification-response';
-import { toThrownError } from '../utils/error.utils';
+import {
+  toErrorCode,
+  toHttpErrorMessage,
+  toThrownError,
+} from '../utils/error.utils';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -12,6 +17,13 @@ export class InvalidCredentialIdFormatError extends Error {
   constructor() {
     super('El credentialId no es un UUID válido.');
     this.name = 'InvalidCredentialIdFormatError';
+  }
+}
+
+export class RateLimitExceededError extends Error {
+  constructor(message = 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.') {
+    super(message);
+    this.name = 'RateLimitExceededError';
   }
 }
 
@@ -37,6 +49,14 @@ export class VerifierService {
         body: { credentialId: trimmed },
       });
     } catch (error: unknown) {
+      if (error instanceof HttpErrorResponse && error.status === 429) {
+        if (toErrorCode(error) === 'rate_limit_exceeded') {
+          throw new RateLimitExceededError(
+            toHttpErrorMessage(error, 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.'),
+          );
+        }
+      }
+
       throw toThrownError(error, 'Verification failed');
     }
   }

@@ -25,8 +25,12 @@ namespace SovereignID.Bff.Clients.Verifier.Models
         public bool? NotRevoked { get; set; }
         /// <summary>The onChainExists property</summary>
         public bool? OnChainExists { get; set; }
+        /// <summary>The revocationSource property</summary>
+        public global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_revocationSource? RevocationSource { get; set; }
         /// <summary>The signatureValid property</summary>
         public bool? SignatureValid { get; set; }
+        /// <summary>The validationSource property</summary>
+        public global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_validationSource? ValidationSource { get; set; }
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse"/> and sets the default values.
         /// </summary>
@@ -57,7 +61,9 @@ namespace SovereignID.Bff.Clients.Verifier.Models
                 { "notExpired", n => { NotExpired = n.GetBoolValue(); } },
                 { "notRevoked", n => { NotRevoked = n.GetBoolValue(); } },
                 { "onChainExists", n => { OnChainExists = n.GetBoolValue(); } },
+                { "revocationSource", n => { RevocationSource = n.GetEnumValue<global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_revocationSource>(); } },
                 { "signatureValid", n => { SignatureValid = n.GetBoolValue(); } },
+                { "validationSource", n => { ValidationSource = n.GetEnumValue<global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_validationSource>(); } },
             };
         }
         /// <summary>
@@ -72,7 +78,9 @@ namespace SovereignID.Bff.Clients.Verifier.Models
             writer.WriteBoolValue("notExpired", NotExpired);
             writer.WriteBoolValue("notRevoked", NotRevoked);
             writer.WriteBoolValue("onChainExists", OnChainExists);
+            writer.WriteEnumValue<global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_revocationSource>("revocationSource", RevocationSource);
             writer.WriteBoolValue("signatureValid", SignatureValid);
+            writer.WriteEnumValue<global::SovereignID.Bff.Clients.Verifier.Models.VerificationChecksResponse_validationSource>("validationSource", ValidationSource);
             writer.WriteAdditionalData(AdditionalData);
         }
     }

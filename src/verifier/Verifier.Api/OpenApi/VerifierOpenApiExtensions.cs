@@ -16,6 +16,22 @@ internal static class VerifierOpenApiExtensions
         "revoked",
         "expired",
         "not_found",
+        "integrity_failed",
+    ];
+
+    private static readonly string[] ValidationSourceWireValues =
+    [
+        "on_chain",
+        "bd_fallback_inconclusive",
+        "bd_fallback_rejected",
+        "not_evaluated",
+    ];
+
+    private static readonly string[] RevocationSourceWireValues =
+    [
+        "bd",
+        "on_chain",
+        "both",
     ];
 
     public static IServiceCollection AddVerifierOpenApiDocumentation(this IServiceCollection services)
@@ -31,7 +47,7 @@ internal static class VerifierOpenApiExtensions
                     Description =
                         "Servicio verificador de Verifiable Credentials de la plataforma SovereignID. "
                         + "Expone la verificación pública de credenciales (`POST /verifications`) y un health-check (`GET /health`). "
-                        + "Los veredictos de negocio (válida/revocada/expirada/inexistente) se devuelven con `200` y el campo `result`; "
+                        + "Los veredictos de negocio (válida/revocada/expirada/inexistente/integridad fallida) se devuelven con `200` y el campo `result`; "
                         + "los errores de protocolo se devuelven como RFC 7807 Problem Details con un código estable en la extensión `error`.",
                     Contact = new OpenApiContact
                     {
@@ -45,18 +61,51 @@ internal static class VerifierOpenApiExtensions
 
             options.AddSchemaTransformer((schema, context, _) =>
             {
-                if (context.JsonTypeInfo.Type != typeof(VerificationResponse))
+                if (context.JsonTypeInfo.Type == typeof(VerificationResponse))
                 {
-                    return Task.CompletedTask;
+                    schema.Properties!["result"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.String,
+                        Enum = VerificationResultWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
                 }
 
-                schema.Properties!["result"] = new OpenApiSchema
+                if (context.JsonTypeInfo.Type == typeof(VerificationChecksResponse))
                 {
-                    Type = JsonSchemaType.String,
-                    Enum = VerificationResultWireValues
-                        .Select(value => (JsonNode)JsonValue.Create(value))
-                        .ToList(),
-                };
+                    schema.Properties!["validationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
+                        Enum = ValidationSourceWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+
+                    schema.Properties!["revocationSource"] = new OpenApiSchema
+                    {
+                        Type = JsonSchemaType.Null | JsonSchemaType.String,
+                        Enum = RevocationSourceWireValues
+                            .Select(value => (JsonNode)JsonValue.Create(value))
+                            .ToList(),
+                    };
+                }
+
+                return Task.CompletedTask;
+            });
+
+            options.AddOperationTransformer((operation, context, _) =>
+            {
+                if (context.Description.HttpMethod is not null
+                    && HttpMethods.IsPost(context.Description.HttpMethod)
+                    && string.Equals(context.Description.RelativePath, "verifications", StringComparison.OrdinalIgnoreCase))
+                {
+                    operation.Responses ??= new OpenApiResponses();
+                    operation.Responses["429"] = new OpenApiResponse
+                    {
+                        Description = "Too Many Requests — Problem Details with `error = rate_limit_exceeded`."
+                    };
+                }
 
                 return Task.CompletedTask;
             });

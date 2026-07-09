@@ -15,7 +15,8 @@ public sealed class VerifierWebApplicationFactory : WebApplicationFactory<Progra
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProviders.InMemory
+                [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProviders.InMemory,
+                ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=sovereignid;Username=sovereignid;Password=sovereignid_dev"
             });
         });
     }

@@ -10,8 +10,8 @@ import { RequestBuilder } from '../../request-builder';
 
 export interface ReportsInstitutionsInstitutionIdVerificationOutcomesGet$Params {
   institutionId: string;
-  from: string;
-  to: string;
+  from?: string;
+  to?: string;
 }
 
 export function reportsInstitutionsInstitutionIdVerificationOutcomesGet(http: HttpClient, rootUrl: string, params: ReportsInstitutionsInstitutionIdVerificationOutcomesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<any>> {
