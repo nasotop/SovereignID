@@ -34,7 +34,7 @@ import { AuthService } from '../../../core/services/auth.service';
 
       @if (isOpen()) {
         <div
-          class="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl shadow-black/30"
+          class="user-menu-dropdown absolute right-0 z-[100] mt-2 w-64 overflow-hidden rounded-lg border border-slate-700 bg-slate-800 shadow-xl shadow-black/30"
           role="menu"
         >
           <div class="border-b border-slate-700 px-4 py-3">

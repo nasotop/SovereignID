@@ -11,6 +11,8 @@ import {
 import { AcademyService } from '../../../core/services/academy.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 import { IssuerTabComponent } from './issuer-tab.component';
 
@@ -20,6 +22,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
   imports: [
     CommonModule,
     FormsModule,
+    HexLoaderComponent,
     RouterLink,
     PortalShellComponent,
     IssuerTabComponent,
@@ -108,9 +111,14 @@ import { IssuerTabComponent } from './issuer-tab.component';
         />
       } @else {
         <section class="rounded-lg border border-slate-700 bg-slate-800/50 p-10 text-center">
-          <p class="font-medium text-white">
-            {{ loading() ? 'Cargando institucion...' : 'No hay institucion seleccionada' }}
-          </p>
+          @if (loading()) {
+            <div class="flex min-h-48 flex-col items-center justify-center gap-4 text-sm text-slate-400">
+              <app-hex-loader label="Cargando institucion" />
+              <p>Cargando institucion...</p>
+            </div>
+          } @else {
+            <p class="font-medium text-white">No hay institucion seleccionada</p>
+          }
         </section>
       }
     </app-portal-shell>
@@ -161,11 +169,13 @@ export class IssuerComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
     try {
-      const [institution, students, careers] = await Promise.all([
-        this.academyService.getInstitution(institutionId),
-        this.academyService.listStudents(institutionId),
-        this.academyService.listCareers(institutionId),
-      ]);
+      const [institution, students, careers] = await withMinimumVisualDelay(
+        Promise.all([
+          this.academyService.getInstitution(institutionId),
+          this.academyService.listStudents(institutionId),
+          this.academyService.listCareers(institutionId),
+        ]),
+      );
       this.selectedInstitution.set(institution as InstitutionSummary);
       this.students.set(students);
       this.careers.set(careers);

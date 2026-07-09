@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { rxResource } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
+import { forkJoin, map, of, timer } from 'rxjs';
 
 import { ISSUER_INSTITUTION_STORAGE_KEY } from '../constants/issuer.constants';
 import {
@@ -11,6 +11,7 @@ import {
 } from '../models/credential.models';
 import { IssuerApiService } from './issuer-api.service';
 import { TitleIssuanceService } from './title-issuance.service';
+import { MINIMUM_VISUAL_LOADING_MS } from '../utils/visual-delay.util';
 
 @Injectable({ providedIn: 'root' })
 export class CredentialService {
@@ -26,7 +27,10 @@ export class CredentialService {
         return of([] as CredentialSummaryResponse[]);
       }
 
-      return this.issuerApiService.listInstitutionCredentials(params.institutionId);
+      return forkJoin({
+        credentials: this.issuerApiService.listInstitutionCredentials(params.institutionId),
+        delay: timer(MINIMUM_VISUAL_LOADING_MS),
+      }).pipe(map(({ credentials }) => credentials));
     },
   });
 

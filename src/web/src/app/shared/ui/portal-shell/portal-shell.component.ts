@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
+import { BlockchainBackgroundComponent } from '../blockchain-background/blockchain-background.component';
 import { UserMenuComponent } from '../user-menu/user-menu.component';
 
 type PortalAccent = 'blue' | 'violet';
@@ -9,13 +10,16 @@ type PortalLayoutWidth = 'contained' | 'full';
 @Component({
   selector: 'app-portal-shell',
   standalone: true,
-  imports: [CommonModule, UserMenuComponent],
+  imports: [CommonModule, BlockchainBackgroundComponent, UserMenuComponent],
   host: {
     class: 'block h-full',
   },
   template: `
-    <div class="bg-slate-900" [ngClass]="rootClass()">
-      <nav class="shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
+    <div class="app-glass-shell relative bg-slate-950" [ngClass]="rootClass()">
+      <app-blockchain-background />
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.1),transparent_38%),linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.82))]"></div>
+
+      <nav class="relative z-40 shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
         <div
           class="mx-auto flex items-center justify-between"
           [ngClass]="navContainerClass()"
@@ -56,7 +60,7 @@ type PortalLayoutWidth = 'contained' | 'full';
         </div>
       </nav>
 
-      <main class="mx-auto" [ngClass]="mainClass()">
+      <main class="relative z-10 mx-auto" [ngClass]="mainClass()">
         @if (!hideHeader()) {
           <header class="shrink-0" [ngClass]="headerClass()">
             <h2 class="text-2xl font-bold text-white">{{ title() }}</h2>

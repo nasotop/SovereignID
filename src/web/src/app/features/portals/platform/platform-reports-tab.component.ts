@@ -10,6 +10,8 @@ import {
 } from '../../../core/models/reports.models';
 import { ReportsService } from '../../../core/services/reports.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import {
   ReportBarPoint,
   ReportChartComponent,
@@ -24,6 +26,7 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
   standalone: true,
   imports: [
     CommonModule,
+    HexLoaderComponent,
     ReportPeriodSelectorComponent,
     ReportChartComponent,
     ReportSourceBadgeComponent,
@@ -54,8 +57,9 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
         </div>
 
         @if (credentialsState() === 'loading') {
-          <div class="flex h-64 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-            Cargando reporte de credenciales...
+          <div class="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
+            <app-hex-loader label="Cargando reporte de credenciales" />
+            <span>Cargando reporte de credenciales...</span>
           </div>
         } @else if (credentialsState() === 'error') {
           <div class="rounded-lg border border-red-700 bg-red-900/40 p-4">
@@ -88,8 +92,9 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
         </div>
 
         @if (studentsState() === 'loading') {
-          <div class="flex h-64 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-            Cargando reporte de alumnos...
+          <div class="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
+            <app-hex-loader label="Cargando reporte de alumnos" />
+            <span>Cargando reporte de alumnos...</span>
           </div>
         } @else if (studentsState() === 'error') {
           <div class="rounded-lg border border-red-700 bg-red-900/40 p-4">
@@ -161,10 +166,12 @@ export class PlatformReportsTabComponent implements OnInit {
     this.credentialsError.set(null);
     this.studentsError.set(null);
 
-    const [credentialsResult, studentsResult] = await Promise.allSettled([
-      this.reportsService.getPlatformCredentialsByInstitution(period.from, period.to),
-      this.reportsService.getPlatformStudentsByInstitution(period.to),
-    ]);
+    const [credentialsResult, studentsResult] = await withMinimumVisualDelay(
+      Promise.allSettled([
+        this.reportsService.getPlatformCredentialsByInstitution(period.from, period.to),
+        this.reportsService.getPlatformStudentsByInstitution(period.to),
+      ]),
+    );
 
     this.applyCredentialsResult(credentialsResult);
     this.applyStudentsResult(studentsResult);
@@ -175,9 +182,11 @@ export class PlatformReportsTabComponent implements OnInit {
     this.credentialsError.set(null);
 
     try {
-      const report = await this.reportsService.getPlatformCredentialsByInstitution(
-        period.from,
-        period.to,
+      const report = await withMinimumVisualDelay(
+        this.reportsService.getPlatformCredentialsByInstitution(
+          period.from,
+          period.to,
+        ),
       );
       this.credentialsSource.set(report.source);
       this.credentialsBarData.set(
@@ -199,7 +208,9 @@ export class PlatformReportsTabComponent implements OnInit {
     this.studentsError.set(null);
 
     try {
-      const report = await this.reportsService.getPlatformStudentsByInstitution(period.to);
+      const report = await withMinimumVisualDelay(
+        this.reportsService.getPlatformStudentsByInstitution(period.to),
+      );
       this.studentsBarData.set(
         report.items.map((item) => ({
           category: item.displayName,

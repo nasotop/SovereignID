@@ -12,8 +12,10 @@ import {
 } from '../../../core/services/holder.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { CredentialAnchorsPanelComponent } from '../../../shared/ui/credential-anchors';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 
 type HolderLoadState = 'loading' | 'loaded' | 'error';
@@ -46,7 +48,7 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
   host: {
     class: 'block h-full',
   },
-  imports: [CommonModule, CredentialAnchorsPanelComponent, ModalComponent, PortalShellComponent, ReactiveFormsModule],
+  imports: [CommonModule, CredentialAnchorsPanelComponent, HexLoaderComponent, ModalComponent, PortalShellComponent, ReactiveFormsModule],
   template: `
     <app-portal-shell
       portalLabel="Holder Portal"
@@ -59,8 +61,9 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
       (logout)="handleLogout()"
     >
       @if (loadState() === 'loading') {
-        <section class="rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
-          Cargando informacion del holder...
+        <section class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
+          <app-hex-loader size="lg" label="Cargando informacion del holder" />
+          <p>Cargando informacion del holder...</p>
         </section>
       }
 
@@ -365,7 +368,10 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
         (closed)="closeAnchorsModal()"
       >
         @if (anchorsModal().state === 'loading') {
-          <p class="text-sm text-slate-300">Cargando anclas...</p>
+          <div class="flex min-h-40 flex-col items-center justify-center gap-4 text-sm text-slate-300">
+            <app-hex-loader label="Cargando anclas" />
+            <p>Cargando anclas...</p>
+          </div>
         }
 
         @if (anchorsModal().state === 'error') {
@@ -444,10 +450,12 @@ export class HolderComponent implements OnInit {
     this.feedback.set(null);
 
     try {
-      const [dashboard, credentials] = await Promise.all([
-        this.holderService.getMyDashboard(),
-        this.holderService.listMyCredentials(),
-      ]);
+      const [dashboard, credentials] = await withMinimumVisualDelay(
+        Promise.all([
+          this.holderService.getMyDashboard(),
+          this.holderService.listMyCredentials(),
+        ]),
+      );
       this.profile.set(dashboard.profile);
       this.institutions.set(dashboard.institutions);
       this.credentials.set(credentials);
@@ -622,7 +630,7 @@ export class HolderComponent implements OnInit {
     }));
 
     try {
-      const detail = await this.getCredentialDetail(credentialId);
+      const detail = await withMinimumVisualDelay(this.getCredentialDetail(credentialId));
       this.anchorsModal.update((modal) => ({
         ...modal,
         detail,

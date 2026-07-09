@@ -15,6 +15,7 @@ import {
 import { CredentialService } from '../../../core/services/credential.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
 import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.component';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-badge.component';
 
@@ -26,6 +27,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
   imports: [
     CommonModule,
     FormsModule,
+    HexLoaderComponent,
     ModalComponent,
     StatusBadgeComponent,
     CopyValueComponent,
@@ -62,10 +64,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
         <button
           type="button"
           class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600 disabled:opacity-50"
-          [disabled]="isBusy() || !institutionId()"
+          [disabled]="isBusy() || isCredentialsLoading() || !institutionId()"
           (click)="refreshCredentials()"
         >
-          {{ isBusy() ? 'Cargando...' : 'Refrescar' }}
+          {{ isBusy() || isCredentialsLoading() ? 'Cargando...' : 'Refrescar' }}
         </button>
         @if (canIssue()) {
           <button
@@ -149,7 +151,14 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               } @empty {
                 <tr>
                   <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
-                    {{ isBusy() ? 'Cargando credenciales...' : 'No hay credenciales emitidas para este filtro.' }}
+                    @if (isCredentialsLoading()) {
+                      <div class="flex flex-col items-center justify-center gap-4">
+                        <app-hex-loader label="Cargando credenciales" />
+                        <span>Cargando credenciales...</span>
+                      </div>
+                    } @else {
+                      No hay credenciales emitidas para este filtro.
+                    }
                   </td>
                 </tr>
               }
@@ -520,6 +529,10 @@ export class IssuerTabComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.credentialService.credentialsResource.reload();
+  }
+
+  isCredentialsLoading(): boolean {
+    return this.credentialService.credentialsResource.isLoading();
   }
 
   selectCredential(credential: IssuedCredential): void {

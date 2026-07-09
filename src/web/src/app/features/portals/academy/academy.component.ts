@@ -13,7 +13,9 @@ import {
 import { AcademyService } from '../../../core/services/academy.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.component';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-badge.component';
@@ -37,6 +39,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
     RouterLink,
     PortalShellComponent,
     ModalComponent,
+    HexLoaderComponent,
     StatusBadgeComponent,
     CopyValueComponent,
     AcademyReportsTabComponent,
@@ -239,9 +242,16 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                     </div>
                   </button>
                 } @empty {
-                  <p class="p-10 text-center text-sm text-slate-400">
-                    {{ loading() ? 'Cargando estudiantes...' : 'No hay estudiantes registrados.' }}
-                  </p>
+                  @if (loading()) {
+                    <div class="flex min-h-48 flex-col items-center justify-center gap-4 p-10 text-center text-sm text-slate-400">
+                      <app-hex-loader label="Cargando estudiantes" />
+                      <p>Cargando estudiantes...</p>
+                    </div>
+                  } @else {
+                    <p class="p-10 text-center text-sm text-slate-400">
+                      No hay estudiantes registrados.
+                    </p>
+                  }
                 }
               </div>
             </section>
@@ -379,9 +389,16 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                   </button>
                 } @empty {
                   <div class="p-10 text-center">
-                    <p class="text-sm font-medium text-white">
-                      {{ loading() ? 'Cargando carreras...' : 'Aun no hay carreras en esta institucion.' }}
-                    </p>
+                    @if (loading()) {
+                      <div class="flex min-h-40 flex-col items-center justify-center gap-4 text-sm text-slate-400">
+                        <app-hex-loader label="Cargando carreras" />
+                        <p>Cargando carreras...</p>
+                      </div>
+                    } @else {
+                      <p class="text-sm font-medium text-white">
+                        Aun no hay carreras en esta institucion.
+                      </p>
+                    }
                     @if (!loading() && canManageInstitution()) {
                       <button
                         type="button"
@@ -508,9 +525,16 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                     </div>
                   </button>
                 } @empty {
-                  <p class="p-10 text-center text-sm text-slate-400">
-                    {{ loading() ? 'Cargando usuarios...' : 'No hay usuarios institucionales activos.' }}
-                  </p>
+                  @if (loading()) {
+                    <div class="flex min-h-48 flex-col items-center justify-center gap-4 p-10 text-center text-sm text-slate-400">
+                      <app-hex-loader label="Cargando usuarios" />
+                      <p>Cargando usuarios...</p>
+                    </div>
+                  } @else {
+                    <p class="p-10 text-center text-sm text-slate-400">
+                      No hay usuarios institucionales activos.
+                    </p>
+                  }
                 }
               </div>
             </section>
@@ -921,7 +945,9 @@ export class AcademyComponent implements OnInit {
 
   async loadInstitutions(): Promise<void> {
     try {
-      this.institutions.set(await this.academyService.listInstitutions());
+      this.institutions.set(
+        await withMinimumVisualDelay(this.academyService.listInstitutions()),
+      );
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     }
@@ -1054,23 +1080,27 @@ export class AcademyComponent implements OnInit {
     this.selectedUser.set(null);
 
     try {
-      const institution = await this.academyService.getInstitution(institutionId);
+      const { institution, careers, students, users } = await withMinimumVisualDelay(
+        (async () => {
+          const institution = await this.academyService.getInstitution(institutionId);
+          this.selectedInstitution.set(institution as InstitutionSummary);
+          this.ensureActiveTabAllowed();
+          const [careers, students] = await Promise.all([
+            this.academyService.listCareers(institutionId),
+            this.academyService.listStudents(institutionId),
+          ]);
+          const users = this.canManageInstitution()
+            ? await this.academyService.listInstitutionUsers(institutionId)
+            : [];
+
+          return { institution, careers, students, users };
+        })(),
+      );
+
       this.selectedInstitution.set(institution as InstitutionSummary);
-      this.ensureActiveTabAllowed();
-      const [careers, students] = await Promise.all([
-        this.academyService.listCareers(institutionId),
-        this.academyService.listStudents(institutionId),
-      ]);
       this.careers.set(careers);
       this.students.set(students);
-
-      if (this.canManageInstitution()) {
-        this.institutionUsers.set(
-          await this.academyService.listInstitutionUsers(institutionId),
-        );
-      } else {
-        this.institutionUsers.set([]);
-      }
+      this.institutionUsers.set(users);
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {

@@ -37,9 +37,9 @@ export interface IssueCredentialModel {
 }
 
 export const DOCUMENT_TYPE_OPTIONS = [
-  { label: 'University Degree', code: 'TITULO' },
-  { label: 'Grade Certificate', code: 'NOTAS' },
-  { label: 'Enrollment Certificate', code: 'CERTIFICACION' },
+  { label: 'Titulo profesional', code: 'TITULO' },
+  { label: 'Certificado de notas', code: 'NOTAS' },
+  { label: 'Certificado de matricula', code: 'CERTIFICACION' },
 ] as const;
 
 export type DocumentTypeOption = (typeof DOCUMENT_TYPE_OPTIONS)[number];
@@ -109,17 +109,17 @@ export interface VerifiableCredentialDocument {
 export const MOCK_HOLDER_CREDENTIALS = [
   {
     id: '1',
-    title: 'Título Universitario',
+    title: 'Titulo universitario',
     issuer: 'Duoc UC',
-    issuedDate: 'Issued on November 15, 2025',
+    issuedDate: 'Emitido el 15 de noviembre de 2025',
     status: 'active' as const,
     icon: 'degree' as const,
   },
   {
     id: '2',
-    title: 'Certificado de Notas',
+    title: 'Certificado de notas',
     issuer: 'Duoc UC',
-    issuedDate: 'Issued on October 22, 2025',
+    issuedDate: 'Emitido el 22 de octubre de 2025',
     status: 'active' as const,
     icon: 'certificate' as const,
   },
