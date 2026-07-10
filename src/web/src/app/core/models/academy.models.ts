@@ -25,6 +25,15 @@ export interface StudentSummary {
   readonly createdAt: string;
 }
 
+export interface CareerSummary {
+  readonly id: string;
+  readonly institutionId: string;
+  readonly code: string;
+  readonly name: string;
+  readonly isActive: boolean;
+  readonly createdAt: string;
+}
+
 export interface StudentWalletSummary {
   readonly id: string;
   readonly studentId: string;
@@ -52,6 +61,16 @@ export interface CreateStudentPayload {
   readonly externalReference: string | null;
   readonly enrollmentYear: number | null;
   readonly walletAddress: string | null;
+}
+
+export interface CreateCareerPayload {
+  readonly code: string;
+  readonly name: string;
+}
+
+export interface UpdateCareerPayload {
+  readonly code: string;
+  readonly name: string;
 }
 
 export interface AddStudentWalletPayload {

@@ -80,6 +80,45 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
         }
     }
 
+    public Task<bool> CareerCodeExistsAsync(
+        Guid institutionId,
+        string code,
+        Guid excludingCareerId,
+        CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(_careers.Values.Any(c =>
+                c.InstitutionId == institutionId
+                && c.Id != excludingCareerId
+                && string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    public Task<IReadOnlyList<CareerSummary>> ListCareersAsync(Guid institutionId, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult<IReadOnlyList<CareerSummary>>(
+                _careers.Values
+                    .Where(c => c.InstitutionId == institutionId)
+                    .OrderByDescending(c => c.IsActive)
+                    .ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+        }
+    }
+
+    public Task<CareerSummary?> GetCareerAsync(Guid institutionId, Guid careerId, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult(
+                _careers.TryGetValue(careerId, out var career) && career.InstitutionId == institutionId
+                    ? career
+                    : null);
+        }
+    }
+
     public Task<CareerSummary> CreateCareerAsync(CreateCareerCommand command, DateTimeOffset now, CancellationToken cancellationToken)
     {
         lock (_lock)
@@ -87,6 +126,40 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
             var career = new CareerSummary(Guid.NewGuid(), command.InstitutionId, command.Code, command.Name, true, now);
             _careers.Add(career.Id, career);
             return Task.FromResult(career);
+        }
+    }
+
+    public Task<CareerSummary?> UpdateCareerAsync(UpdateCareerCommand command, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            if (!_careers.TryGetValue(command.CareerId, out var career) || career.InstitutionId != command.InstitutionId)
+            {
+                return Task.FromResult<CareerSummary?>(null);
+            }
+
+            var updated = career with
+            {
+                Code = command.Code,
+                Name = command.Name
+            };
+            _careers[career.Id] = updated;
+            return Task.FromResult<CareerSummary?>(updated);
+        }
+    }
+
+    public Task<CareerSummary?> DeactivateCareerAsync(Guid institutionId, Guid careerId, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            if (!_careers.TryGetValue(careerId, out var career) || career.InstitutionId != institutionId)
+            {
+                return Task.FromResult<CareerSummary?>(null);
+            }
+
+            var updated = career with { IsActive = false };
+            _careers[career.Id] = updated;
+            return Task.FromResult<CareerSummary?>(updated);
         }
     }
 

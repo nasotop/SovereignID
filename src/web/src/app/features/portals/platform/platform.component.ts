@@ -3,6 +3,8 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { BlockchainBackgroundComponent } from '../../../shared/ui/blockchain-background/blockchain-background.component';
+import { UserMenuComponent } from '../../../shared/ui/user-menu/user-menu.component';
 import { PlatformInstitutionsTabComponent } from './platform-institutions-tab.component';
 import { PlatformReportsTabComponent } from './platform-reports-tab.component';
 
@@ -13,12 +15,17 @@ type PlatformTab = 'institutions' | 'reports';
   standalone: true,
   imports: [
     CommonModule,
+    BlockchainBackgroundComponent,
+    UserMenuComponent,
     PlatformInstitutionsTabComponent,
     PlatformReportsTabComponent,
   ],
   template: `
-    <div class="flex h-screen flex-col overflow-hidden bg-slate-900 text-slate-100">
-      <nav class="shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
+    <div class="app-glass-shell relative flex h-screen flex-col overflow-hidden bg-slate-950 text-slate-100">
+      <app-blockchain-background />
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(124,58,237,0.12),transparent_38%),linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.82))]"></div>
+
+      <nav class="relative z-40 shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
         <div class="mx-auto flex w-full max-w-none items-center justify-between px-6 py-4 2xl:px-8">
           <div class="flex items-center gap-3">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600">
@@ -32,17 +39,11 @@ type PlatformTab = 'institutions' | 'reports';
             </div>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex items-center rounded-lg border border-slate-600 bg-slate-700/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
-            (click)="handleLogout()"
-          >
-            Cerrar sesion
-          </button>
+          <app-user-menu role="platform_admin" (logout)="handleLogout()" />
         </div>
       </nav>
 
-      <main class="mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col gap-6 p-6 2xl:px-8">
+      <main class="relative z-10 mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col gap-6 p-6 2xl:px-8">
         <div class="flex shrink-0 gap-2 border-b border-slate-700">
           <button
             type="button"

@@ -12,11 +12,26 @@ import {
 } from '../../../core/services/holder.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { CredentialAnchorsPanelComponent } from '../../../shared/ui/credential-anchors';
+import { CredentialSharePanelComponent } from '../../../shared/ui/credential-share-panel';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { PortalShellComponent } from '../../../shared/ui/portal-shell/portal-shell.component';
 
 type HolderLoadState = 'loading' | 'loaded' | 'error';
+
+const CLOSED_SHARE_MODAL: ShareModalModel = {
+  open: false,
+  credentialId: null,
+  credentialTitle: null,
+};
+
+interface ShareModalModel {
+  open: boolean;
+  credentialId: string | null;
+  credentialTitle: string | null;
+}
 
 interface AnchorsModalModel {
   open: boolean;
@@ -46,7 +61,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
   host: {
     class: 'block h-full',
   },
-  imports: [CommonModule, CredentialAnchorsPanelComponent, ModalComponent, PortalShellComponent, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    CredentialAnchorsPanelComponent,
+    CredentialSharePanelComponent,
+    HexLoaderComponent,
+    ModalComponent,
+    PortalShellComponent,
+    ReactiveFormsModule,
+  ],
   template: `
     <app-portal-shell
       portalLabel="Holder Portal"
@@ -54,11 +77,14 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
       subtitle="Perfil personal, instituciones vinculadas y credenciales verificables."
       accent="blue"
       layoutWidth="full"
+      [userName]="displayName()"
+      userRole="holder"
       (logout)="handleLogout()"
     >
       @if (loadState() === 'loading') {
-        <section class="rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
-          Cargando informacion del holder...
+        <section class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
+          <app-hex-loader size="lg" label="Cargando informacion del holder" />
+          <p>Cargando informacion del holder...</p>
         </section>
       }
 
@@ -246,9 +272,9 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
                         <button
                           type="button"
                           class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
-                          (click)="handleShare(credential.id)"
+                          (click)="openShareModal(credential.id, credential.title)"
                         >
-                          Copiar ID
+                          Compartir QR
                         </button>
                         <button
                           type="button"
@@ -356,6 +382,24 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
       </app-modal>
 
       <app-modal
+        [isOpen]="shareModal().open"
+        title="Compartir credencial"
+        description="Genera un codigo QR con el enlace publico de verificacion."
+        size="md"
+        (closed)="closeShareModal()"
+      >
+        @if (shareModal().credentialId; as credentialId) {
+          <app-credential-share-panel
+            [credentialId]="credentialId"
+            [credentialTitle]="shareModal().credentialTitle"
+            (linkCopied)="showFeedback('Enlace de verificacion copiado.', 'success')"
+            (idCopied)="showFeedback('UUID de credencial copiado.', 'success')"
+            (copyError)="showFeedback($event, 'error')"
+          />
+        }
+      </app-modal>
+
+      <app-modal
         [isOpen]="anchorsModal().open"
         title="Anclas on-chain"
         description="Datos verificables registrados por el emisor."
@@ -363,7 +407,10 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
         (closed)="closeAnchorsModal()"
       >
         @if (anchorsModal().state === 'loading') {
-          <p class="text-sm text-slate-300">Cargando anclas...</p>
+          <div class="flex min-h-40 flex-col items-center justify-center gap-4 text-sm text-slate-300">
+            <app-hex-loader label="Cargando anclas" />
+            <p>Cargando anclas...</p>
+          </div>
         }
 
         @if (anchorsModal().state === 'error') {
@@ -403,6 +450,7 @@ export class HolderComponent implements OnInit {
   readonly feedbackType = signal<'success' | 'error'>('success');
   readonly isProfileModalOpen = signal(false);
   readonly anchorsModal = signal<AnchorsModalModel>(CLOSED_ANCHORS_MODAL);
+  readonly shareModal = signal<ShareModalModel>(CLOSED_SHARE_MODAL);
   readonly isSavingProfile = signal(false);
   readonly actionCredentialId = signal<string | null>(null);
 
@@ -442,10 +490,12 @@ export class HolderComponent implements OnInit {
     this.feedback.set(null);
 
     try {
-      const [dashboard, credentials] = await Promise.all([
-        this.holderService.getMyDashboard(),
-        this.holderService.listMyCredentials(),
-      ]);
+      const [dashboard, credentials] = await withMinimumVisualDelay(
+        Promise.all([
+          this.holderService.getMyDashboard(),
+          this.holderService.listMyCredentials(),
+        ]),
+      );
       this.profile.set(dashboard.profile);
       this.institutions.set(dashboard.institutions);
       this.credentials.set(credentials);
@@ -515,13 +565,16 @@ export class HolderComponent implements OnInit {
     }
   }
 
-  async handleShare(credentialId: string): Promise<void> {
-    try {
-      await this.holderService.shareCredentialId(credentialId);
-      this.showFeedback(`Credential ID copiado: ${credentialId}`, 'success');
-    } catch (error: unknown) {
-      this.showFeedback(toErrorMessage(error), 'error');
-    }
+  openShareModal(credentialId: string, credentialTitle: string): void {
+    this.shareModal.set({
+      open: true,
+      credentialId,
+      credentialTitle,
+    });
+  }
+
+  closeShareModal(): void {
+    this.shareModal.set(CLOSED_SHARE_MODAL);
   }
 
   async openAnchorsModal(credentialId: string): Promise<void> {
@@ -544,6 +597,7 @@ export class HolderComponent implements OnInit {
   handleLogout(): void {
     this.credentialDetailCache.clear();
     this.closeAnchorsModal();
+    this.closeShareModal();
     this.authService.logout();
     void this.router.navigate(['/login']);
   }
@@ -590,7 +644,7 @@ export class HolderComponent implements OnInit {
     return trimmed.length === 0 ? null : trimmed;
   }
 
-  private showFeedback(message: string, type: 'success' | 'error'): void {
+  showFeedback(message: string, type: 'success' | 'error'): void {
     this.feedback.set(message);
     this.feedbackType.set(type);
   }
@@ -620,7 +674,7 @@ export class HolderComponent implements OnInit {
     }));
 
     try {
-      const detail = await this.getCredentialDetail(credentialId);
+      const detail = await withMinimumVisualDelay(this.getCredentialDetail(credentialId));
       this.anchorsModal.update((modal) => ({
         ...modal,
         detail,

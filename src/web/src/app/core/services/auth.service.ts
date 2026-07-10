@@ -95,6 +95,19 @@ export class AuthService {
     return this.authState().address;
   }
 
+  getShortAddress(): string {
+    const address = this.getAddress();
+    if (!address) {
+      return 'Sin wallet';
+    }
+
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  getUserDisplayName(): string {
+    return this.getShortAddress();
+  }
+
   hasPlatformAdmin(): boolean {
     return this.authState().platformAdmin;
   }
@@ -123,18 +136,10 @@ export class AuthService {
 
     if (
       this.getMemberships().some((membership) =>
-        ['admin', 'viewer'].includes(membership.role.toLowerCase()),
+        ['admin', 'issuer', 'viewer'].includes(membership.role.toLowerCase()),
       )
     ) {
       return '/academy';
-    }
-
-    if (
-      this.getMemberships().some((membership) =>
-        membership.role.toLowerCase() === 'issuer',
-      )
-    ) {
-      return '/issuer';
     }
 
     if (this.isHolder()) {

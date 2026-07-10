@@ -10,6 +10,8 @@ import {
 } from '../../../core/models/reports.models';
 import { ReportsService } from '../../../core/services/reports.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import {
   ReportBarPoint,
   ReportChartComponent,
@@ -37,6 +39,7 @@ function idleSection<T>(): SectionState<T> {
   standalone: true,
   imports: [
     CommonModule,
+    HexLoaderComponent,
     ReportPeriodSelectorComponent,
     ReportKpiStatComponent,
     ReportSourceBadgeComponent,
@@ -47,8 +50,9 @@ function idleSection<T>(): SectionState<T> {
       <app-report-period-selector accent="blue" (periodChange)="onPeriodChange($event)" />
 
       @if (initialLoading()) {
-        <div class="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-100">
-          Cargando reportes...
+        <div class="flex items-center gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-100">
+          <app-hex-loader size="sm" label="Cargando reportes" />
+          <span>Cargando reportes...</span>
         </div>
       }
 
@@ -155,7 +159,10 @@ function idleSection<T>(): SectionState<T> {
 
     <ng-template #sectionState let-section="section" let-retry="retry">
       @if (section.status === 'loading') {
-        <p class="py-8 text-center text-sm text-slate-400">Cargando...</p>
+        <div class="flex min-h-40 flex-col items-center justify-center gap-4 py-8 text-center text-sm text-slate-400">
+          <app-hex-loader label="Cargando seccion" />
+          <p>Cargando...</p>
+        </div>
       } @else if (section.status === 'error') {
         <div class="rounded-lg border border-red-700/50 bg-red-900/30 p-4 text-sm text-red-100">
           <p>{{ section.error }}</p>
@@ -223,13 +230,15 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.initialLoading.set(true);
     this.setAllLoading();
 
-    await Promise.allSettled([
-      this.loadIssued(),
-      this.loadReads(),
-      this.loadPerStudent(),
-      this.loadRevoked(),
-      this.loadOutcomes(),
-    ]);
+    await withMinimumVisualDelay(
+      Promise.allSettled([
+        this.loadIssued(),
+        this.loadReads(),
+        this.loadPerStudent(),
+        this.loadRevoked(),
+        this.loadOutcomes(),
+      ]),
+    );
 
     this.initialLoading.set(false);
   }
@@ -246,7 +255,9 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.issued.set({ status: 'loading', data: null, error: null });
     try {
       const { from, to } = this.period();
-      const data = await this.reportsService.getCredentialsIssued(this.institutionId, from, to);
+      const data = await withMinimumVisualDelay(
+        this.reportsService.getCredentialsIssued(this.institutionId, from, to),
+      );
       this.issued.set({ status: 'loaded', data, error: null });
       this.issuedLineData.set(this.toLineData(data));
     } catch (error: unknown) {
@@ -258,7 +269,9 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.reads.set({ status: 'loading', data: null, error: null });
     try {
       const { from, to } = this.period();
-      const data = await this.reportsService.getCredentialReads(this.institutionId, from, to);
+      const data = await withMinimumVisualDelay(
+        this.reportsService.getCredentialReads(this.institutionId, from, to),
+      );
       this.reads.set({ status: 'loaded', data, error: null });
       this.readsLineData.set(this.toLineData(data));
     } catch (error: unknown) {
@@ -270,7 +283,9 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.perStudent.set({ status: 'loading', data: null, error: null });
     try {
       const asOf = this.period().to;
-      const data = await this.reportsService.getCredentialsPerStudent(this.institutionId, asOf);
+      const data = await withMinimumVisualDelay(
+        this.reportsService.getCredentialsPerStudent(this.institutionId, asOf),
+      );
       this.perStudent.set({ status: 'loaded', data, error: null });
     } catch (error: unknown) {
       this.perStudent.set({ status: 'error', data: null, error: toErrorMessage(error) });
@@ -281,7 +296,9 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.revoked.set({ status: 'loading', data: null, error: null });
     try {
       const { from, to } = this.period();
-      const data = await this.reportsService.getCredentialsRevoked(this.institutionId, from, to);
+      const data = await withMinimumVisualDelay(
+        this.reportsService.getCredentialsRevoked(this.institutionId, from, to),
+      );
       this.revoked.set({ status: 'loaded', data, error: null });
       this.revokedLineData.set(this.toLineData(data));
     } catch (error: unknown) {
@@ -293,7 +310,9 @@ export class AcademyReportsTabComponent implements OnChanges {
     this.outcomes.set({ status: 'loading', data: null, error: null });
     try {
       const { from, to } = this.period();
-      const data = await this.reportsService.getVerificationOutcomes(this.institutionId, from, to);
+      const data = await withMinimumVisualDelay(
+        this.reportsService.getVerificationOutcomes(this.institutionId, from, to),
+      );
       this.outcomes.set({ status: 'loaded', data, error: null });
       this.outcomesLineData.set(this.toGroupedLineData(data));
     } catch (error: unknown) {

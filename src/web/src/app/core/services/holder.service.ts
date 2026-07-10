@@ -14,6 +14,7 @@ import {
   UpdateHolderProfilePayload,
 } from '../models/holder.models';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
+import { buildVerifierShareUrl } from '../utils/verifier-share-url.util';
 import { AuthService } from './auth.service';
 
 export class HolderUnauthenticatedError extends Error {
@@ -110,12 +111,24 @@ export class HolderService {
     URL.revokeObjectURL(url);
   }
 
+  buildVerifierShareUrl(credentialId: string): string {
+    return buildVerifierShareUrl(credentialId);
+  }
+
+  async shareVerifierLink(credentialId: string): Promise<void> {
+    await this.copyToClipboard(this.buildVerifierShareUrl(credentialId));
+  }
+
   async shareCredentialId(id: string): Promise<void> {
+    await this.copyToClipboard(id);
+  }
+
+  private async copyToClipboard(text: string): Promise<void> {
     if (!navigator.clipboard?.writeText) {
       throw new Error('El portapapeles no está disponible en este navegador.');
     }
 
-    await navigator.clipboard.writeText(id);
+    await navigator.clipboard.writeText(text);
   }
 
   isDegreeType(typeCode: string): boolean {

@@ -28,7 +28,11 @@ export const routes: Routes = [
       ),
     canActivate: [
       authGuard,
-      roleGuard({ institutionRoles: ['issuer', 'admin'] }),
+      roleGuard({
+        platformAdmin: true,
+        institutionRoles: ['issuer', 'admin'],
+        mode: 'any',
+      }),
     ],
   },
   {

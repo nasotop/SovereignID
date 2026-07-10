@@ -6,6 +6,7 @@ El servicio `academy` concentra el alcance academico del MVP:
 - Invitar usuarios institucionales por email para que vinculen una wallet MetaMask existente.
 - Administrar usuarios institucionales dentro del tenant.
 - Crear carreras por institucion.
+- Mantener el pool de carreras de una institucion: listar, consultar, editar y desactivar carreras.
 - Crear estudiantes por institucion y, opcionalmente, vincular una wallet existente del estudiante.
 - Vincular manualmente una wallet existente a un estudiante.
 - La wallet/DID emisor de la institucion se vincula en el servicio `issuer`.
@@ -33,6 +34,10 @@ Todos los endpoints mutables requieren `Authorization: Bearer {jwt}` emitido por
 | `GET /academy/institutions` | `PlatformAdmin` | Lista instituciones para administracion de plataforma |
 | `GET /academy/institutions/{institutionId}` | `PlatformOrInstitutionMember` | Consulta institucion |
 | `POST /academy/institutions/{institutionId}/careers` | `InstitutionAdmin` | Crea carrera |
+| `GET /academy/institutions/{institutionId}/careers` | `PlatformOrInstitutionMember` | Lista carreras de la institucion |
+| `GET /academy/institutions/{institutionId}/careers/{careerId}` | `PlatformOrInstitutionMember` | Consulta carrera |
+| `PATCH /academy/institutions/{institutionId}/careers/{careerId}` | `InstitutionAdmin` | Actualiza codigo y nombre de carrera |
+| `DELETE /academy/institutions/{institutionId}/careers/{careerId}` | `InstitutionAdmin` | Desactiva carrera sin borrar historial |
 | `POST /academy/institutions/{institutionId}/students` | `InstitutionAdmin` | Crea estudiante, con wallet opcional |
 | `GET /academy/institutions/{institutionId}/students` | `PlatformOrInstitutionMember` | Lista estudiantes de la institucion |
 | `GET /academy/institutions/{institutionId}/students/{studentId}` | `PlatformOrInstitutionMember` | Consulta estudiante |
@@ -60,6 +65,7 @@ Codigos principales:
 | `institution_not_found` | 404 | Institucion inexistente |
 | `invalid_career` | 400 | Carrera sin codigo o nombre |
 | `career_code_exists` | 409 | Codigo de carrera duplicado en la institucion |
+| `career_not_found` | 404 | Carrera inexistente para la institucion |
 | `student_external_reference_exists` | 409 | Referencia externa duplicada en la institucion |
 | `student_not_found` | 404 | Estudiante inexistente para la institucion |
 | `invalid_wallet_address` | 400 | Wallet no tiene formato Ethereum `0x` + 40 hex |

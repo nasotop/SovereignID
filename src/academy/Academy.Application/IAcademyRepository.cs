@@ -18,9 +18,33 @@ public interface IAcademyRepository
         string code,
         CancellationToken cancellationToken);
 
+    Task<bool> CareerCodeExistsAsync(
+        Guid institutionId,
+        string code,
+        Guid excludingCareerId,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<CareerSummary>> ListCareersAsync(
+        Guid institutionId,
+        CancellationToken cancellationToken);
+
+    Task<CareerSummary?> GetCareerAsync(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken);
+
     Task<CareerSummary> CreateCareerAsync(
         CreateCareerCommand command,
         DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<CareerSummary?> UpdateCareerAsync(
+        UpdateCareerCommand command,
+        CancellationToken cancellationToken);
+
+    Task<CareerSummary?> DeactivateCareerAsync(
+        Guid institutionId,
+        Guid careerId,
         CancellationToken cancellationToken);
 
     Task<bool> StudentExternalReferenceExistsAsync(

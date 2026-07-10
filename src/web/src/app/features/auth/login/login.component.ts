@@ -4,20 +4,26 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { Web3Service } from '../../../core/services/web3.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { BlockchainBackgroundComponent } from '../../../shared/ui/blockchain-background/blockchain-background.component';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 
 type LoginState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, BlockchainBackgroundComponent, HexLoaderComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gray-900 px-4">
-      <div class="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-8">
+    <div class="relative min-h-screen overflow-hidden bg-slate-950 px-4">
+      <app-blockchain-background />
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_42%),linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.88))]"></div>
+
+      <div class="relative z-10 flex min-h-screen items-center justify-center">
+      <div class="w-full max-w-md rounded-lg border border-slate-700/80 bg-slate-900/88 p-8 shadow-2xl shadow-cyan-950/30 backdrop-blur-md">
         <!-- Header -->
         <div class="text-center mb-8">
           <h1 class="text-3xl font-bold text-white mb-2">SovereignID</h1>
-          <p class="text-gray-400">Sign in with Ethereum</p>
+          <p class="text-slate-400">Sign in with Ethereum</p>
         </div>
 
         <!-- MetaMask Check -->
@@ -35,27 +41,8 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
         <!-- Loading State -->
         @if (state() === 'loading') {
           <div class="text-center">
-            <div class="animate-spin mb-4">
-              <svg
-                class="w-12 h-12 text-blue-500 mx-auto"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+            <div class="mb-4 flex justify-center">
+              <app-hex-loader size="lg" label="Esperando firma de wallet" />
             </div>
             <p class="text-gray-300 font-medium">
               Please sign the message in your wallet...
@@ -165,6 +152,7 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
             </a>
           }
         </div>
+      </div>
       </div>
     </div>
   `,

@@ -55,7 +55,13 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
 
         var institution = await _dbContext.Institutions
             .AsNoTracking()
-            .SingleOrDefaultAsync(i => i.Id == student.InstitutionId && i.IsActive, cancellationToken);
+            .Where(i => i.Id == student.InstitutionId && i.IsActive)
+            .Select(i => new
+            {
+                i.Id,
+                i.Did
+            })
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (institution?.Did is null or "")
         {
@@ -147,6 +153,25 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<CredentialTypeSummary>> ListCredentialTypesAsync(
+        CancellationToken cancellationToken)
+    {
+        var credentialTypes = await _dbContext.CredentialTypes
+            .AsNoTracking()
+            .Where(type => type.IsActive)
+            .OrderBy(type => type.Name)
+            .Select(type => new CredentialTypeSummary(
+                type.Id,
+                type.Code,
+                type.Name,
+                type.Description,
+                type.AllowsExpiration,
+                type.SchemaVersion))
+            .ToListAsync(cancellationToken);
+
+        return credentialTypes;
+    }
+
     public async Task<CredentialSummary?> GetCredentialAsync(Guid credentialId, CancellationToken cancellationToken)
     {
         var item = await (
@@ -199,7 +224,12 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
     {
         var institution = await _dbContext.Institutions
             .AsNoTracking()
-            .SingleOrDefaultAsync(i => i.Id == institutionId && i.IsActive, cancellationToken);
+            .Where(i => i.Id == institutionId && i.IsActive)
+            .Select(i => new
+            {
+                i.IssuerWalletAddress
+            })
+            .SingleOrDefaultAsync(cancellationToken);
 
         return institution?.IssuerWalletAddress;
     }
@@ -217,7 +247,20 @@ internal sealed class PostgresTitleIssuerRepository : ITitleIssuerRepository
             return null;
         }
 
-        return await GetInstitutionIssuerWalletAsync(student.InstitutionId, cancellationToken);
+        var institution = await _dbContext.Institutions
+            .AsNoTracking()
+            .Where(i => i.Id == student.InstitutionId && i.IsActive)
+            .Select(i => new
+            {
+                i.IssuerWalletAddress,
+                i.Did
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return string.IsNullOrWhiteSpace(institution?.IssuerWalletAddress)
+            || string.IsNullOrWhiteSpace(institution.Did)
+                ? null
+                : institution.IssuerWalletAddress;
     }
 
     private static CredentialSummary MapSummary(

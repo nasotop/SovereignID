@@ -15,6 +15,9 @@ public interface ITitleIssuerRepository
         Guid institutionId,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<CredentialTypeSummary>> ListCredentialTypesAsync(
+        CancellationToken cancellationToken);
+
     Task<CredentialSummary?> GetCredentialAsync(Guid credentialId, CancellationToken cancellationToken);
 
     Task<CredentialRevoked?> RevokeCredentialAsync(

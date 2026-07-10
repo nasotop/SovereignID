@@ -53,6 +53,55 @@ public sealed class AcademyInstitutionsController(
                 .PostAsync(request, cancellationToken: cancellationToken),
             success => $"/academy/institutions/{institutionId}/careers/{success!.Id}");
 
+    [HttpGet("{institutionId:guid}/careers")]
+    [ProducesResponseType(typeof(IReadOnlyList<CareerSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> ListCareers(
+        Guid institutionId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, $"academy/institutions/{institutionId}/careers"),
+            cancellationToken);
+
+    [HttpGet("{institutionId:guid}/careers/{careerId:guid}")]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> GetCareer(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Get, $"academy/institutions/{institutionId}/careers/{careerId}"),
+            cancellationToken);
+
+    [HttpPatch("{institutionId:guid}/careers/{careerId:guid}")]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status409Conflict)]
+    public Task<IActionResult> UpdateCareer(
+        Guid institutionId,
+        Guid careerId,
+        [FromBody] Bff.Api.Models.UpdateCareerRequest request,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Patch,
+                $"academy/institutions/{institutionId}/careers/{careerId}",
+                request),
+            cancellationToken);
+
+    [HttpDelete("{institutionId:guid}/careers/{careerId:guid}")]
+    [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> DeactivateCareer(
+        Guid institutionId,
+        Guid careerId,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            new HttpRequestMessage(HttpMethod.Delete, $"academy/institutions/{institutionId}/careers/{careerId}"),
+            cancellationToken);
+
     [HttpPost("{institutionId:guid}/students")]
     [ProducesResponseType(typeof(StudentSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]

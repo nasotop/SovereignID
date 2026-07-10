@@ -24,17 +24,17 @@ public partial class Institution
     /// <summary>
     /// DID del emisor institucional, ej: did:ethr:sepolia:0x...
     /// </summary>
-    public string Did { get; set; } = null!;
+    public string? Did { get; set; }
 
     /// <summary>
     /// Dirección Ethereum del emisor (0x + 40 hex)
     /// </summary>
-    public string IssuerWalletAddress { get; set; } = null!;
+    public string? IssuerWalletAddress { get; set; }
 
     /// <summary>
     /// Clave pública para verificación de firmas
     /// </summary>
-    public string PublicKey { get; set; } = null!;
+    public string? PublicKey { get; set; }
 
     public string CountryCode { get; set; } = null!;
 

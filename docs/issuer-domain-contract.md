@@ -5,6 +5,7 @@ El servicio `issuer` concentra la emision, consulta y gobernanza de credenciales
 ## Alcance MVP
 
 - Vincular un titulo emitido a un estudiante mediante la tabla `credentials`.
+- Asociar el titulo emitido a una carrera activa de la misma institucion cuando el tipo de credencial lo requiera.
 - Vincular la wallet/DID emisor de una institucion existente.
 - Usar la wallet primaria activa del estudiante como sujeto de la credencial.
 - Usar el DID emisor de la institucion asociada al estudiante.
@@ -48,9 +49,9 @@ El portal web holder consume estos endpoints via cliente Angular generado (`ng-o
 2. La institucion puede vincular una wallet MetaMask existente como wallet emisora.
 3. El estudiante debe existir, estar activo y tener wallet primaria activa.
 4. La institucion del estudiante debe existir, estar activa y tener DID emisor.
-5. Si se informa una carrera, debe pertenecer a la misma institucion y estar activa.
+5. Para emision de titulo, la carrera se selecciona desde el pool de `academy`; si se informa una carrera, debe pertenecer a la misma institucion y estar activa.
 6. El tipo de credencial debe existir y estar activo.
-7. El request de titulo debe incluir CID IPFS, gateway URL, hash de contenido, transaction hash, block number y firma EIP-712.
+7. El request de titulo debe incluir `careerId`, CID IPFS, gateway URL, hash de contenido, transaction hash, block number y firma EIP-712.
 8. Si `chainId` no viene en el request, se usa `Issuer:DefaultChainId`.
 9. Las consultas de solo lectura en Infrastructure usan LINQ con `AsNoTracking`.
 10. La API no inyecta `DbContext`; Application usa `ITitleIssuerRepository`, `ICredentialReadStore` y los adapters EF viven en Infrastructure.

@@ -21,6 +21,7 @@ export class VcDocumentService {
         degree: input.documentType,
         studentLabel: input.studentLabel,
         careerId: input.careerId || undefined,
+        careerName: input.careerName || undefined,
       },
       credentialSchema: {
         id: 'https://sovereignid.local/schemas/titulo-v1.json',

@@ -5,6 +5,10 @@ public sealed record CreateStudentRequest(
     int? EnrollmentYear,
     string? WalletAddress);
 
+public sealed record UpdateCareerRequest(
+    string Code,
+    string Name);
+
 public sealed record AddStudentWalletRequest(
     string WalletAddress,
     bool MakePrimary = true);

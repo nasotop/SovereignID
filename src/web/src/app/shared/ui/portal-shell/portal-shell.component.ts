@@ -1,19 +1,25 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
+import { BlockchainBackgroundComponent } from '../blockchain-background/blockchain-background.component';
+import { UserMenuComponent } from '../user-menu/user-menu.component';
+
 type PortalAccent = 'blue' | 'violet';
 type PortalLayoutWidth = 'contained' | 'full';
 
 @Component({
   selector: 'app-portal-shell',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BlockchainBackgroundComponent, UserMenuComponent],
   host: {
     class: 'block h-full',
   },
   template: `
-    <div class="bg-slate-900" [ngClass]="rootClass()">
-      <nav class="shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
+    <div class="app-glass-shell relative bg-slate-950" [ngClass]="rootClass()">
+      <app-blockchain-background />
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.13),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.1),transparent_38%),linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.82))]"></div>
+
+      <nav class="relative z-40 shrink-0 border-b border-slate-700/60 bg-slate-800/80 backdrop-blur-sm">
         <div
           class="mx-auto flex items-center justify-between"
           [ngClass]="navContainerClass()"
@@ -46,23 +52,23 @@ type PortalLayoutWidth = 'contained' | 'full';
             </div>
           </div>
 
-          <button
-            type="button"
-            class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
-            (click)="logout.emit()"
-          >
-            Cerrar sesion
-          </button>
+          <app-user-menu
+            [displayName]="userName()"
+            [role]="userRole()"
+            (logout)="logout.emit()"
+          />
         </div>
       </nav>
 
-      <main class="mx-auto" [ngClass]="mainClass()">
-        <header class="shrink-0" [ngClass]="headerClass()">
-          <h2 class="text-2xl font-bold text-white">{{ title() }}</h2>
-          @if (subtitle()) {
-            <p class="text-slate-400 mt-1">{{ subtitle() }}</p>
-          }
-        </header>
+      <main class="relative z-10 mx-auto" [ngClass]="mainClass()">
+        @if (!hideHeader()) {
+          <header class="shrink-0" [ngClass]="headerClass()">
+            <h2 class="text-2xl font-bold text-white">{{ title() }}</h2>
+            @if (subtitle()) {
+              <p class="text-slate-400 mt-1">{{ subtitle() }}</p>
+            }
+          </header>
+        }
 
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ng-content />
@@ -77,6 +83,9 @@ export class PortalShellComponent {
   readonly subtitle = input<string>('');
   readonly accent = input<PortalAccent>('blue');
   readonly layoutWidth = input<PortalLayoutWidth>('contained');
+  readonly hideHeader = input(false);
+  readonly userName = input<string | null>(null);
+  readonly userRole = input<string | null>(null);
   readonly logout = output<void>();
 
   accentClass(): string {

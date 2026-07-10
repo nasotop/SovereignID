@@ -24,7 +24,9 @@ import {
   PlatformUnauthorizedError,
 } from '../../../core/services/academy.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.component';
+import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
 import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-badge.component';
 
@@ -36,6 +38,7 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
     FormsModule,
     RouterLink,
     ModalComponent,
+    HexLoaderComponent,
     StatusBadgeComponent,
     CopyValueComponent,
   ],
@@ -153,7 +156,10 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
                   <tr>
                     <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">
                       @if (loadingInstitutions()) {
-                        Cargando instituciones...
+                        <div class="flex flex-col items-center justify-center gap-4">
+                          <app-hex-loader label="Cargando instituciones" />
+                          <span>Cargando instituciones...</span>
+                        </div>
                       } @else if (institutions().length) {
                         No hay resultados para la busqueda actual.
                       } @else {
@@ -171,8 +177,9 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
           @if (selectedInstitution()) {
             <div class="space-y-6">
               @if (loadingInstitution()) {
-                <div class="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-100">
-                  Cargando detalle de institucion...
+                <div class="flex items-center gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+                  <app-hex-loader size="sm" label="Cargando detalle de institucion" />
+                  <span>Cargando detalle de institucion...</span>
                 </div>
               }
               <div class="flex items-start justify-between gap-3">
@@ -549,7 +556,9 @@ export class PlatformInstitutionsTabComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      this.institutions.set(await this.academyService.listInstitutions());
+      this.institutions.set(
+        await withMinimumVisualDelay(this.academyService.listInstitutions()),
+      );
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -580,7 +589,9 @@ export class PlatformInstitutionsTabComponent implements OnInit {
     this.lastInvitation.set(null);
 
     try {
-      const institution = await this.academyService.getInstitution(institutionId);
+      const institution = await withMinimumVisualDelay(
+        this.academyService.getInstitution(institutionId),
+      );
       this.selectedInstitution.set(institution);
     } catch (error: unknown) {
       this.selectedInstitution.set(null);

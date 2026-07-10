@@ -1,4 +1,4 @@
-import { Component, effect, ElementRef, input, output, viewChild } from '@angular/core';
+import { Component, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 
 type ModalSize = 'sm' | 'md' | 'lg';
 
@@ -12,6 +12,7 @@ type ModalSize = 'sm' | 'md' | 'lg';
     <dialog
       #dialogElement
       class="modal-dialog"
+      [class.modal-dialog-closing]="isClosing()"
       [attr.aria-labelledby]="titleId"
       (cancel)="onCancel($event)"
       (click)="onBackdropClick($event)"
@@ -67,6 +68,7 @@ type ModalSize = 'sm' | 'md' | 'lg';
     .modal-dialog::backdrop {
       background-color: rgb(15 23 42 / 0.75);
       backdrop-filter: blur(4px);
+      animation: modal-backdrop-in 180ms ease-out;
     }
 
     .modal-panel {
@@ -76,6 +78,9 @@ type ModalSize = 'sm' | 'md' | 'lg';
       border-radius: 0.75rem;
       padding: 1.5rem;
       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+      animation: modal-panel-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: center top;
+      will-change: opacity, transform;
     }
 
     .modal-panel-sm {
@@ -89,6 +94,63 @@ type ModalSize = 'sm' | 'md' | 'lg';
     .modal-panel-lg {
       max-width: 42rem;
     }
+
+    .modal-dialog-closing::backdrop {
+      animation: modal-backdrop-out 140ms ease-in forwards;
+    }
+
+    .modal-dialog-closing .modal-panel {
+      animation: modal-panel-out 140ms ease-in forwards;
+    }
+
+    @keyframes modal-backdrop-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes modal-backdrop-out {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    @keyframes modal-panel-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes modal-panel-out {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal-dialog::backdrop,
+      .modal-dialog-closing::backdrop,
+      .modal-panel,
+      .modal-dialog-closing .modal-panel {
+        animation: none;
+      }
+    }
   `,
 })
 export class ModalComponent {
@@ -99,15 +161,19 @@ export class ModalComponent {
   readonly closed = output<void>();
 
   readonly titleId = `modal-title-${crypto.randomUUID()}`;
+  readonly isClosing = signal(false);
 
   private readonly dialogRef =
     viewChild.required<ElementRef<HTMLDialogElement>>('dialogElement');
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     effect(() => {
       const dialog = this.dialogRef().nativeElement;
 
       if (this.isOpen()) {
+        this.cancelPendingClose();
+        this.isClosing.set(false);
         if (!dialog.open) {
           dialog.showModal();
         }
@@ -115,7 +181,7 @@ export class ModalComponent {
       }
 
       if (dialog.open) {
-        dialog.close();
+        this.closeWithAnimation(dialog);
       }
     });
   }
@@ -146,5 +212,29 @@ export class ModalComponent {
       default:
         return 'modal-panel-md';
     }
+  }
+
+  private closeWithAnimation(dialog: HTMLDialogElement): void {
+    if (this.isClosing()) {
+      return;
+    }
+
+    this.isClosing.set(true);
+    this.closeTimer = setTimeout(() => {
+      if (dialog.open) {
+        dialog.close();
+      }
+      this.isClosing.set(false);
+      this.closeTimer = null;
+    }, 150);
+  }
+
+  private cancelPendingClose(): void {
+    if (!this.closeTimer) {
+      return;
+    }
+
+    clearTimeout(this.closeTimer);
+    this.closeTimer = null;
   }
 }

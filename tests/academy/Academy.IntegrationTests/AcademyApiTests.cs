@@ -115,6 +115,38 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         using var careerJson = await JsonDocument.ParseAsync(await createCareerResponse.Content.ReadAsStreamAsync());
         var careerId = careerJson.RootElement.GetProperty("id").GetGuid();
 
+        var listCareersResponse = await SendAuthorizedGetAsync(
+            $"/academy/institutions/{institutionId}/careers",
+            adminToken);
+
+        Assert.Equal(HttpStatusCode.OK, listCareersResponse.StatusCode);
+        using var careersJson = await JsonDocument.ParseAsync(await listCareersResponse.Content.ReadAsStreamAsync());
+        Assert.Contains(
+            careersJson.RootElement.EnumerateArray(),
+            career => career.GetProperty("id").GetGuid() == careerId
+                && career.GetProperty("isActive").GetBoolean());
+
+        var updateCareerResponse = await SendAuthorizedPatchAsync(
+            $"/academy/institutions/{institutionId}/careers/{careerId}",
+            adminToken,
+            new
+            {
+                code = "ING-DEV",
+                name = "Ingenieria en Desarrollo de Software"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, updateCareerResponse.StatusCode);
+        using var updatedCareerJson = await JsonDocument.ParseAsync(await updateCareerResponse.Content.ReadAsStreamAsync());
+        Assert.Equal("ING-DEV", updatedCareerJson.RootElement.GetProperty("code").GetString());
+
+        var deactivateCareerResponse = await SendAuthorizedDeleteAsync(
+            $"/academy/institutions/{institutionId}/careers/{careerId}",
+            adminToken);
+
+        Assert.Equal(HttpStatusCode.OK, deactivateCareerResponse.StatusCode);
+        using var deactivatedCareerJson = await JsonDocument.ParseAsync(await deactivateCareerResponse.Content.ReadAsStreamAsync());
+        Assert.False(deactivatedCareerJson.RootElement.GetProperty("isActive").GetBoolean());
+
         var createStudentResponse = await SendAuthorizedPostAsync(
             $"/academy/institutions/{institutionId}/students",
             adminToken,
@@ -199,6 +231,51 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
         });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Careers_WithIssuerMembership_CanListButCannotCreate()
+    {
+        var createInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = $"CAR-{Guid.NewGuid():N}"[..12],
+            legalName = "Institucion Carreras SpA",
+            displayName = "Institucion Carreras",
+            contactEmail = "admin-careers@demo.test",
+            countryCode = "CL"
+        });
+        createInstitutionResponse.EnsureSuccessStatusCode();
+        using var institutionJson = await JsonDocument.ParseAsync(await createInstitutionResponse.Content.ReadAsStreamAsync());
+        var institutionId = institutionJson.RootElement.GetProperty("institution").GetProperty("id").GetGuid();
+        var adminToken = JwtTestHelper.CreateInstitutionAdminToken(institutionId);
+        var issuerToken = JwtTestHelper.CreateToken(
+            "0xdddddddddddddddddddddddddddddddddddddddd",
+            memberships: [new SovereignID.Authorization.InstitutionMembership(institutionId, "issuer")]);
+
+        var createCareerResponse = await SendAuthorizedPostAsync(
+            $"/academy/institutions/{institutionId}/careers",
+            adminToken,
+            new
+            {
+                code = "AUD",
+                name = "Auditoria"
+            });
+        Assert.Equal(HttpStatusCode.Created, createCareerResponse.StatusCode);
+
+        var listCareersResponse = await SendAuthorizedGetAsync(
+            $"/academy/institutions/{institutionId}/careers",
+            issuerToken);
+        Assert.Equal(HttpStatusCode.OK, listCareersResponse.StatusCode);
+
+        var issuerCreateResponse = await SendAuthorizedPostAsync(
+            $"/academy/institutions/{institutionId}/careers",
+            issuerToken,
+            new
+            {
+                code = "DER",
+                name = "Derecho"
+            });
+        Assert.Equal(HttpStatusCode.Forbidden, issuerCreateResponse.StatusCode);
     }
 
     [Fact]

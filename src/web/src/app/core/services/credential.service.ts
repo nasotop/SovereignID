@@ -1,16 +1,18 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { rxResource } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
+import { forkJoin, map, of, timer } from 'rxjs';
 
 import { ISSUER_INSTITUTION_STORAGE_KEY } from '../constants/issuer.constants';
 import {
+  CredentialTypeOption,
   CredentialSummaryResponse,
   IssueCredentialModel,
   IssuedCredential,
 } from '../models/credential.models';
 import { IssuerApiService } from './issuer-api.service';
 import { TitleIssuanceService } from './title-issuance.service';
+import { MINIMUM_VISUAL_LOADING_MS } from '../utils/visual-delay.util';
 
 @Injectable({ providedIn: 'root' })
 export class CredentialService {
@@ -26,8 +28,18 @@ export class CredentialService {
         return of([] as CredentialSummaryResponse[]);
       }
 
-      return this.issuerApiService.listInstitutionCredentials(params.institutionId);
+      return forkJoin({
+        credentials: this.issuerApiService.listInstitutionCredentials(params.institutionId),
+        delay: timer(MINIMUM_VISUAL_LOADING_MS),
+      }).pipe(map(({ credentials }) => credentials));
     },
+  });
+
+  readonly credentialTypesResource = rxResource({
+    stream: () => forkJoin({
+      credentialTypes: this.issuerApiService.listCredentialTypes(),
+      delay: timer(MINIMUM_VISUAL_LOADING_MS),
+    }).pipe(map(({ credentialTypes }) => credentialTypes)),
   });
 
   readonly credentials = computed<ReadonlyArray<IssuedCredential>>(() => {
@@ -47,6 +59,10 @@ export class CredentialService {
 
   readonly revokedCount = computed(
     () => this.credentials().filter((c) => c.status === 'revoked').length,
+  );
+
+  readonly credentialTypes = computed<ReadonlyArray<CredentialTypeOption>>(
+    () => this.credentialTypesResource.value() ?? [],
   );
 
   setInstitutionId(institutionId: string): void {
@@ -77,6 +93,7 @@ function mapSummaryToIssuedCredential(
     credentialId: summary.credentialId,
     institutionId: summary.institutionId,
     studentId: summary.studentId,
+    careerId: summary.careerId ?? null,
     studentLabel: summary.studentLabel ?? summary.studentId,
     documentType: summary.credentialTypeCode,
     issuedDate: summary.issuedAt.slice(0, 10),
