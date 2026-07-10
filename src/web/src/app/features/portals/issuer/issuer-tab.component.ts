@@ -8,8 +8,6 @@ import {
   StudentSummary,
 } from '../../../core/models/academy.models';
 import {
-  DOCUMENT_TYPE_OPTIONS,
-  DocumentTypeOption,
   IssuedCredential,
 } from '../../../core/models/credential.models';
 import { CredentialService } from '../../../core/services/credential.service';
@@ -328,8 +326,13 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               name="issueDocumentType"
               (ngModelChange)="issueDocumentType.set($event)"
             >
-              @for (type of documentTypes; track type.code) {
-                <option [value]="type.code">{{ type.label }}</option>
+              @if (isCredentialTypesLoading()) {
+                <option value="" disabled>Cargando tipos...</option>
+              } @else if (!credentialTypes().length) {
+                <option value="" disabled>Sin tipos disponibles</option>
+              }
+              @for (type of credentialTypes(); track type.code) {
+                <option [value]="type.code">{{ type.name }}</option>
               }
             </select>
           </label>
@@ -454,7 +457,6 @@ export class IssuerTabComponent {
 
   private readonly credentialService = inject(CredentialService);
 
-  readonly documentTypes: readonly DocumentTypeOption[] = DOCUMENT_TYPE_OPTIONS;
   readonly selectedCredential = signal<IssuedCredential | null>(null);
   readonly searchTerm = signal('');
   readonly statusFilter = signal<CredentialFilter>('all');
@@ -465,7 +467,7 @@ export class IssuerTabComponent {
   readonly issueModalOpen = signal(false);
   readonly issueStudentId = signal('');
   readonly issueCareerId = signal('');
-  readonly issueDocumentType = signal(DOCUMENT_TYPE_OPTIONS[0].code);
+  readonly issueDocumentType = signal('');
   readonly issueDate = signal(new Date().toISOString().slice(0, 10));
   readonly selectedIssueStudent = signal<StudentSummary | null>(null);
 
@@ -474,6 +476,7 @@ export class IssuerTabComponent {
   readonly revokeReason = signal('');
 
   readonly credentials = computed(() => this.credentialService.credentials());
+  readonly credentialTypes = computed(() => this.credentialService.credentialTypes());
   readonly activeCount = computed(() => this.credentialService.activeCount());
   readonly revokedCount = computed(() => this.credentialService.revokedCount());
 
@@ -490,6 +493,10 @@ export class IssuerTabComponent {
 
   readonly selectedIssueCareer = computed(() =>
     this.activeCareers().find((career) => career.id === this.issueCareerId()) ?? null,
+  );
+
+  readonly selectedCredentialType = computed(() =>
+    this.credentialTypes().find((type) => type.code === this.issueDocumentType()) ?? null,
   );
 
   readonly filteredCredentials = computed(() => {
@@ -523,6 +530,14 @@ export class IssuerTabComponent {
         this.credentialService.setInstitutionId(institutionId);
       }
     });
+
+    effect(() => {
+      const selectedType = this.issueDocumentType();
+      const defaultType = this.credentialTypes()[0]?.code ?? '';
+      if (!selectedType && defaultType) {
+        this.issueDocumentType.set(defaultType);
+      }
+    });
   }
 
   refreshCredentials(): void {
@@ -533,6 +548,10 @@ export class IssuerTabComponent {
 
   isCredentialsLoading(): boolean {
     return this.credentialService.credentialsResource.isLoading();
+  }
+
+  isCredentialTypesLoading(): boolean {
+    return this.credentialService.credentialTypesResource.isLoading();
   }
 
   selectCredential(credential: IssuedCredential): void {
@@ -557,14 +576,15 @@ export class IssuerTabComponent {
       && Boolean(this.issuerDid())
       && Boolean(this.institution()?.issuerWalletAddress)
       && this.eligibleStudents().length > 0
-      && this.activeCareers().length > 0;
+      && this.activeCareers().length > 0
+      && this.credentialTypes().length > 0;
   }
 
   openIssueModal(): void {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.issueDate.set(new Date().toISOString().slice(0, 10));
-    this.issueDocumentType.set(DOCUMENT_TYPE_OPTIONS[0].code);
+    this.issueDocumentType.set(this.credentialTypes()[0]?.code ?? '');
     this.issueCareerId.set(this.activeCareers()[0]?.id ?? '');
     const firstStudent = this.eligibleStudents()[0] ?? null;
     this.selectedIssueStudent.set(firstStudent);
@@ -592,7 +612,7 @@ export class IssuerTabComponent {
       && Boolean(student?.primaryWalletDid)
       && Boolean(this.issuerDid())
       && Boolean(this.selectedIssueCareer())
-      && Boolean(this.issueDocumentType())
+      && Boolean(this.selectedCredentialType())
       && Boolean(this.issueDate());
   }
 

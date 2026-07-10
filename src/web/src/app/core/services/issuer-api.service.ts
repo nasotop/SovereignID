@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { BFF_API_BASE } from '../constants/api.constants';
 import {
+  CredentialTypeOption,
   CredentialRevokedResponse,
   CredentialSummaryResponse,
   LinkStudentTitleRequest,
@@ -18,6 +19,12 @@ export class IssuerApiService {
   ): Observable<ReadonlyArray<CredentialSummaryResponse>> {
     return this.http.get<ReadonlyArray<CredentialSummaryResponse>>(
       `${BFF_API_BASE}/issuer/institutions/${institutionId}/credentials`,
+    );
+  }
+
+  listCredentialTypes(): Observable<ReadonlyArray<CredentialTypeOption>> {
+    return this.http.get<ReadonlyArray<CredentialTypeOption>>(
+      `${BFF_API_BASE}/issuer/credential-types`,
     );
   }
 

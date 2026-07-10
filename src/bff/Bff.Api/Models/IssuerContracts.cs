@@ -98,6 +98,14 @@ public sealed record CredentialRevoked(
     string? RevocationReason,
     string RevocationTxHash);
 
+public sealed record CredentialTypeSummary(
+    int Id,
+    string Code,
+    string Name,
+    string? Description,
+    bool AllowsExpiration,
+    string SchemaVersion);
+
 public sealed record StudentTitleLinked(
     Guid CredentialId,
     Guid InstitutionId,

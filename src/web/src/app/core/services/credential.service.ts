@@ -5,6 +5,7 @@ import { forkJoin, map, of, timer } from 'rxjs';
 
 import { ISSUER_INSTITUTION_STORAGE_KEY } from '../constants/issuer.constants';
 import {
+  CredentialTypeOption,
   CredentialSummaryResponse,
   IssueCredentialModel,
   IssuedCredential,
@@ -34,6 +35,13 @@ export class CredentialService {
     },
   });
 
+  readonly credentialTypesResource = rxResource({
+    stream: () => forkJoin({
+      credentialTypes: this.issuerApiService.listCredentialTypes(),
+      delay: timer(MINIMUM_VISUAL_LOADING_MS),
+    }).pipe(map(({ credentialTypes }) => credentialTypes)),
+  });
+
   readonly credentials = computed<ReadonlyArray<IssuedCredential>>(() => {
     const remote = this.credentialsResource.value();
     if (!remote) {
@@ -51,6 +59,10 @@ export class CredentialService {
 
   readonly revokedCount = computed(
     () => this.credentials().filter((c) => c.status === 'revoked').length,
+  );
+
+  readonly credentialTypes = computed<ReadonlyArray<CredentialTypeOption>>(
+    () => this.credentialTypesResource.value() ?? [],
   );
 
   setInstitutionId(institutionId: string): void {
