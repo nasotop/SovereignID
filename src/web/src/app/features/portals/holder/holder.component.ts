@@ -61,7 +61,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
   host: {
     class: 'block h-full',
   },
-  imports: [CommonModule, CredentialAnchorsPanelComponent, CredentialSharePanelComponent, HexLoaderComponent, ModalComponent, PortalShellComponent, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    CredentialAnchorsPanelComponent,
+    CredentialSharePanelComponent,
+    HexLoaderComponent,
+    ModalComponent,
+    PortalShellComponent,
+    ReactiveFormsModule,
+  ],
   template: `
     <app-portal-shell
       portalLabel="Holder Portal"
