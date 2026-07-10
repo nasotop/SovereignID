@@ -9,11 +9,6 @@
     },
     "version": "v1"
   },
-  "servers": [
-    {
-      "url": "http://127.0.0.1:5194/"
-    }
-  ],
   "paths": {
     "/academy/holders/me": {
       "get": {
@@ -24,7 +19,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -69,7 +64,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -1048,7 +1043,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -1242,6 +1237,48 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/issuer/credential-types": {
+      "get": {
+        "tags": [
+          "CredentialTypes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CredentialTypeSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -1496,7 +1533,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1538,7 +1575,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1572,7 +1609,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1614,7 +1651,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1656,7 +1693,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1689,7 +1726,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1714,7 +1751,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -2276,6 +2313,45 @@
           }
         }
       },
+      "CredentialTypeSummary": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "allowsExpiration",
+          "schemaVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allowsExpiration": {
+            "type": "boolean"
+          },
+          "schemaVersion": {
+            "type": "string"
+          }
+        }
+      },
       "HolderCredentialAnchors": {
         "required": [
           "ipfsCid",
@@ -2756,7 +2832,7 @@
           }
         }
       },
-      "JsonElement": { },
+      "JsonElement": {},
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
@@ -3325,6 +3401,9 @@
     },
     {
       "name": "Credentials"
+    },
+    {
+      "name": "CredentialTypes"
     },
     {
       "name": "Health"
