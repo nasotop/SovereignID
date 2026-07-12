@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { CopyValueComponent } from '../copy-value/copy-value.component';
 import {
@@ -12,7 +13,7 @@ import {
 @Component({
   selector: 'app-credential-anchors-panel',
   standalone: true,
-  imports: [CommonModule, CopyValueComponent, RouterLink],
+  imports: [CommonModule, CopyValueComponent, RouterLink, TranslatePipe],
   template: `
     <dl class="grid gap-3 text-sm">
       <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
@@ -32,7 +33,7 @@ import {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Abrir en gateway
+              {{ 'anchors.openGateway' | translate }}
             </a>
           </dd>
         </div>
@@ -56,7 +57,7 @@ import {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Ver en Sepolia
+              {{ 'anchors.viewSepolia' | translate }}
             </a>
           }
         </dd>
@@ -76,7 +77,7 @@ import {
 
       @if (anchors().eip712Signature) {
         <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
-          <dt class="text-slate-500">Firma EIP-712</dt>
+          <dt class="text-slate-500">{{ 'anchors.signature' | translate }}</dt>
           <dd>
             <app-copy-value [value]="anchors().eip712Signature" />
           </dd>
@@ -91,7 +92,7 @@ import {
           [routerLink]="link.path"
           [queryParams]="link.queryParams"
         >
-          Verificar en portal público
+          {{ 'verifier.publicPortal' | translate }}
         </a>
       </div>
     }

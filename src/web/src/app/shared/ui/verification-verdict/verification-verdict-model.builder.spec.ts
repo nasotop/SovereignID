@@ -39,11 +39,11 @@ describe('buildVerdictViewModel', () => {
       }),
     );
 
-    const localRows = viewModel.groups.find((group) => group.title === 'Registro local')?.rows;
+    const localRows = viewModel.groups.find((group) => group.titleKey === 'verificationVerdict.groups.localRegistry')?.rows;
     expect(localRows?.some((row) => row.key === 'revocationSource')).toBe(true);
     expect(
-      localRows?.find((row) => row.key === 'revocationSource')?.displayValue,
-    ).toBe('On-chain');
+      localRows?.find((row) => row.key === 'revocationSource')?.displayValueKey,
+    ).toBe('verificationVerdict.sources.onChain');
   });
 
   it('hides revocation source for non-revoked results', () => {
@@ -71,9 +71,9 @@ describe('buildVerdictViewModel', () => {
     );
 
     expect(viewModel.evidenceBanner.visible).toBe(true);
-    expect(viewModel.groups.find((group) => group.title === 'Evidencia on-chain')?.rows).toEqual(
+    expect(viewModel.groups.find((group) => group.titleKey === 'verificationVerdict.groups.onChainEvidence')?.rows).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ displayValue: 'No evaluado' }),
+        expect.objectContaining({ displayValueKey: 'verificationVerdict.values.notEvaluated' }),
       ]),
     );
   });
@@ -91,10 +91,10 @@ describe('buildVerdictViewModel', () => {
     );
 
     const evidenceRows =
-      viewModel.groups.find((group) => group.title === 'Evidencia on-chain')?.rows ?? [];
+      viewModel.groups.find((group) => group.titleKey === 'verificationVerdict.groups.onChainEvidence')?.rows ?? [];
     const hashRow = evidenceRows.find((row) => row.key === 'hashMatches');
 
-    expect(hashRow?.displayValue).toBe('No evaluado');
+    expect(hashRow?.displayValueKey).toBe('verificationVerdict.values.notEvaluated');
     expect(hashRow?.tone).toBe('muted');
   });
 
@@ -111,7 +111,7 @@ describe('buildVerdictViewModel', () => {
       }),
     );
 
-    expect(viewModel.resultLabel).toBe('Integridad comprometida');
+    expect(viewModel.resultLabelKey).toBe('verificationVerdict.results.integrityFailed');
     expect(viewModel.resultTone).toBe('danger');
   });
 });

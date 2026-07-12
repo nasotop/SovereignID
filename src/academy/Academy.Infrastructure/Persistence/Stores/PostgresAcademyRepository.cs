@@ -77,6 +77,30 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         return ToSummary(entity);
     }
 
+    public async Task<InstitutionSummary?> UpdateInstitutionAsync(
+        UpdateInstitutionCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Institutions
+            .SingleOrDefaultAsync(i => i.Id == command.InstitutionId, cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.LegalName = command.LegalName;
+        entity.DisplayName = command.DisplayName;
+        entity.CountryCode = command.CountryCode;
+        entity.WebsiteUrl = command.WebsiteUrl;
+        entity.IsActive = command.IsActive;
+        entity.DeactivatedAt = command.IsActive ? null : UtcDateTime(now);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToSummary(entity);
+    }
+
     public Task<bool> CareerCodeExistsAsync(Guid institutionId, string code, CancellationToken cancellationToken) =>
         _dbContext.Careers
             .AsNoTracking()

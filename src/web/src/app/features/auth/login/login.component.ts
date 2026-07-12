@@ -1,29 +1,34 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { Web3Service } from '../../../core/services/web3.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
 import { BlockchainBackgroundComponent } from '../../../shared/ui/blockchain-background/blockchain-background.component';
 import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
+import { LanguageSwitcherComponent } from '../../../shared/ui/language-switcher/language-switcher.component';
 
 type LoginState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterLink, BlockchainBackgroundComponent, HexLoaderComponent],
+  imports: [CommonModule, RouterLink, TranslatePipe, BlockchainBackgroundComponent, HexLoaderComponent, LanguageSwitcherComponent],
   template: `
     <div class="relative min-h-screen overflow-hidden bg-slate-950 px-4">
       <app-blockchain-background />
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.14),transparent_42%),linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.88))]"></div>
+      <div class="absolute right-4 top-4 z-20">
+        <app-language-switcher variant="floating" />
+      </div>
 
       <div class="relative z-10 flex min-h-screen items-center justify-center">
       <div class="w-full max-w-md rounded-lg border border-slate-700/80 bg-slate-900/88 p-8 shadow-2xl shadow-cyan-950/30 backdrop-blur-md">
         <!-- Header -->
         <div class="text-center mb-8">
           <h1 class="text-3xl font-bold text-white mb-2">SovereignID</h1>
-          <p class="text-slate-400">Sign in with Ethereum</p>
+          <p class="text-slate-400">{{ 'login.subtitle' | translate }}</p>
         </div>
 
         <!-- MetaMask Check -->
@@ -31,9 +36,9 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
           <div
             class="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg text-red-100 text-sm"
           >
-            <p class="font-semibold">MetaMask not detected</p>
+            <p class="font-semibold">{{ 'login.metamaskMissingTitle' | translate }}</p>
             <p class="mt-1">
-              Please install MetaMask to sign in with your Ethereum wallet.
+              {{ 'login.metamaskMissingBody' | translate }}
             </p>
           </div>
         }
@@ -42,10 +47,10 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
         @if (state() === 'loading') {
           <div class="text-center">
             <div class="mb-4 flex justify-center">
-              <app-hex-loader size="lg" label="Esperando firma de wallet" />
+              <app-hex-loader size="lg" [label]="'login.waitingSignature' | translate" />
             </div>
             <p class="text-gray-300 font-medium">
-              Please sign the message in your wallet...
+              {{ 'login.signMessage' | translate }}
             </p>
           </div>
         }
@@ -70,7 +75,7 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
               </svg>
             </div>
             <p class="text-green-400 font-semibold text-lg mb-2">
-              Welcome back!
+              {{ 'login.welcome' | translate }}
             </p>
             <p class="text-gray-400 text-sm break-all">
               {{ authService.getAddress() }}
@@ -97,15 +102,15 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
                 ></path>
               </svg>
             </div>
-            <p class="text-red-400 font-semibold mb-2">Sign in failed</p>
+            <p class="text-red-400 font-semibold mb-2">{{ 'login.failed' | translate }}</p>
             <p class="text-gray-400 text-sm mb-4">
-              {{ errorMessage() || 'Please try again' }}
+              {{ errorMessage() || ('login.tryAgainMessage' | translate) }}
             </p>
             <button
               (click)="resetState()"
               class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
             >
-              Try again
+              {{ 'login.tryAgain' | translate }}
             </button>
           </div>
         }
@@ -134,21 +139,21 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
                 opacity="0.6"
               />
             </svg>
-            <span>Connect with MetaMask</span>
+            <span>{{ 'login.connect' | translate }}</span>
           </button>
         }
 
         <!-- Footer -->
         <div class="text-center mt-6 space-y-3">
           <p class="text-gray-500 text-xs">
-            You will be asked to sign a message to verify your identity
+            {{ 'login.disclaimer' | translate }}
           </p>
           @if (authService.hasPlatformAdmin()) {
             <a
               routerLink="/platform"
               class="inline-block text-sm text-blue-400 hover:text-blue-300 transition"
             >
-              Ir al portal de plataforma
+              {{ 'login.platformPortal' | translate }}
             </a>
           }
         </div>
@@ -160,6 +165,7 @@ type LoginState = 'idle' | 'loading' | 'success' | 'error';
 export class LoginComponent {
   readonly authService = inject(AuthService);
   readonly web3Service = inject(Web3Service);
+  private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -181,7 +187,7 @@ export class LoginComponent {
     } catch (error: unknown) {
       this.state.set('error');
       this.errorMessage.set(toErrorMessage(error));
-      console.error('Login error:', error);
+      console.error(this.translate.instant('login.errorLog'), error);
     }
   }
 

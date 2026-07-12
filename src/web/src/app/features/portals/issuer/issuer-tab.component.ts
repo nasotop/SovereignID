@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import {
   CareerSummary,
@@ -25,6 +26,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
   imports: [
     CommonModule,
     FormsModule,
+    TranslatePipe,
     HexLoaderComponent,
     ModalComponent,
     StatusBadgeComponent,
@@ -50,10 +52,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
     >
       @if (showHeader()) {
         <div class="min-w-0">
-          <p class="text-xs font-medium uppercase text-blue-300">Modulo issuer</p>
-          <h3 class="mt-1 text-2xl font-bold text-white">Emision de credenciales</h3>
+          <p class="text-xs font-medium uppercase text-blue-300">{{ 'issuer.headerTitle' | translate }}</p>
+          <h3 class="mt-1 text-2xl font-bold text-white">{{ 'issuer.title' | translate }}</h3>
           <p class="text-sm text-slate-400">
-            Titulos y certificados verificables emitidos por la institucion activa.
+            {{ 'issuer.subtitle' | translate }}
           </p>
         </div>
       }
@@ -65,7 +67,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
           [disabled]="isBusy() || isCredentialsLoading() || !institutionId()"
           (click)="refreshCredentials()"
         >
-          {{ isBusy() || isCredentialsLoading() ? 'Cargando...' : 'Refrescar' }}
+          {{ isBusy() || isCredentialsLoading() ? ('common.loading' | translate) : ('common.refresh' | translate) }}
         </button>
         @if (canIssue()) {
           <button
@@ -74,7 +76,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             [disabled]="!canOpenIssueModal()"
             (click)="openIssueModal()"
           >
-            Emitir credencial
+            {{ 'issuer.issue' | translate }}
           </button>
         }
       </div>
@@ -85,13 +87,13 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
         <div class="border-b border-slate-700 p-4">
           <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h3 class="text-base font-semibold text-white">Credenciales emitidas</h3>
-              <p class="text-xs text-slate-400">{{ filteredCredentials().length }} resultados</p>
+              <h3 class="text-base font-semibold text-white">{{ 'issuer.issuedList' | translate }}</h3>
+              <p class="text-xs text-slate-400">{{ 'issuer.results' | translate: { count: filteredCredentials().length } }}</p>
             </div>
             <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem] lg:w-[32rem]">
               <input
                 class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
-                placeholder="Buscar por estudiante, tipo o ID"
+                [placeholder]="'issuer.search' | translate"
                 [ngModel]="searchTerm()"
                 (ngModelChange)="searchTerm.set($event)"
               />
@@ -100,10 +102,10 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
                 [ngModel]="statusFilter()"
                 (ngModelChange)="setStatusFilter($event)"
               >
-                <option value="all">Todos</option>
-                <option value="active">Activas</option>
-                <option value="revoked">Revocadas</option>
-                <option value="expired">Expiradas</option>
+                <option value="all">{{ 'common.all' | translate }}</option>
+                <option value="active">{{ 'common.status.active' | translate }}</option>
+                <option value="revoked">{{ 'common.status.revoked' | translate }}</option>
+                <option value="expired">{{ 'common.status.expired' | translate }}</option>
               </select>
             </div>
           </div>
@@ -113,12 +115,12 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
           <table class="w-full min-w-[820px] text-left">
             <thead class="sticky top-0 bg-slate-800 text-xs uppercase text-slate-400">
               <tr class="border-b border-slate-700">
-                <th class="px-4 py-3">Estudiante</th>
-                <th class="px-4 py-3">Carrera</th>
-                <th class="px-4 py-3">Tipo</th>
-                <th class="px-4 py-3">Emitida</th>
-                <th class="px-4 py-3">Estado</th>
-                <th class="px-4 py-3">Credential ID</th>
+                <th class="px-4 py-3">{{ 'issuer.student' | translate }}</th>
+                <th class="px-4 py-3">{{ 'issuer.career' | translate }}</th>
+                <th class="px-4 py-3">{{ 'issuer.type' | translate }}</th>
+                <th class="px-4 py-3">{{ 'issuer.issued' | translate }}</th>
+                <th class="px-4 py-3">{{ 'common.status.active' | translate }}</th>
+                <th class="px-4 py-3">{{ 'issuer.credentialId' | translate }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/70">
@@ -151,11 +153,11 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
                   <td colspan="6" class="px-4 py-12 text-center text-sm text-slate-400">
                     @if (isCredentialsLoading()) {
                       <div class="flex flex-col items-center justify-center gap-4">
-                        <app-hex-loader label="Cargando credenciales" />
-                        <span>Cargando credenciales...</span>
+                        <app-hex-loader [label]="'common.loading' | translate" />
+                        <span>{{ 'common.loading' | translate }}</span>
                       </div>
                     } @else {
-                      No hay credenciales emitidas para este filtro.
+                      {{ 'issuer.issuedList' | translate }}: 0
                     }
                   </td>
                 </tr>
@@ -170,7 +172,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
           <div class="space-y-6">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-xs font-medium uppercase text-blue-300">Credencial seleccionada</p>
+                <p class="text-xs font-medium uppercase text-blue-300">{{ 'issuer.selectedCredential' | translate }}</p>
                 <h3 class="mt-1 truncate text-xl font-semibold text-white">
                   {{ selectedCredential()!.documentType }}
                 </h3>
@@ -178,7 +180,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               <button
                 type="button"
                 class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
-                aria-label="Cerrar detalle"
+                [attr.aria-label]="'common.close' | translate"
                 (click)="selectedCredential.set(null)"
               >
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -189,19 +191,19 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
 
             <dl class="space-y-4 text-sm">
               <div>
-                <dt class="text-slate-500">Credential ID</dt>
+                <dt class="text-slate-500">{{ 'issuer.credentialId' | translate }}</dt>
                 <dd><app-copy-value [value]="selectedCredential()!.credentialId" /></dd>
               </div>
               <div>
-                <dt class="text-slate-500">Estudiante</dt>
+                <dt class="text-slate-500">{{ 'issuer.student' | translate }}</dt>
                 <dd class="text-slate-200">{{ selectedCredential()!.studentLabel }}</dd>
               </div>
               <div>
-                <dt class="text-slate-500">Carrera</dt>
+                <dt class="text-slate-500">{{ 'issuer.career' | translate }}</dt>
                 <dd class="text-slate-200">{{ careerNameForCredential(selectedCredential()!) }}</dd>
               </div>
               <div>
-                <dt class="text-slate-500">Estado</dt>
+                <dt class="text-slate-500">{{ 'common.status.active' | translate }}</dt>
                 <dd class="mt-1">
                   <app-status-badge
                     [label]="statusLabel(selectedCredential()!.status)"
@@ -235,54 +237,54 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
                 [disabled]="isBusy()"
                 (click)="openRevokeModal(selectedCredential()!)"
               >
-                Revocar credencial
+                {{ 'issuer.revokeTitle' | translate }}
               </button>
             }
           </div>
         } @else {
           <div class="space-y-6">
             <div>
-              <p class="text-xs font-medium uppercase text-blue-300">Resumen issuer</p>
-              <h3 class="mt-1 text-xl font-semibold text-white">Vista general</h3>
+              <p class="text-xs font-medium uppercase text-blue-300">{{ 'issuer.summary' | translate }}</p>
+              <h3 class="mt-1 text-xl font-semibold text-white">{{ 'issuer.overview' | translate }}</h3>
               <p class="mt-1 text-sm text-slate-400">
-                Selecciona una credencial para ver detalle o revocarla.
+                {{ 'issuer.selectedCredential' | translate }}
               </p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-xs text-slate-500">Total</p>
+                <p class="text-xs text-slate-500">{{ 'common.total' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-white">{{ credentials().length }}</p>
               </article>
               <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-xs text-slate-500">Activas</p>
+                <p class="text-xs text-slate-500">{{ 'common.status.active' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-emerald-300">{{ activeCount() }}</p>
               </article>
               <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-xs text-slate-500">Revocadas</p>
+                <p class="text-xs text-slate-500">{{ 'common.status.revoked' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-red-300">{{ revokedCount() }}</p>
               </article>
               <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-xs text-slate-500">Estudiantes aptos</p>
+                <p class="text-xs text-slate-500">{{ 'issuer.eligibleStudents' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-blue-300">{{ eligibleStudents().length }}</p>
               </article>
             </div>
 
             <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-              <p class="text-sm font-semibold text-white">Estado emisor</p>
+              <p class="text-sm font-semibold text-white">{{ 'issuer.issuerDid' | translate }}</p>
               <dl class="mt-3 space-y-3 text-sm">
                 <div>
-                  <dt class="text-slate-500">Wallet emisora</dt>
-                  <dd><app-copy-value [value]="institution()?.issuerWalletAddress" emptyLabel="Sin wallet emisora" /></dd>
+                  <dt class="text-slate-500">{{ 'issuer.issuerWallet' | translate }}</dt>
+                  <dd><app-copy-value [value]="institution()?.issuerWalletAddress" [emptyLabel]="'issuer.noIssuerWallet' | translate" /></dd>
                 </div>
                 <div>
-                  <dt class="text-slate-500">DID institucion</dt>
-                  <dd><app-copy-value [value]="institution()?.did" emptyLabel="Sin DID" /></dd>
+                  <dt class="text-slate-500">DID</dt>
+                  <dd><app-copy-value [value]="institution()?.did" emptyLabel="-" /></dd>
                 </div>
               </dl>
               @if (!canOpenIssueModal()) {
                 <p class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
-                  Para emitir, la institucion debe tener wallet/DID emisor, al menos un estudiante con wallet primaria y una carrera activa.
+                  {{ 'issuer.noIssuerWallet' | translate }}
                 </p>
               }
             </div>
@@ -293,14 +295,14 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
 
     <app-modal
       [isOpen]="issueModalOpen()"
-      title="Emitir credencial"
-      description="Selecciona estudiante, tipo de documento y fecha de emision."
+      [title]="'issuer.issueModalTitle' | translate"
+      [description]="'issuer.issueModalSubtitle' | translate"
       size="lg"
       (closed)="closeIssueModal()"
     >
       <form class="grid gap-4" (submit)="handleIssueSubmit($event)">
         <label class="grid gap-1 text-sm text-slate-200">
-          Estudiante
+          {{ 'issuer.student' | translate }}
           <select
             class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
             [ngModel]="issueStudentId()"
@@ -308,7 +310,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             (ngModelChange)="onIssueStudentChange($event)"
             required
           >
-            <option value="">Seleccionar estudiante</option>
+            <option value="">{{ 'issuer.selectStudent' | translate }}</option>
             @for (student of eligibleStudents(); track student.id) {
               <option [value]="student.id">
                 {{ student.externalReference || student.id }} - {{ student.primaryWalletAddress }}
@@ -319,7 +321,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
 
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="grid gap-1 text-sm text-slate-200">
-            Tipo
+            {{ 'issuer.type' | translate }}
             <select
               class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
               [ngModel]="issueDocumentType()"
@@ -327,9 +329,9 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
               (ngModelChange)="issueDocumentType.set($event)"
             >
               @if (isCredentialTypesLoading()) {
-                <option value="" disabled>Cargando tipos...</option>
+                <option value="" disabled>{{ 'issuer.credentialTypesLoading' | translate }}</option>
               } @else if (!credentialTypes().length) {
-                <option value="" disabled>Sin tipos disponibles</option>
+                <option value="" disabled>{{ 'issuer.noCredentialTypes' | translate }}</option>
               }
               @for (type of credentialTypes(); track type.code) {
                 <option [value]="type.code">{{ type.name }}</option>
@@ -338,7 +340,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
           </label>
 
           <label class="grid gap-1 text-sm text-slate-200">
-            Fecha emision
+            {{ 'issuer.issueDate' | translate }}
             <input
               type="date"
               class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
@@ -351,7 +353,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
         </div>
 
         <label class="grid gap-1 text-sm text-slate-200">
-          Carrera
+          {{ 'issuer.career' | translate }}
           <select
             class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
             [ngModel]="issueCareerId()"
@@ -359,7 +361,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             (ngModelChange)="issueCareerId.set($event)"
             required
           >
-            <option value="">Seleccionar carrera</option>
+            <option value="">{{ 'issuer.selectCareer' | translate }}</option>
             @for (career of activeCareers(); track career.id) {
               <option [value]="career.id">{{ career.code }} - {{ career.name }}</option>
             }
@@ -368,22 +370,22 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
 
         @if (selectedIssueStudent()) {
           <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm">
-            <p class="font-semibold text-white">Datos derivados</p>
+            <p class="font-semibold text-white">{{ 'issuer.derivedData' | translate }}</p>
             <dl class="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <dt class="text-slate-500">Wallet estudiante</dt>
+                <dt class="text-slate-500">{{ 'issuer.studentWallet' | translate }}</dt>
                 <dd class="break-all font-mono text-xs text-slate-200">{{ selectedIssueStudent()!.primaryWalletAddress }}</dd>
               </div>
               <div>
-                <dt class="text-slate-500">DID estudiante</dt>
+                <dt class="text-slate-500">{{ 'issuer.studentDid' | translate }}</dt>
                 <dd class="break-all font-mono text-xs text-slate-200">{{ selectedIssueStudent()!.primaryWalletDid }}</dd>
               </div>
               <div>
-                <dt class="text-slate-500">DID emisor</dt>
+                <dt class="text-slate-500">{{ 'issuer.issuerDid' | translate }}</dt>
                 <dd class="break-all font-mono text-xs text-slate-200">{{ issuerDid() }}</dd>
               </div>
               <div>
-                <dt class="text-slate-500">Carrera seleccionada</dt>
+                <dt class="text-slate-500">{{ 'issuer.selectedCareer' | translate }}</dt>
                 <dd class="text-slate-200">{{ selectedIssueCareer()?.name || '-' }}</dd>
               </div>
             </dl>
@@ -396,14 +398,14 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
             (click)="closeIssueModal()"
           >
-            Cancelar
+            {{ 'common.cancel' | translate }}
           </button>
           <button
             type="submit"
             class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
             [disabled]="isBusy() || !canSubmitIssue()"
           >
-            {{ isBusy() ? 'Emitiendo...' : 'Emitir credencial' }}
+            {{ isBusy() ? ('issuer.issuing' | translate) : ('issuer.issue' | translate) }}
           </button>
         </div>
       </form>
@@ -411,13 +413,13 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
 
     <app-modal
       [isOpen]="revokeModalOpen()"
-      title="Revocar credencial"
+      [title]="'issuer.revokeTitle' | translate"
       description="La revocacion quedara registrada en blockchain y en el servicio issuer."
       (closed)="closeRevokeModal()"
     >
       <form class="grid gap-4" (submit)="handleRevokeSubmit($event)">
         <label class="grid gap-1 text-sm text-slate-200">
-          Motivo
+          {{ 'issuer.revokeReason' | translate }}
           <textarea
             class="min-h-28 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
             [ngModel]="revokeReason()"
@@ -432,7 +434,7 @@ type CredentialFilter = 'all' | 'active' | 'revoked' | 'expired';
             class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
             (click)="closeRevokeModal()"
           >
-            Cancelar
+            {{ 'common.cancel' | translate }}
           </button>
           <button
             type="submit"
@@ -456,6 +458,7 @@ export class IssuerTabComponent {
   readonly showHeader = input(true);
 
   private readonly credentialService = inject(CredentialService);
+  private readonly translate = inject(TranslateService);
 
   readonly selectedCredential = signal<IssuedCredential | null>(null);
   readonly searchTerm = signal('');
@@ -642,7 +645,10 @@ export class IssuerTabComponent {
         issuerDid: this.issuerDid(),
       });
       this.issueModalOpen.set(false);
-      this.successMessage.set(`Titulo emitido para ${student.externalReference || student.id} en ${career.name}.`);
+      this.successMessage.set(this.translate.instant('issuer.issuedSuccess', {
+        student: student.externalReference || student.id,
+        career: career.name,
+      }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -678,7 +684,7 @@ export class IssuerTabComponent {
       await this.credentialService.revokeCredential(credential.credentialId, reason);
       this.revokeModalOpen.set(false);
       this.selectedCredential.set(null);
-      this.successMessage.set('Credencial revocada correctamente.');
+      this.successMessage.set(this.translate.instant('issuer.revoked'));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -689,11 +695,11 @@ export class IssuerTabComponent {
   statusLabel(status: string): string {
     switch (status) {
       case 'active':
-        return 'Activa';
+        return this.translate.instant('common.status.active');
       case 'revoked':
-        return 'Revocada';
+        return this.translate.instant('common.status.revoked');
       case 'expired':
-        return 'Expirada';
+        return this.translate.instant('common.status.expired');
       default:
         return status;
     }
@@ -701,7 +707,7 @@ export class IssuerTabComponent {
 
   careerNameForCredential(credential: IssuedCredential): string {
     if (!credential.careerId) {
-      return 'Sin carrera';
+      return this.translate.instant('issuer.noCareer');
     }
 
     return this.careers().find((career) => career.id === credential.careerId)?.name

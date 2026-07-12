@@ -23,9 +23,11 @@ import {
   InstitutionSummary as AcademyInstitutionSummary,
   InstitutionUserSummary,
   InviteInstitutionUserPayload,
+  LinkInstitutionIssuerWalletPayload,
   StudentSummary,
   StudentWalletSummary,
   UpdateCareerPayload,
+  UpdateInstitutionPayload,
   UpdateInstitutionUserRolePayload,
 } from '../models/academy.models';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
@@ -98,6 +100,32 @@ export class AcademyService {
     } catch (error: unknown) {
       throw this.mapApiError(error, 'No se pudo crear la invitacion');
     }
+  }
+
+  async updateInstitution(
+    institutionId: string,
+    body: UpdateInstitutionPayload,
+  ): Promise<AcademyInstitutionSummary> {
+    this.requireJwt();
+
+    return this.patchJson<AcademyInstitutionSummary>(
+      `${BFF_API_BASE}/academy/institutions/${institutionId}`,
+      body,
+      'No se pudo actualizar la institucion',
+    );
+  }
+
+  async linkInstitutionIssuerWallet(
+    institutionId: string,
+    body: LinkInstitutionIssuerWalletPayload,
+  ): Promise<void> {
+    this.requireJwt();
+
+    await this.postJson<unknown>(
+      `${BFF_API_BASE}/issuer/institutions/${institutionId}/wallet`,
+      body,
+      'No se pudo vincular la wallet emisora',
+    );
   }
 
   async acceptInvitationPublic(

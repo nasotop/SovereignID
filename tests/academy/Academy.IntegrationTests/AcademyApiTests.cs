@@ -214,6 +214,49 @@ public sealed class AcademyApiTests : IClassFixture<AcademyWebApplicationFactory
     }
 
     [Fact]
+    public async Task UpdateInstitution_WithInstitutionAdmin_UpdatesEditableFieldsButKeepsCode()
+    {
+        var originalCode = $"INST-{Guid.NewGuid():N}"[..12].ToUpperInvariant();
+        var createInstitutionResponse = await SendPlatformAdminPostAsync("/academy/institutions", new
+        {
+            code = originalCode,
+            legalName = "Institucion Editable SpA",
+            displayName = "Institucion Editable",
+            contactEmail = "editable@demo.test",
+            countryCode = "CL"
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createInstitutionResponse.StatusCode);
+        using var institutionJson = await JsonDocument.ParseAsync(await createInstitutionResponse.Content.ReadAsStreamAsync());
+        var institutionId = institutionJson.RootElement
+            .GetProperty("institution")
+            .GetProperty("id")
+            .GetGuid();
+
+        var updateResponse = await SendAuthorizedPatchAsync(
+            $"/academy/institutions/{institutionId}",
+            JwtTestHelper.CreateInstitutionAdminToken(institutionId),
+            new
+            {
+                code = "SHOULD-NOT-CHANGE",
+                legalName = "Institucion Editada SpA",
+                displayName = "Institucion Editada",
+                countryCode = "PE",
+                websiteUrl = "https://editada.example",
+                isActive = false
+            });
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        using var updatedJson = await JsonDocument.ParseAsync(await updateResponse.Content.ReadAsStreamAsync());
+        Assert.Equal(originalCode, updatedJson.RootElement.GetProperty("code").GetString());
+        Assert.Equal("Institucion Editada SpA", updatedJson.RootElement.GetProperty("legalName").GetString());
+        Assert.Equal("Institucion Editada", updatedJson.RootElement.GetProperty("displayName").GetString());
+        Assert.Equal("PE", updatedJson.RootElement.GetProperty("countryCode").GetString());
+        Assert.Equal("https://editada.example", updatedJson.RootElement.GetProperty("websiteUrl").GetString());
+        Assert.False(updatedJson.RootElement.GetProperty("isActive").GetBoolean());
+    }
+
+    [Fact]
     public async Task CreateInstitution_WithIssuerMembershipOnly_ReturnsForbidden()
     {
         var institutionId = Guid.Parse("11111111-1111-1111-1111-111111111111");

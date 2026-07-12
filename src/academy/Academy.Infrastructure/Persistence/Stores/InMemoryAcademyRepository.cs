@@ -72,6 +72,32 @@ internal sealed class InMemoryAcademyRepository : IAcademyRepository
         }
     }
 
+    public Task<InstitutionSummary?> UpdateInstitutionAsync(
+        UpdateInstitutionCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            if (!_institutions.TryGetValue(command.InstitutionId, out var institution))
+            {
+                return Task.FromResult<InstitutionSummary?>(null);
+            }
+
+            var updated = institution with
+            {
+                LegalName = command.LegalName,
+                DisplayName = command.DisplayName,
+                CountryCode = command.CountryCode,
+                WebsiteUrl = command.WebsiteUrl,
+                IsActive = command.IsActive
+            };
+
+            _institutions[command.InstitutionId] = updated;
+            return Task.FromResult<InstitutionSummary?>(EnrichInstitutionSummary(updated));
+        }
+    }
+
     public Task<bool> CareerCodeExistsAsync(Guid institutionId, string code, CancellationToken cancellationToken)
     {
         lock (_lock)

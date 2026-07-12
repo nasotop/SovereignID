@@ -39,6 +39,21 @@ public sealed class AcademyInstitutionsController(
         DownstreamResults.OkAsync(() =>
             academy.Academy.Institutions[institutionId].GetAsync(cancellationToken: cancellationToken));
 
+    [HttpPatch("{institutionId:guid}")]
+    [ProducesResponseType(typeof(InstitutionSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status404NotFound)]
+    public Task<IActionResult> UpdateInstitution(
+        Guid institutionId,
+        [FromBody] Bff.Api.Models.UpdateInstitutionRequest request,
+        CancellationToken cancellationToken) =>
+        SendAcademyAsync(
+            CreateJsonRequest(
+                HttpMethod.Patch,
+                $"academy/institutions/{institutionId}",
+                request),
+            cancellationToken);
+
     [HttpPost("{institutionId:guid}/careers")]
     [ProducesResponseType(typeof(CareerSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(SovereignID.Bff.Clients.Academy.Models.ProblemDetails), StatusCodes.Status400BadRequest)]

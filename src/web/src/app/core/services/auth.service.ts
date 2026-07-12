@@ -98,7 +98,11 @@ export class AuthService {
   getShortAddress(): string {
     const address = this.getAddress();
     if (!address) {
-      return 'Sin wallet';
+      try {
+        return localStorage.getItem('sovereignid.language') === 'es' ? 'Sin wallet' : 'No wallet';
+      } catch {
+        return 'No wallet';
+      }
     }
 
     return `${address.slice(0, 6)}...${address.slice(-4)}`;

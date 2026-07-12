@@ -9,6 +9,11 @@
     },
     "version": "v1"
   },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5194/"
+    }
+  ],
   "paths": {
     "/academy/holders/me": {
       "get": {
@@ -19,7 +24,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "400": {
@@ -64,7 +69,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "400": {
@@ -182,6 +187,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InstitutionSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "AcademyInstitutions"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstitutionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstitutionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInstitutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstitutionSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1043,7 +1116,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           },
           "404": {
@@ -1533,7 +1606,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1575,7 +1648,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1609,7 +1682,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1651,7 +1724,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1693,7 +1766,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1726,7 +1799,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -1751,7 +1824,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": { }
             }
           }
         }
@@ -2832,7 +2905,7 @@
           }
         }
       },
-      "JsonElement": {},
+      "JsonElement": { },
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
@@ -3252,6 +3325,35 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "UpdateInstitutionRequest": {
+        "required": [
+          "legalName",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string",
+            "default": "CL"
+          },
+          "websiteUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
           }
         }
       },

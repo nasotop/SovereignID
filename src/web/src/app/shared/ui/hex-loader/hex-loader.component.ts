@@ -91,7 +91,7 @@ type HexLoaderSize = 'sm' | 'md' | 'lg';
 })
 export class HexLoaderComponent {
   readonly size = input<HexLoaderSize>('md');
-  readonly label = input('Cargando');
+  readonly label = input('Loading');
 
   sizeClass(): string {
     return `hex-loader-${this.size()}`;

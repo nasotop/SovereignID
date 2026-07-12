@@ -15,25 +15,26 @@ export type CheckRowTone = 'success' | 'danger' | 'neutral' | 'muted';
 
 export interface CheckRowViewModel {
   key: string;
-  label: string;
-  displayValue: string;
+  labelKey: string;
+  displayValue?: string;
+  displayValueKey?: string;
   tone: CheckRowTone;
 }
 
 export interface CheckGroupViewModel {
-  title: string;
+  titleKey: string;
   rows: CheckRowViewModel[];
 }
 
 export interface EvidenceBannerViewModel {
   visible: boolean;
-  message: string;
+  messageKey: string;
 }
 
 export type VerdictResultTone = 'success' | 'warning' | 'danger' | 'neutral';
 
 export interface VerdictViewModel {
-  resultLabel: string;
+  resultLabelKey: string;
   resultTone: VerdictResultTone;
   groups: CheckGroupViewModel[];
   evidenceBanner: EvidenceBannerViewModel;
@@ -55,40 +56,40 @@ const EVIDENCE_CHECK_KEYS: BooleanCheckKey[] = [
   'signatureValid',
 ];
 
-const BOOLEAN_CHECK_LABELS: Record<BooleanCheckKey, string> = {
-  found: 'Encontrada en registro',
-  notRevoked: 'No revocada',
-  notExpired: 'No expirada',
-  onChainExists: 'Existe on-chain',
-  hashMatches: 'Hash coincide',
-  signatureValid: 'Firma válida',
+const BOOLEAN_CHECK_LABEL_KEYS: Record<BooleanCheckKey, string> = {
+  found: 'verificationVerdict.checks.found',
+  notRevoked: 'verificationVerdict.checks.notRevoked',
+  notExpired: 'verificationVerdict.checks.notExpired',
+  onChainExists: 'verificationVerdict.checks.onChainExists',
+  hashMatches: 'verificationVerdict.checks.hashMatches',
+  signatureValid: 'verificationVerdict.checks.signatureValid',
 };
 
-const VALIDATION_SOURCE_LABELS: Record<
+const VALIDATION_SOURCE_LABEL_KEYS: Record<
   NonNullable<VerificationChecksResponse['validationSource']>,
   string
 > = {
-  on_chain: 'On-chain',
-  bd_fallback_inconclusive: 'BD (inconcluso)',
-  bd_fallback_rejected: 'BD (rechazado)',
-  not_evaluated: 'No evaluado',
+  on_chain: 'verificationVerdict.sources.onChain',
+  bd_fallback_inconclusive: 'verificationVerdict.sources.dbFallbackInconclusive',
+  bd_fallback_rejected: 'verificationVerdict.sources.dbFallbackRejected',
+  not_evaluated: 'verificationVerdict.values.notEvaluated',
 };
 
-const REVOCATION_SOURCE_LABELS: Record<
+const REVOCATION_SOURCE_LABEL_KEYS: Record<
   NonNullable<VerificationChecksResponse['revocationSource']>,
   string
 > = {
-  bd: 'Base de datos',
-  on_chain: 'On-chain',
-  both: 'BD y on-chain',
+  bd: 'verificationVerdict.sources.database',
+  on_chain: 'verificationVerdict.sources.onChain',
+  both: 'verificationVerdict.sources.databaseAndOnChain',
 };
 
-const RESULT_LABELS: Record<VerificationResponse['result'], string> = {
-  valid: 'Credencial válida',
-  revoked: 'Credencial revocada',
-  expired: 'Credencial expirada',
-  not_found: 'Credencial inexistente',
-  integrity_failed: 'Integridad comprometida',
+const RESULT_LABEL_KEYS: Record<VerificationResponse['result'], string> = {
+  valid: 'verificationVerdict.results.valid',
+  revoked: 'verificationVerdict.results.revoked',
+  expired: 'verificationVerdict.results.expired',
+  not_found: 'verificationVerdict.results.notFound',
+  integrity_failed: 'verificationVerdict.results.integrityFailed',
 };
 
 const RESULT_TONES: Record<VerificationResponse['result'], VerdictResultTone> = {
@@ -99,40 +100,37 @@ const RESULT_TONES: Record<VerificationResponse['result'], VerdictResultTone> = 
   integrity_failed: 'danger',
 };
 
-const EVIDENCE_DISABLED_BANNER_MESSAGE =
-  'La verificación on-chain/IPFS no está habilitada en este entorno.';
-
 function formatBooleanCheck(value: boolean | null | undefined): {
-  displayValue: string;
+  displayValueKey: string;
   tone: CheckRowTone;
 } {
   if (value === null || value === undefined) {
-    return { displayValue: 'No evaluado', tone: 'muted' };
+    return { displayValueKey: 'verificationVerdict.values.notEvaluated', tone: 'muted' };
   }
 
   return value
-    ? { displayValue: 'Sí', tone: 'success' }
-    : { displayValue: 'No', tone: 'danger' };
+    ? { displayValueKey: 'verificationVerdict.values.yes', tone: 'success' }
+    : { displayValueKey: 'verificationVerdict.values.no', tone: 'danger' };
 }
 
 function formatValidationSource(
   value: VerificationChecksResponse['validationSource'],
-): string {
+): string | undefined {
   if (value === null || value === undefined) {
-    return '—';
+    return undefined;
   }
 
-  return VALIDATION_SOURCE_LABELS[value];
+  return VALIDATION_SOURCE_LABEL_KEYS[value];
 }
 
 function formatRevocationSource(
   value: VerificationChecksResponse['revocationSource'],
-): string {
+): string | undefined {
   if (value === null || value === undefined) {
-    return '—';
+    return undefined;
   }
 
-  return REVOCATION_SOURCE_LABELS[value];
+  return REVOCATION_SOURCE_LABEL_KEYS[value];
 }
 
 function isEvidenceDisabled(checks: VerificationChecksResponse): boolean {
@@ -152,8 +150,8 @@ function buildBooleanRows(
     const formatted = formatBooleanCheck(checks[key]);
     return {
       key,
-      label: BOOLEAN_CHECK_LABELS[key],
-      displayValue: formatted.displayValue,
+      labelKey: BOOLEAN_CHECK_LABEL_KEYS[key],
+      displayValueKey: formatted.displayValueKey,
       tone: formatted.tone,
     };
   });
@@ -173,32 +171,35 @@ export function buildVerdictViewModel(
 
   evidenceRows.push({
     key: 'validationSource',
-    label: 'Fuente de validación de firma',
-    displayValue: formatValidationSource(checks.validationSource),
+    labelKey: 'verificationVerdict.validationSource',
+    displayValueKey: formatValidationSource(checks.validationSource),
+    displayValue: formatValidationSource(checks.validationSource) ? undefined : '-',
     tone: 'neutral',
   });
 
   const groups: CheckGroupViewModel[] = [
-    { title: 'Registro local', rows: localRows },
-    { title: 'Evidencia on-chain', rows: evidenceRows },
+    { titleKey: 'verificationVerdict.groups.localRegistry', rows: localRows },
+    { titleKey: 'verificationVerdict.groups.onChainEvidence', rows: evidenceRows },
   ];
 
   if (response.result === 'revoked') {
+    const displayValueKey = formatRevocationSource(checks.revocationSource);
     groups[0].rows.push({
       key: 'revocationSource',
-      label: 'Fuente de revocación',
-      displayValue: formatRevocationSource(checks.revocationSource),
+      labelKey: 'verificationVerdict.revocationSource',
+      displayValueKey,
+      displayValue: displayValueKey ? undefined : '-',
       tone: 'neutral',
     });
   }
 
   return {
-    resultLabel: RESULT_LABELS[response.result],
+    resultLabelKey: RESULT_LABEL_KEYS[response.result],
     resultTone: RESULT_TONES[response.result],
     groups,
     evidenceBanner: {
       visible: isEvidenceDisabled(checks),
-      message: EVIDENCE_DISABLED_BANNER_MESSAGE,
+      messageKey: 'verificationVerdict.evidenceDisabled',
     },
     credential: response.credential,
   };

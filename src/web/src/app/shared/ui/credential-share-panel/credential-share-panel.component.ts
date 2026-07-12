@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, input, output } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { HolderService } from '../../../core/services/holder.service';
 import { buildVerifierShareUrl } from '../../../core/utils/verifier-share-url.util';
@@ -10,26 +11,28 @@ import { QrCodeComponent } from '../qr-code';
 @Component({
   selector: 'app-credential-share-panel',
   standalone: true,
-  imports: [CommonModule, CopyValueComponent, QrCodeComponent],
+  imports: [CommonModule, CopyValueComponent, QrCodeComponent, TranslatePipe],
   template: `
     <div class="space-y-5">
       @if (credentialTitle()) {
         <p class="text-sm text-slate-300">
-          Comparte la credencial
+          {{ 'holder.shareIntroPrefix' | translate }}
           <span class="font-semibold text-white">{{ credentialTitle() }}</span>
-          para verificacion publica.
+          {{ 'holder.shareIntroSuffix' | translate }}
         </p>
       }
 
       <div class="flex flex-col items-center gap-4 rounded-lg border border-slate-700 bg-slate-900/50 p-5">
         <app-qr-code [value]="shareUrl()" [alt]="qrAlt()" />
         <p class="text-center text-sm text-slate-400">
-          Al escanear se abre el verificador con el ID pre-cargado.
+          {{ 'holder.shareQrHint' | translate }}
         </p>
       </div>
 
       <div class="space-y-2">
-        <p class="text-xs font-semibold uppercase text-slate-500">Enlace de verificacion</p>
+        <p class="text-xs font-semibold uppercase text-slate-500">
+          {{ 'holder.verificationLink' | translate }}
+        </p>
         <app-copy-value [value]="shareUrl()" [head]="24" [tail]="12" />
       </div>
 
@@ -39,14 +42,14 @@ import { QrCodeComponent } from '../qr-code';
           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
           (click)="copyShareLink()"
         >
-          Copiar enlace
+          {{ 'holder.copyLink' | translate }}
         </button>
         <button
           type="button"
           class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700"
           (click)="copyCredentialId()"
         >
-          Copiar solo UUID
+          {{ 'holder.copyUuidOnly' | translate }}
         </button>
       </div>
     </div>
@@ -67,7 +70,7 @@ export class CredentialSharePanelComponent {
   );
 
   readonly qrAlt = computed(
-    () => `Codigo QR para verificar credencial ${this.credentialId()}`,
+    () => `QR code for credential ${this.credentialId()}`,
   );
 
   async copyShareLink(): Promise<void> {

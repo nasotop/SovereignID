@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { PlatformUnauthorizedError } from '../../../core/services/academy.service';
 import {
@@ -30,14 +31,15 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
     ReportPeriodSelectorComponent,
     ReportChartComponent,
     ReportSourceBadgeComponent,
+    TranslatePipe,
   ],
   template: `
     <div class="flex flex-col gap-6">
       <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 class="text-2xl font-bold text-white">Reportes</h2>
+          <h2 class="text-2xl font-bold text-white">{{ 'platform.reports.title' | translate }}</h2>
           <p class="mt-1 text-sm text-slate-400">
-            Rankings cross-tenant de credenciales emitidas y alumnos activos por institucion.
+            {{ 'platform.reports.subtitle' | translate }}
           </p>
         </div>
         <app-report-period-selector accent="violet" (periodChange)="onPeriodChange($event)" />
@@ -46,9 +48,9 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
       <section class="rounded-lg border border-slate-700 bg-slate-800 p-6">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 class="text-base font-semibold text-white">Credenciales por institucion</h3>
+            <h3 class="text-base font-semibold text-white">{{ 'platform.reports.credentialsByInstitution' | translate }}</h3>
             <p class="mt-1 text-xs text-slate-400">
-              Ranking de emisiones en el periodo seleccionado (R-P1).
+              {{ 'platform.reports.credentialsHint' | translate }}
             </p>
           </div>
           @if (credentialsState() === 'loaded' && credentialsSource()) {
@@ -58,8 +60,8 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
 
         @if (credentialsState() === 'loading') {
           <div class="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-            <app-hex-loader label="Cargando reporte de credenciales" />
-            <span>Cargando reporte de credenciales...</span>
+            <app-hex-loader [label]="'platform.reports.loadingCredentials' | translate" />
+            <span>{{ 'platform.reports.loadingCredentials' | translate }}</span>
           </div>
         } @else if (credentialsState() === 'error') {
           <div class="rounded-lg border border-red-700 bg-red-900/40 p-4">
@@ -69,7 +71,7 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
               class="mt-3 inline-flex items-center rounded-lg border border-red-500/50 bg-red-900/60 px-3 py-1.5 text-sm font-medium text-red-100 transition hover:bg-red-900"
               (click)="retryCredentials()"
             >
-              Reintentar
+              {{ 'login.tryAgain' | translate }}
             </button>
           </div>
         } @else {
@@ -77,7 +79,7 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
             <app-report-chart mode="bar-horizontal" [barData]="credentialsBarData()" />
           } @else {
             <div class="flex h-64 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-              No hay datos de credenciales para el periodo seleccionado.
+              {{ 'platform.reports.noCredentialsData' | translate }}
             </div>
           }
         }
@@ -85,16 +87,16 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
 
       <section class="rounded-lg border border-slate-700 bg-slate-800 p-6">
         <div class="mb-4">
-          <h3 class="text-base font-semibold text-white">Alumnos por institucion</h3>
+          <h3 class="text-base font-semibold text-white">{{ 'platform.reports.studentsByInstitution' | translate }}</h3>
           <p class="mt-1 text-xs text-slate-400">
-            Stock de alumnos activos al cierre del periodo (R-P2, asOf = {{ currentPeriod()?.to ?? '-' }}).
+            {{ 'platform.reports.studentsHint' | translate:{ date: currentPeriod()?.to ?? '-' } }}
           </p>
         </div>
 
         @if (studentsState() === 'loading') {
           <div class="flex h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-            <app-hex-loader label="Cargando reporte de alumnos" />
-            <span>Cargando reporte de alumnos...</span>
+            <app-hex-loader [label]="'platform.reports.loadingStudents' | translate" />
+            <span>{{ 'platform.reports.loadingStudents' | translate }}</span>
           </div>
         } @else if (studentsState() === 'error') {
           <div class="rounded-lg border border-red-700 bg-red-900/40 p-4">
@@ -104,7 +106,7 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
               class="mt-3 inline-flex items-center rounded-lg border border-red-500/50 bg-red-900/60 px-3 py-1.5 text-sm font-medium text-red-100 transition hover:bg-red-900"
               (click)="retryStudents()"
             >
-              Reintentar
+              {{ 'login.tryAgain' | translate }}
             </button>
           </div>
         } @else {
@@ -112,7 +114,7 @@ type ReportSectionState = 'loading' | 'loaded' | 'error';
             <app-report-chart mode="bar-horizontal" [barData]="studentsBarData()" />
           } @else {
             <div class="flex h-64 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-sm text-slate-400">
-              No hay datos de alumnos para la fecha seleccionada.
+              {{ 'platform.reports.noStudentsData' | translate }}
             </div>
           }
         }
