@@ -1,6 +1,16 @@
 ﻿using Academy.Application;
-using Academy.Infrastructure.Persistence.Entities;
+using Academy.Infrastructure.Persistence.Generated;
 using Microsoft.EntityFrameworkCore;
+using CareerEntity = Academy.Infrastructure.Persistence.Generated.Entities.Career;
+using HolderProfileEntity = Academy.Infrastructure.Persistence.Generated.Entities.HolderProfile;
+using InstitutionEntity = Academy.Infrastructure.Persistence.Generated.Entities.Institution;
+using InstitutionInvitationEntity = Academy.Infrastructure.Persistence.Generated.Entities.InstitutionInvitation;
+using InstitutionUserEntity = Academy.Infrastructure.Persistence.Generated.Entities.InstitutionUser;
+using StudentEntity = Academy.Infrastructure.Persistence.Generated.Entities.Student;
+using StudentWalletEntity = Academy.Infrastructure.Persistence.Generated.Entities.StudentWallet;
+using UserEntity = Academy.Infrastructure.Persistence.Generated.Entities.User;
+using UserRole = Academy.Infrastructure.Persistence.Generated.Entities.UserRole;
+using WalletStatus = Academy.Infrastructure.Persistence.Generated.Entities.WalletStatus;
 
 namespace Academy.Infrastructure.Persistence.Stores;
 
