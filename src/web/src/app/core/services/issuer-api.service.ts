@@ -13,6 +13,20 @@ import {
 export class IssuerApiService {
   private readonly http = inject(HttpClient);
 
+  linkInstitutionIssuerWallet(
+    institutionId: string,
+    request: {
+      walletAddress: string;
+      did: string;
+      publicKey?: string | null;
+    },
+  ): Observable<{ institutionId: string; walletAddress: string; did: string }> {
+    return this.http.post<{ institutionId: string; walletAddress: string; did: string }>(
+      `${BFF_API_BASE}/issuer/institutions/${institutionId}/wallet`,
+      request,
+    );
+  }
+
   listInstitutionCredentials(
     institutionId: string,
   ): Observable<ReadonlyArray<CredentialSummaryResponse>> {

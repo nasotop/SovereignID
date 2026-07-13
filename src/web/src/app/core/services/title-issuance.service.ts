@@ -24,6 +24,14 @@ export class TitleIssuanceService {
       model.institutionId,
     );
 
+    const issuer = await this.credentialContractService.getIssuerIdentity();
+    await firstValueFrom(
+      this.issuerApiService.linkInstitutionIssuerWallet(model.institutionId, {
+        walletAddress: issuer.walletAddress,
+        did: issuer.did,
+      }),
+    );
+
     const chain = await this.credentialContractService.registerCredentialOnChain({
       credentialId,
       institutionId: model.institutionId,
