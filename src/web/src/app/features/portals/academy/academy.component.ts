@@ -133,6 +133,15 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 {{ 'academy.careers.create' | translate }}
               </button>
             }
+            @if (activeTab() === 'careers' && canManageInstitution()) {
+              <button
+                type="button"
+                class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+                (click)="openCareerModal()"
+              >
+                Crear carrera
+              </button>
+            }
             @if (activeTab() === 'users' && canManageInstitution()) {
               <button
                 type="button"
@@ -1218,6 +1227,40 @@ export class AcademyComponent implements OnInit {
       : new Intl.DateTimeFormat(this.languageService.locale(), {
         dateStyle: 'medium',
       }).format(date);
+  }
+
+  activeUserName(): string {
+    const currentAddress = this.authService.getAddress()?.toLowerCase();
+    if (!currentAddress) {
+      return this.authService.getUserDisplayName();
+    }
+
+    const user = this.institutionUsers().find(
+      (item) => item.walletAddress?.toLowerCase() === currentAddress,
+    );
+
+    return user?.displayName || user?.email || this.authService.getUserDisplayName();
+  }
+
+  activeRoleBadgeClass(): string {
+    const role = this.activeRoleLabel();
+    if (role === 'platform_admin') {
+      return 'border-violet-500/40 bg-violet-500/10 text-violet-200';
+    }
+
+    if (role === 'admin') {
+      return 'border-blue-500/40 bg-blue-500/10 text-blue-200';
+    }
+
+    if (role === 'issuer') {
+      return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200';
+    }
+
+    if (role === 'viewer') {
+      return 'border-slate-500/50 bg-slate-700/40 text-slate-200';
+    }
+
+    return 'border-amber-500/40 bg-amber-500/10 text-amber-200';
   }
 
   activeUserName(): string {
