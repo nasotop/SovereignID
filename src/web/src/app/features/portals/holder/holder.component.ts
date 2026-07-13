@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { HolderCredentialDetail } from '../../../api/bff/models/holder-credential-detail';
 import { HolderCredentialSummary } from '../../../api/bff/models/holder-credential-summary';
@@ -11,6 +12,7 @@ import {
   HolderUnauthorizedError,
 } from '../../../core/services/holder.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
 import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
@@ -49,12 +51,6 @@ const CLOSED_ANCHORS_MODAL: AnchorsModalModel = {
   error: null,
 };
 
-const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
-  active: 'Activa',
-  revoked: 'Revocada',
-  expired: 'Expirada',
-};
-
 @Component({
   selector: 'app-holder',
   standalone: true,
@@ -69,12 +65,13 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
     ModalComponent,
     PortalShellComponent,
     ReactiveFormsModule,
+    TranslatePipe,
   ],
   template: `
     <app-portal-shell
-      portalLabel="Holder Portal"
-      title="Mi identidad"
-      subtitle="Perfil personal, instituciones vinculadas y credenciales verificables."
+      [portalLabel]="'shell.holderPortal' | translate"
+      [title]="'holder.title' | translate"
+      [subtitle]="'holder.subtitle' | translate"
       accent="blue"
       layoutWidth="full"
       [userName]="displayName()"
@@ -83,15 +80,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
     >
       @if (loadState() === 'loading') {
         <section class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-lg border border-slate-700 bg-slate-800 p-8 text-slate-300">
-          <app-hex-loader size="lg" label="Cargando informacion del holder" />
-          <p>Cargando informacion del holder...</p>
+          <app-hex-loader size="lg" [label]="'common.loading' | translate" />
+          <p>{{ 'common.loading' | translate }}</p>
         </section>
       }
 
       @if (loadState() === 'error') {
         <section class="rounded-lg border border-red-800/60 bg-red-950/30 p-8">
           <h3 class="text-lg font-semibold text-red-200">
-            {{ isUnauthorized() ? 'Sesion no autorizada' : 'No se pudo cargar el portal' }}
+            {{ isUnauthorized() ? ('unauthorized.title' | translate) : ('holder.loadFailed' | translate) }}
           </h3>
           <p class="mt-2 text-sm text-slate-300">{{ errorMessage() }}</p>
           <button
@@ -99,7 +96,7 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
             class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
             (click)="isUnauthorized() ? goToLogin() : loadHolder()"
           >
-            {{ isUnauthorized() ? 'Ir al login' : 'Reintentar' }}
+            {{ isUnauthorized() ? ('invitation.login' | translate) : ('login.tryAgain' | translate) }}
           </button>
         </section>
       }
@@ -122,9 +119,9 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
           <div class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
             <div class="flex shrink-0 items-center justify-between border-b border-slate-700 px-5 py-4">
               <div>
-                <h3 class="text-lg font-semibold text-white">Perfil holder</h3>
+                <h3 class="text-lg font-semibold text-white">{{ 'holder.profile' | translate }}</h3>
                 <p class="text-sm text-slate-400">
-                  Datos personales off-chain asociados a tu wallet.
+                  {{ 'holder.profileSubtitle' | translate }}
                 </p>
               </div>
               <button
@@ -132,20 +129,20 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
                 class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
                 (click)="openProfileModal()"
               >
-                Editar perfil
+                {{ 'holder.editProfile' | translate }}
               </button>
             </div>
 
             <div class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
             <div class="grid gap-5 p-5 lg:grid-cols-2">
               <article class="rounded-lg border border-slate-700 bg-slate-900/50 p-5">
-                <p class="text-xs font-semibold uppercase text-blue-300">Identidad</p>
+                <p class="text-xs font-semibold uppercase text-blue-300">{{ 'holder.identity' | translate }}</p>
                 <h4 class="mt-2 text-xl font-semibold text-white">
-                  {{ displayName() || 'Holder sin nombre visible' }}
+                  {{ displayName() || ('holder.noDisplayName' | translate) }}
                 </h4>
                 <dl class="mt-5 space-y-4 text-sm">
                   <div>
-                    <dt class="text-slate-500">Wallet</dt>
+                    <dt class="text-slate-500">{{ 'common.wallet' | translate }}</dt>
                     <dd class="mt-1 break-all font-mono text-slate-200">{{ profile()!.walletAddress }}</dd>
                   </div>
                   <div>
@@ -156,30 +153,30 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
               </article>
 
               <article class="rounded-lg border border-slate-700 bg-slate-900/50 p-5">
-                <p class="text-xs font-semibold uppercase text-blue-300">Datos personales</p>
+                <p class="text-xs font-semibold uppercase text-blue-300">{{ 'holder.personalData' | translate }}</p>
                 <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
                   <div>
-                    <dt class="text-slate-500">Nombre completo</dt>
+                    <dt class="text-slate-500">{{ 'holder.fullName' | translate }}</dt>
                     <dd class="mt-1 text-slate-100">{{ profile()!.fullName || '-' }}</dd>
                   </div>
                   <div>
-                    <dt class="text-slate-500">Fecha nacimiento</dt>
+                    <dt class="text-slate-500">{{ 'holder.birthDate' | translate }}</dt>
                     <dd class="mt-1 text-slate-100">{{ formatDate(profile()!.birthDate) }}</dd>
                   </div>
                   <div>
-                    <dt class="text-slate-500">Email contacto</dt>
+                    <dt class="text-slate-500">{{ 'holder.contactEmail' | translate }}</dt>
                     <dd class="mt-1 break-all text-slate-100">{{ profile()!.contactEmail || '-' }}</dd>
                   </div>
                   <div>
-                    <dt class="text-slate-500">Pais</dt>
+                    <dt class="text-slate-500">{{ 'holder.country' | translate }}</dt>
                     <dd class="mt-1 text-slate-100">{{ profile()!.countryCode || '-' }}</dd>
                   </div>
                   <div>
-                    <dt class="text-slate-500">Telefono</dt>
+                    <dt class="text-slate-500">{{ 'holder.phone' | translate }}</dt>
                     <dd class="mt-1 text-slate-100">{{ profile()!.phoneNumber || '-' }}</dd>
                   </div>
                   <div>
-                    <dt class="text-slate-500">Actualizado</dt>
+                    <dt class="text-slate-500">{{ 'holder.updated' | translate }}</dt>
                     <dd class="mt-1 text-slate-100">{{ formatDateTime(profile()!.updatedAt) }}</dd>
                   </div>
                 </dl>
@@ -189,15 +186,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
             <div class="grid min-h-0 gap-5 px-5 pb-5 lg:grid-cols-2">
               <article class="min-h-0 rounded-lg border border-slate-700 bg-slate-900/50">
                 <div class="border-b border-slate-700 px-4 py-3">
-                  <h4 class="font-semibold text-white">Instituciones vinculadas</h4>
+                  <h4 class="font-semibold text-white">{{ 'holder.linkedInstitutions' | translate }}</h4>
                   <p class="text-sm text-slate-400">
-                    {{ institutions().length }} relacion(es) encontradas por wallet.
+                    {{ 'holder.linkedInstitutionsCount' | translate:{ count: institutions().length } }}
                   </p>
                 </div>
                 <div class="max-h-72 overflow-auto">
                   @if (institutions().length === 0) {
                     <p class="p-4 text-sm text-slate-400">
-                      Esta wallet aun no esta vinculada a estudiantes institucionales.
+                      {{ 'holder.noLinkedInstitutions' | translate }}
                     </p>
                   }
 
@@ -209,24 +206,24 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
                           <p class="text-xs text-slate-500">{{ institution.institutionId }}</p>
                         </div>
                         <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
-                          {{ institution.isPrimary ? 'Wallet primaria' : 'Wallet asociada' }}
+                          {{ institution.isPrimary ? ('holder.primaryWallet' | translate) : ('holder.linkedWallet' | translate) }}
                         </span>
                       </div>
                       <dl class="mt-3 grid grid-cols-2 gap-3 text-xs">
                         <div>
-                          <dt class="text-slate-500">Codigo</dt>
+                          <dt class="text-slate-500">{{ 'platform.institutions.code' | translate }}</dt>
                           <dd class="text-slate-200">{{ institution.institutionCode }}</dd>
                         </div>
                         <div>
-                          <dt class="text-slate-500">Matricula</dt>
+                          <dt class="text-slate-500">{{ 'holder.enrollment' | translate }}</dt>
                           <dd class="text-slate-200">{{ institution.enrollmentYear || '-' }}</dd>
                         </div>
                         <div>
-                          <dt class="text-slate-500">Referencia</dt>
+                          <dt class="text-slate-500">{{ 'holder.reference' | translate }}</dt>
                           <dd class="text-slate-200">{{ institution.externalReference || '-' }}</dd>
                         </div>
                         <div>
-                          <dt class="text-slate-500">Vinculada</dt>
+                          <dt class="text-slate-500">{{ 'holder.linkedAt' | translate }}</dt>
                           <dd class="text-slate-200">{{ formatDateTime(institution.linkedAt) }}</dd>
                         </div>
                       </dl>
@@ -237,15 +234,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
 
               <article class="min-h-0 rounded-lg border border-slate-700 bg-slate-900/50">
                 <div class="border-b border-slate-700 px-4 py-3">
-                  <h4 class="font-semibold text-white">Credenciales</h4>
+                  <h4 class="font-semibold text-white">{{ 'holder.credentials' | translate }}</h4>
                   <p class="text-sm text-slate-400">
-                    Titulos y certificados emitidos hacia tu DID/wallet.
+                    {{ 'holder.credentialsSubtitle' | translate }}
                   </p>
                 </div>
                 <div class="max-h-72 overflow-auto">
                   @if (credentials().length === 0) {
                     <p class="p-4 text-sm text-slate-400">
-                      Aun no tienes credenciales emitidas para esta cuenta.
+                      {{ 'holder.noCredentials' | translate }}
                     </p>
                   }
 
@@ -267,21 +264,21 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
                           [disabled]="actionCredentialId() === credential.id"
                           (click)="handleDownload(credential.id)"
                         >
-                          Descargar JSON
+                          {{ 'holder.downloadJson' | translate }}
                         </button>
                         <button
                           type="button"
                           class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
                           (click)="openShareModal(credential.id, credential.title)"
                         >
-                          Compartir QR
+                          {{ 'holder.shareQr' | translate }}
                         </button>
                         <button
                           type="button"
                           class="rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-2 text-xs font-semibold text-blue-200 hover:bg-blue-500/20"
                           (click)="openAnchorsModal(credential.id)"
                         >
-                          Ver anclas
+                          {{ 'holder.viewAnchors' | translate }}
                         </button>
                       </div>
                     </div>
@@ -293,33 +290,33 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
           </div>
 
           <aside class="min-h-0 overflow-y-auto overscroll-y-contain rounded-lg border border-slate-700 bg-slate-800 p-5">
-            <p class="text-xs font-semibold uppercase text-blue-300">Resumen</p>
-            <h3 class="mt-2 text-xl font-semibold text-white">Estado del holder</h3>
+            <p class="text-xs font-semibold uppercase text-blue-300">{{ 'holder.summary' | translate }}</p>
+            <h3 class="mt-2 text-xl font-semibold text-white">{{ 'holder.holderStatus' | translate }}</h3>
             <div class="mt-5 grid grid-cols-2 gap-3">
               <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-sm text-slate-500">Instituciones</p>
+                <p class="text-sm text-slate-500">{{ 'holder.institutions' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-white">{{ institutions().length }}</p>
               </div>
               <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-sm text-slate-500">Credenciales</p>
+                <p class="text-sm text-slate-500">{{ 'holder.credentials' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-white">{{ credentials().length }}</p>
               </div>
               <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-sm text-slate-500">Activas</p>
+                <p class="text-sm text-slate-500">{{ 'holder.active' | translate }}</p>
                 <p class="mt-2 text-2xl font-bold text-emerald-300">{{ activeCredentials() }}</p>
               </div>
               <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                <p class="text-sm text-slate-500">Perfil</p>
+                <p class="text-sm text-slate-500">{{ 'holder.profileLabel' | translate }}</p>
                 <p class="mt-2 text-lg font-bold" [ngClass]="isProfileComplete() ? 'text-emerald-300' : 'text-amber-300'">
-                  {{ isProfileComplete() ? 'Completo' : 'Pendiente' }}
+                  {{ isProfileComplete() ? ('holder.complete' | translate) : ('common.pending' | translate) }}
                 </p>
               </div>
             </div>
 
             <div class="mt-5 rounded-lg border border-slate-700 bg-slate-900/60 p-4 text-sm">
-              <h4 class="font-semibold text-white">Alcance</h4>
+              <h4 class="font-semibold text-white">{{ 'holder.scope' | translate }}</h4>
               <p class="mt-2 text-slate-400">
-                Estos datos personales quedan off-chain. Las credenciales emitidas por una institucion se verifican por DID, hash, estado y anclas registradas por Issuer.
+                {{ 'holder.scopeDescription' | translate }}
               </p>
             </div>
           </aside>
@@ -329,35 +326,35 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
 
       <app-modal
         [isOpen]="isProfileModalOpen()"
-        title="Editar perfil holder"
-        description="Actualiza datos personales off-chain visibles en tu portal."
+        [title]="'holder.editProfile' | translate"
+        [description]="'holder.profileModalDescription' | translate"
         size="lg"
         (closed)="closeProfileModal()"
       >
         <form class="grid gap-4" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block text-sm text-slate-200">
-              Nombre visible
+              {{ 'holder.displayName' | translate }}
               <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="displayName" />
             </label>
             <label class="block text-sm text-slate-200">
-              Nombre completo
+              {{ 'holder.fullName' | translate }}
               <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="fullName" />
             </label>
             <label class="block text-sm text-slate-200">
-              Fecha nacimiento
+              {{ 'holder.birthDate' | translate }}
               <input type="date" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="birthDate" />
             </label>
             <label class="block text-sm text-slate-200">
-              Pais
+              {{ 'holder.country' | translate }}
               <input maxlength="2" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 uppercase text-white outline-none focus:border-blue-500" formControlName="countryCode" />
             </label>
             <label class="block text-sm text-slate-200">
-              Email contacto
+              {{ 'holder.contactEmail' | translate }}
               <input type="email" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="contactEmail" />
             </label>
             <label class="block text-sm text-slate-200">
-              Telefono
+              {{ 'holder.phone' | translate }}
               <input class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white outline-none focus:border-blue-500" formControlName="phoneNumber" />
             </label>
           </div>
@@ -368,14 +365,14 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
               class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700"
               (click)="closeProfileModal()"
             >
-              Cancelar
+              {{ 'common.cancel' | translate }}
             </button>
             <button
               type="submit"
               class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
               [disabled]="isSavingProfile()"
             >
-              {{ isSavingProfile() ? 'Guardando...' : 'Guardar perfil' }}
+              {{ isSavingProfile() ? ('common.saving' | translate) : ('holder.saveProfile' | translate) }}
             </button>
           </div>
         </form>
@@ -383,8 +380,8 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
 
       <app-modal
         [isOpen]="shareModal().open"
-        title="Compartir credencial"
-        description="Genera un codigo QR con el enlace publico de verificacion."
+        [title]="'holder.shareCredentialTitle' | translate"
+        [description]="'holder.shareCredentialDescription' | translate"
         size="md"
         (closed)="closeShareModal()"
       >
@@ -392,8 +389,8 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
           <app-credential-share-panel
             [credentialId]="credentialId"
             [credentialTitle]="shareModal().credentialTitle"
-            (linkCopied)="showFeedback('Enlace de verificacion copiado.', 'success')"
-            (idCopied)="showFeedback('UUID de credencial copiado.', 'success')"
+            (linkCopied)="handleShareLinkCopied()"
+            (idCopied)="handleShareIdCopied()"
             (copyError)="showFeedback($event, 'error')"
           />
         }
@@ -401,15 +398,15 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
 
       <app-modal
         [isOpen]="anchorsModal().open"
-        title="Anclas on-chain"
-        description="Datos verificables registrados por el emisor."
+        [title]="'holder.anchorsTitle' | translate"
+        [description]="'holder.anchorsDescription' | translate"
         size="lg"
         (closed)="closeAnchorsModal()"
       >
         @if (anchorsModal().state === 'loading') {
           <div class="flex min-h-40 flex-col items-center justify-center gap-4 text-sm text-slate-300">
-            <app-hex-loader label="Cargando anclas" />
-            <p>Cargando anclas...</p>
+            <app-hex-loader [label]="'common.loading' | translate" />
+            <p>{{ 'common.loading' | translate }}</p>
           </div>
         }
 
@@ -420,7 +417,7 @@ const STATUS_LABELS: Record<HolderCredentialSummary['status'], string> = {
             class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
             (click)="retryAnchorsModal()"
           >
-            Reintentar
+            {{ 'login.tryAgain' | translate }}
           </button>
         }
 
@@ -438,7 +435,9 @@ export class HolderComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly holderService = inject(HolderService);
+  private readonly languageService = inject(LanguageService);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   readonly credentials = signal<ReadonlyArray<HolderCredentialSummary>>([]);
   readonly institutions = signal<ReadonlyArray<HolderInstitutionSummary>>([]);
@@ -542,7 +541,7 @@ export class HolderComponent implements OnInit {
       });
       this.profile.set(updated);
       this.isProfileModalOpen.set(false);
-      this.showFeedback('Perfil actualizado correctamente.', 'success');
+      this.showFeedback(this.translate.instant('holder.profileSaved'), 'success');
     } catch (error: unknown) {
       this.showFeedback(toErrorMessage(error), 'error');
     } finally {
@@ -557,7 +556,7 @@ export class HolderComponent implements OnInit {
     try {
       const detail = await this.getCredentialDetail(credentialId);
       this.holderService.downloadCredentialJson(detail);
-      this.showFeedback('Credencial descargada.', 'success');
+      this.showFeedback(this.translate.instant('holder.credentialDownloaded'), 'success');
     } catch (error: unknown) {
       this.showFeedback(toErrorMessage(error), 'error');
     } finally {
@@ -575,6 +574,14 @@ export class HolderComponent implements OnInit {
 
   closeShareModal(): void {
     this.shareModal.set(CLOSED_SHARE_MODAL);
+  }
+
+  handleShareLinkCopied(): void {
+    this.showFeedback(this.translate.instant('holder.verificationLinkCopied'), 'success');
+  }
+
+  handleShareIdCopied(): void {
+    this.showFeedback(this.translate.instant('holder.credentialUuidCopied'), 'success');
   }
 
   async openAnchorsModal(credentialId: string): Promise<void> {
@@ -608,7 +615,7 @@ export class HolderComponent implements OnInit {
   }
 
   statusLabel(status: HolderCredentialSummary['status']): string {
-    return STATUS_LABELS[status];
+    return this.translate.instant(`common.status.${status}`);
   }
 
   statusClass(status: HolderCredentialSummary['status']): string {
@@ -636,7 +643,12 @@ export class HolderComponent implements OnInit {
     }
 
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat(this.languageService.locale(), {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(date);
   }
 
   private blankToNull(value: string): string | null {

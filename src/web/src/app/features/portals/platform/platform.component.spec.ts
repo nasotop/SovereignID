@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideTranslateService } from '@ngx-translate/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PlatformComponent } from './platform.component';
@@ -15,6 +16,7 @@ describe('PlatformComponent', () => {
       imports: [PlatformComponent],
       providers: [
         provideRouter([]),
+        provideTranslateService({ fallbackLang: 'en' }),
         {
           provide: AcademyService,
           useValue: {
@@ -62,13 +64,12 @@ describe('PlatformComponent', () => {
 
   it('should render platform tabs', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Instituciones');
-    expect(compiled.textContent).toContain('Reportes');
+    expect(compiled.querySelectorAll('button').length).toBeGreaterThanOrEqual(2);
   });
 
   it('should show institutions tab by default', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Crear institucion');
+    expect(compiled.querySelector('app-platform-institutions-tab')).toBeTruthy();
     expect(compiled.querySelector('app-platform-reports-tab')).toBeFalsy();
   });
 

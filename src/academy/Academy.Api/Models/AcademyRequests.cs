@@ -8,6 +8,13 @@ public sealed record CreateInstitutionRequest(
     string CountryCode = "CL",
     string? WebsiteUrl = null);
 
+public sealed record UpdateInstitutionRequest(
+    string LegalName,
+    string DisplayName,
+    string CountryCode = "CL",
+    string? WebsiteUrl = null,
+    bool IsActive = true);
+
 public sealed record CreateCareerRequest(
     string Code,
     string Name);

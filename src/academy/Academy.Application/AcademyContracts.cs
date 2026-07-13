@@ -19,6 +19,14 @@ public sealed record CreateInstitutionCommand(
     string CountryCode = "CL",
     string? WebsiteUrl = null);
 
+public sealed record UpdateInstitutionCommand(
+    Guid InstitutionId,
+    string LegalName,
+    string DisplayName,
+    string CountryCode = "CL",
+    string? WebsiteUrl = null,
+    bool IsActive = true);
+
 public sealed record InstitutionSummary(
     Guid Id,
     string Code,

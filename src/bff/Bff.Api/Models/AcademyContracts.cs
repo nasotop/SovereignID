@@ -5,6 +5,13 @@ public sealed record CreateStudentRequest(
     int? EnrollmentYear,
     string? WalletAddress);
 
+public sealed record UpdateInstitutionRequest(
+    string LegalName,
+    string DisplayName,
+    string CountryCode = "CL",
+    string? WebsiteUrl = null,
+    bool IsActive = true);
+
 public sealed record UpdateCareerRequest(
     string Code,
     string Name);

@@ -1,8 +1,10 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-copy-value',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     <button
       type="button"
@@ -14,7 +16,7 @@ import { Component, computed, input, signal } from '@angular/core';
       <span class="truncate">{{ displayValue() }}</span>
       @if (value()) {
         <span class="shrink-0 text-[10px] uppercase text-slate-500">
-          {{ copied() ? 'Copiado' : 'Copiar' }}
+          {{ copied() ? ('common.copied' | translate) : ('common.copy' | translate) }}
         </span>
       }
     </button>

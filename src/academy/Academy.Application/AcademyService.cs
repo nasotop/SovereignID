@@ -86,6 +86,38 @@ public sealed class AcademyService
             : new AcademySuccess<InstitutionSummary>(institution);
     }
 
+    public async Task<AcademyResult<InstitutionSummary>> UpdateInstitutionAsync(
+        UpdateInstitutionCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (command.InstitutionId == Guid.Empty)
+        {
+            return Fail<InstitutionSummary>("invalid_institution", 400, "institutionId is required.");
+        }
+
+        if (IsBlank(command.LegalName) || IsBlank(command.DisplayName))
+        {
+            return Fail<InstitutionSummary>("invalid_institution", 400, "legalName and displayName are required.");
+        }
+
+        var normalized = command with
+        {
+            LegalName = command.LegalName.Trim(),
+            DisplayName = command.DisplayName.Trim(),
+            CountryCode = NormalizeCountry(command.CountryCode),
+            WebsiteUrl = BlankToNull(command.WebsiteUrl)
+        };
+
+        var institution = await _repository.UpdateInstitutionAsync(
+            normalized,
+            _timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return institution is null
+            ? Fail<InstitutionSummary>("institution_not_found", 404, "Institution was not found.")
+            : new AcademySuccess<InstitutionSummary>(institution);
+    }
+
     public async Task<AcademyResult<CareerSummary>> CreateCareerAsync(
         CreateCareerCommand command,
         CancellationToken cancellationToken)

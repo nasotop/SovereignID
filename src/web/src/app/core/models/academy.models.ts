@@ -73,6 +73,20 @@ export interface UpdateCareerPayload {
   readonly name: string;
 }
 
+export interface UpdateInstitutionPayload {
+  readonly legalName: string;
+  readonly displayName: string;
+  readonly countryCode: string;
+  readonly websiteUrl: string | null;
+  readonly isActive: boolean;
+}
+
+export interface LinkInstitutionIssuerWalletPayload {
+  readonly walletAddress: string;
+  readonly did: string;
+  readonly publicKey: string | null;
+}
+
 export interface AddStudentWalletPayload {
   readonly walletAddress: string;
   readonly makePrimary: boolean;

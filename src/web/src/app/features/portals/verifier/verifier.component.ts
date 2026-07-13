@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
 import { VerifierService } from '../../../core/services/verifier.service';
@@ -13,20 +14,12 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
 @Component({
   selector: 'app-verifier',
   standalone: true,
-  imports: [CommonModule, FormsModule, VerificationVerdictPanelComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, VerificationVerdictPanelComponent],
   template: `
     <div class="min-h-screen bg-slate-900 flex flex-col">
       <header class="pt-12 pb-8 px-6 text-center">
-        <div
-          class="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto mb-5"
-        >
-          <svg
-            class="w-9 h-9 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
+        <div class="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto mb-5">
+          <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -36,20 +29,15 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
           </svg>
         </div>
         <h1 class="text-3xl font-bold text-white mb-2">SovereignID</h1>
-        <p class="text-slate-400 text-lg">Credential Verifier</p>
-        <p class="text-slate-500 text-sm mt-2 max-w-md mx-auto">
-          Public verification service — no account required
-        </p>
+        <p class="text-slate-400 text-lg">{{ 'verifier.title' | translate }}</p>
+        <p class="text-slate-500 text-sm mt-2 max-w-md mx-auto">{{ 'verifier.subtitle' | translate }}</p>
       </header>
 
       <main class="flex-1 flex items-start justify-center px-6 pb-16">
         <div class="w-full max-w-2xl space-y-6">
           <section class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6">
-            <label
-              for="credentialId"
-              class="block text-sm font-medium text-slate-300 mb-2"
-            >
-              Credential ID (UUID)
+            <label for="credentialId" class="block text-sm font-medium text-slate-300 mb-2">
+              {{ 'verifier.credentialId' | translate }}
             </label>
             <input
               id="credentialId"
@@ -65,9 +53,7 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
             />
 
             @if (validationError()) {
-              <p class="mt-3 text-sm text-red-400" role="alert">
-                {{ validationError() }}
-              </p>
+              <p class="mt-3 text-sm text-red-400" role="alert">{{ validationError() }}</p>
             }
 
             <button
@@ -77,44 +63,16 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
               (click)="handleVerify()"
             >
               @if (state() === 'loading') {
-                <svg
-                  class="w-5 h-5 animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
+                <svg class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>Verifying...</span>
+                <span>{{ 'verifier.verifying' | translate }}</span>
               } @else {
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Verify Credential</span>
+                <span>{{ 'verifier.verify' | translate }}</span>
               }
             </button>
           </section>
@@ -124,26 +82,22 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
           }
 
           @if (state() === 'error') {
-            <section
-              class="rounded-2xl bg-red-950/30 border border-red-800/60 p-6 text-center"
-            >
-              <p class="text-red-300 font-semibold mb-2">Verification failed</p>
+            <section class="rounded-2xl bg-red-950/30 border border-red-800/60 p-6 text-center">
+              <p class="text-red-300 font-semibold mb-2">{{ 'verifier.failed' | translate }}</p>
               <p class="text-slate-300 text-sm mb-4">
-                {{ errorMessage() || 'Please try again' }}
+                {{ errorMessage() || ('login.tryAgainMessage' | translate) }}
               </p>
               <button
                 type="button"
                 class="w-full py-3 px-4 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors"
                 (click)="resetError()"
               >
-                Try again
+                {{ 'login.tryAgain' | translate }}
               </button>
             </section>
           }
 
-          <p class="text-center text-slate-500 text-xs">
-            Verification is performed against the blockchain-anchored issuer registry
-          </p>
+          <p class="text-center text-slate-500 text-xs">{{ 'verifier.footer' | translate }}</p>
         </div>
       </main>
     </div>
@@ -152,6 +106,7 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
 export class VerifierComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly verifierService = inject(VerifierService);
+  private readonly translate = inject(TranslateService);
 
   readonly credentialId = signal('');
   readonly state = signal<VerifierState>('idle');
@@ -173,7 +128,7 @@ export class VerifierComponent implements OnInit {
       this.credentialId.set(raw);
     } else {
       this.credentialId.set('');
-      this.validationError.set('El credentialId no es un UUID válido.');
+      this.validationError.set(this.translate.instant('verifier.invalidCredentialId'));
     }
   }
 
@@ -186,7 +141,7 @@ export class VerifierComponent implements OnInit {
 
   async handleVerify(): Promise<void> {
     if (!this.verifierService.isValidCredentialId(this.credentialId())) {
-      this.validationError.set('El credentialId no es un UUID válido.');
+      this.validationError.set(this.translate.instant('verifier.invalidCredentialId'));
       return;
     }
 
