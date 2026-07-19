@@ -7,6 +7,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
 import { VerifierService } from '../../../core/services/verifier.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
+import { LanguageSwitcherComponent } from '../../../shared/ui/language-switcher/language-switcher.component';
 import { VerificationVerdictPanelComponent } from '../../../shared/ui/verification-verdict';
 
 type VerifierState = 'idle' | 'loading' | 'result' | 'error';
@@ -14,9 +15,18 @@ type VerifierState = 'idle' | 'loading' | 'result' | 'error';
 @Component({
   selector: 'app-verifier',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, VerificationVerdictPanelComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslatePipe,
+    LanguageSwitcherComponent,
+    VerificationVerdictPanelComponent,
+  ],
   template: `
-    <div class="min-h-screen bg-slate-900 flex flex-col">
+    <div class="relative min-h-screen bg-slate-900 flex flex-col">
+      <div class="absolute right-4 top-4 z-20">
+        <app-language-switcher variant="floating" />
+      </div>
       <header class="pt-12 pb-8 px-6 text-center">
         <div class="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center mx-auto mb-5">
           <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

@@ -90,14 +90,15 @@ internal sealed class RpcCredentialRegistryReader : ICredentialRegistryReader
 
     private static OnChainCredentialData DecodeGetCredentialResult(string hexData)
     {
+        // Nethereum Parameter ctor is (type, name, order) — type first.
         var outputs = new[]
         {
-            new Parameter("contentHash", "bytes32", 1),
-            new Parameter("ipfsCid", "string", 2),
-            new Parameter("institutionId", "bytes32", 3),
-            new Parameter("issuer", "address", 4),
-            new Parameter("subject", "address", 5),
-            new Parameter("revoked", "bool", 6)
+            new Parameter("bytes32", "contentHash", 1),
+            new Parameter("string", "ipfsCid", 2),
+            new Parameter("bytes32", "institutionId", 3),
+            new Parameter("address", "issuer", 4),
+            new Parameter("address", "subject", 5),
+            new Parameter("bool", "revoked", 6)
         };
 
         var decoded = new ParameterDecoder().DecodeDefaultData(hexData, outputs);
