@@ -26,9 +26,24 @@ export interface ChainTransactionResult {
   eip712Signature: string;
 }
 
+export interface IssuerIdentity {
+  walletAddress: string;
+  did: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CredentialContractService {
   private readonly web3Service = inject(Web3Service);
+
+  async getIssuerIdentity(): Promise<IssuerIdentity> {
+    const signer = await this.getSigner();
+    const walletAddress = await signer.getAddress();
+
+    return {
+      walletAddress,
+      did: `did:ethr:sepolia:${walletAddress.toLowerCase()}`,
+    };
+  }
 
   async ensureInstitutionIssuerRegistered(institutionId: string): Promise<void> {
     const contract = await this.getWriteContract();

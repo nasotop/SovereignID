@@ -3,6 +3,7 @@
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions;
 using SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Credentials;
+using SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Documents;
 using SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Wallet;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +21,11 @@ namespace SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item
         public global::SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Credentials.CredentialsRequestBuilder Credentials
         {
             get => new global::SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Credentials.CredentialsRequestBuilder(PathParameters, RequestAdapter);
+        }
+        /// <summary>The documents property</summary>
+        public global::SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Documents.DocumentsRequestBuilder Documents
+        {
+            get => new global::SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Documents.DocumentsRequestBuilder(PathParameters, RequestAdapter);
         }
         /// <summary>The wallet property</summary>
         public global::SovereignID.Bff.Clients.Issuer.Issuer.Institutions.Item.Wallet.WalletRequestBuilder Wallet

@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Corvus.Text.Json" Version="5.0.0">
+      <ExcludeAssets>analyzers</ExcludeAssets>
+      <PrivateAssets>none</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.8" />
   </ItemGroup>
 

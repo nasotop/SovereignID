@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Issuer.Api.Models;
 
 namespace Issuer.Api.Models;
 
@@ -7,6 +6,13 @@ public sealed record LinkInstitutionIssuerWalletRequest(
     string WalletAddress,
     string Did,
     string? PublicKey);
+
+public sealed record AnchorCredentialDocumentRequest(JsonElement Document);
+
+public sealed record ContentAnchorResponse(
+    string ContentHash,
+    string IpfsCid,
+    string IpfsGatewayUrl);
 
 public sealed record LinkStudentTitleRequest(
     Guid? CredentialId,

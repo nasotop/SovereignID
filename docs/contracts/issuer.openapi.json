@@ -324,6 +324,102 @@
         }
       }
     },
+    "/issuer/institutions/{institutionId}/documents/anchor": {
+      "post": {
+        "tags": [
+          "InstitutionDocuments"
+        ],
+        "summary": "Canonicaliza (JCS), calcula contentHash y pinnea el VC JSON-LD en IPFS.",
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAnchorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/issuer/institutions/{institutionId}/wallet": {
       "post": {
         "tags": [
@@ -469,6 +565,36 @@
   },
   "components": {
     "schemas": {
+      "AnchorCredentialDocumentRequest": {
+        "required": [
+          "document"
+        ],
+        "type": "object",
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "ContentAnchorResponse": {
+        "required": [
+          "contentHash",
+          "ipfsCid",
+          "ipfsGatewayUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "ipfsCid": {
+            "type": "string"
+          },
+          "ipfsGatewayUrl": {
+            "type": "string"
+          }
+        }
+      },
       "CredentialRevoked": {
         "required": [
           "credentialId",
@@ -1118,6 +1244,9 @@
     },
     {
       "name": "InstitutionCredentials"
+    },
+    {
+      "name": "InstitutionDocuments"
     },
     {
       "name": "InstitutionIssuerWallet"
