@@ -26,4 +26,4 @@
 - [x] 5.1 Actualizar `docs/deployment.md`: Pinata solo en issuer-api (variables `Issuer__ContentAnchor__*`).
 - [x] 5.2 Actualizar `CONTEXT.md` flujo de emisión (sin pinning browser).
 - [x] 5.3 `npm run build` en `src/web`.
-- [ ] 5.4 Smoke manual: emisión completa con issuer dev + Pinata configurado.
+- [x] 5.4 Smoke manual: emisión completa con issuer dev + Pinata configurado.

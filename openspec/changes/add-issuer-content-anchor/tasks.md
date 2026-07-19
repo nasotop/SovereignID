@@ -100,6 +100,6 @@
 
 - [x] 7.1 Ejecutar tests `Issuer.IntegrationTests`.
 
-- [ ] 7.2 Smoke manual: anchor con Pinata en dev → bytes recuperables por gateway → verify link con `VerifyEnabled=true`.
+- [x] 7.2 Smoke manual: anchor con Pinata en dev → bytes recuperables por gateway → verify link con `VerifyEnabled=true`.
 
 
