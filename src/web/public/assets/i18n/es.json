@@ -350,7 +350,7 @@
   "verifier": {
     "title": "Verificador",
     "subtitle": "Servicio publico de verificacion sin cuenta requerida",
-    "credentialId": "Credential ID (UUID)",
+    "credentialId": "ID de credencial (UUID)",
     "verifying": "Verificando...",
     "verify": "Verificar credencial",
     "failed": "La verificacion fallo",
