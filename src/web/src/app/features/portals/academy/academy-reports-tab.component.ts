@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import {
   CredentialsPerStudentReport,
@@ -44,6 +45,7 @@ function idleSection<T>(): SectionState<T> {
     ReportKpiStatComponent,
     ReportSourceBadgeComponent,
     ReportChartComponent,
+    TranslatePipe,
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -51,24 +53,24 @@ function idleSection<T>(): SectionState<T> {
 
       @if (initialLoading()) {
         <div class="flex items-center gap-3 rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-100">
-          <app-hex-loader size="sm" label="Cargando reportes" />
-          <span>Cargando reportes...</span>
+          <app-hex-loader size="sm" [label]="'academy.reports.loading' | translate" />
+          <span>{{ 'academy.reports.loading' | translate }}</span>
         </div>
       }
 
       <section class="grid gap-3 md:grid-cols-3">
         @if (perStudent().status === 'loaded' && perStudent().data) {
           <app-report-kpi-stat
-            label="Promedio credenciales / alumno"
+            [label]="'academy.reports.avgCredentialsPerStudent' | translate"
             [value]="perStudent().data!.averageCredentialsPerStudent"
             [decimals]="2"
           />
           <app-report-kpi-stat
-            label="Alumnos activos"
+            [label]="'academy.reports.activeStudents' | translate"
             [value]="perStudent().data!.totalStudents"
           />
           <app-report-kpi-stat
-            label="Credenciales totales"
+            [label]="'reports.totalCredentials' | translate"
             [value]="perStudent().data!.totalCredentials"
           />
         } @else {
@@ -80,9 +82,9 @@ function idleSection<T>(): SectionState<T> {
         <article class="rounded-lg border border-slate-700 bg-slate-800 p-4">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold text-white">Emisiones</h3>
+              <h3 class="text-base font-semibold text-white">{{ 'academy.reports.issued' | translate }}</h3>
               @if (issued().status === 'loaded' && issued().data) {
-                <p class="text-sm text-slate-400">Total: {{ issued().data!.total }}</p>
+                <p class="text-sm text-slate-400">{{ 'reports.total' | translate:{ total: issued().data!.total } }}</p>
               }
             </div>
             @if (issued().status === 'loaded' && issued().data) {
@@ -99,9 +101,9 @@ function idleSection<T>(): SectionState<T> {
         <article class="rounded-lg border border-slate-700 bg-slate-800 p-4">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold text-white">Verificaciones</h3>
+              <h3 class="text-base font-semibold text-white">{{ 'academy.reports.verifications' | translate }}</h3>
               @if (reads().status === 'loaded' && reads().data) {
-                <p class="text-sm text-slate-400">Total: {{ reads().data!.total }}</p>
+                <p class="text-sm text-slate-400">{{ 'reports.total' | translate:{ total: reads().data!.total } }}</p>
               }
             </div>
             @if (reads().status === 'loaded' && reads().data) {
@@ -118,9 +120,9 @@ function idleSection<T>(): SectionState<T> {
         <article class="rounded-lg border border-slate-700 bg-slate-800 p-4">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold text-white">Revocaciones</h3>
+              <h3 class="text-base font-semibold text-white">{{ 'academy.reports.revocations' | translate }}</h3>
               @if (revoked().status === 'loaded' && revoked().data) {
-                <p class="text-sm text-slate-400">Total: {{ revoked().data!.total }}</p>
+                <p class="text-sm text-slate-400">{{ 'reports.total' | translate:{ total: revoked().data!.total } }}</p>
               }
             </div>
             @if (revoked().status === 'loaded' && revoked().data) {
@@ -137,10 +139,10 @@ function idleSection<T>(): SectionState<T> {
         <article class="rounded-lg border border-slate-700 bg-slate-800 p-4">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold text-white">Resultados de verificacion</h3>
+              <h3 class="text-base font-semibold text-white">{{ 'academy.reports.verificationOutcomes' | translate }}</h3>
               @if (outcomes().status === 'loaded' && outcomes().data) {
                 <p class="text-sm text-slate-400">
-                  Validas: {{ outcomes().data!.validTotal }} · Invalidas: {{ outcomes().data!.invalidTotal }}
+                  {{ 'reports.validInvalid' | translate:{ valid: outcomes().data!.validTotal, invalid: outcomes().data!.invalidTotal } }}
                 </p>
               }
             </div>
@@ -160,8 +162,8 @@ function idleSection<T>(): SectionState<T> {
     <ng-template #sectionState let-section="section" let-retry="retry">
       @if (section.status === 'loading') {
         <div class="flex min-h-40 flex-col items-center justify-center gap-4 py-8 text-center text-sm text-slate-400">
-          <app-hex-loader label="Cargando seccion" />
-          <p>Cargando...</p>
+          <app-hex-loader [label]="'academy.reports.loadingSection' | translate" />
+          <p>{{ 'common.loading' | translate }}</p>
         </div>
       } @else if (section.status === 'error') {
         <div class="rounded-lg border border-red-700/50 bg-red-900/30 p-4 text-sm text-red-100">
@@ -171,7 +173,7 @@ function idleSection<T>(): SectionState<T> {
             class="mt-3 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-100 hover:bg-red-900/50"
             (click)="retry()"
           >
-            Reintentar
+            {{ 'login.tryAgain' | translate }}
           </button>
         </div>
       }
@@ -329,8 +331,8 @@ export class AcademyReportsTabComponent implements OnChanges {
 
   private toGroupedLineData(report: VerificationOutcomesReport): readonly ReportGroupedLinePoint[] {
     return report.series.flatMap((point) => [
-      { time: point.date, value: point.valid, group: 'Validas' },
-      { time: point.date, value: point.invalid, group: 'Invalidas' },
+      { time: point.date, value: point.valid, group: 'Valid' },
+      { time: point.date, value: point.invalid, group: 'Invalid' },
     ]);
   }
 }

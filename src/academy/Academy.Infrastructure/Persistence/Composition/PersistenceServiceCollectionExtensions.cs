@@ -1,5 +1,6 @@
 ﻿using Academy.Application;
-using Academy.Infrastructure.Persistence.Entities;
+using Academy.Infrastructure.Persistence.Generated;
+using Academy.Infrastructure.Persistence.Generated.Entities;
 using Academy.Infrastructure.Persistence.Stores;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

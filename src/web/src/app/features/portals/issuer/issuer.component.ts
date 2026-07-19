@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import {
   CareerSummary,
@@ -22,6 +23,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
   imports: [
     CommonModule,
     FormsModule,
+    TranslatePipe,
     HexLoaderComponent,
     RouterLink,
     PortalShellComponent,
@@ -29,9 +31,9 @@ import { IssuerTabComponent } from './issuer-tab.component';
   ],
   template: `
     <app-portal-shell
-      portalLabel="Issuer Portal"
-      title="Emision institucional"
-      subtitle="Gestion de titulos y certificados verificables."
+      [portalLabel]="'shell.issuerPortal' | translate"
+      [title]="'issuer.shellTitle' | translate"
+      [subtitle]="'issuer.shellSubtitle' | translate"
       layoutWidth="full"
       [userRole]="activeRoleLabel()"
       (logout)="handleLogout()"
@@ -44,12 +46,12 @@ import { IssuerTabComponent } from './issuer-tab.component';
 
       <section class="mb-6 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="text-xs font-medium uppercase text-blue-300">Institucion activa</p>
+          <p class="text-xs font-medium uppercase text-blue-300">{{ 'issuer.activeInstitution' | translate }}</p>
           <h3 class="mt-1 truncate text-xl font-semibold text-white">
-            {{ selectedInstitution()?.displayName || 'Selecciona institucion' }}
+            {{ selectedInstitution()?.displayName || ('issuer.selectInstitution' | translate) }}
           </h3>
           <p class="text-sm text-slate-400">
-            Esta ruta usa el mismo modulo de emision disponible en Academy.
+            {{ 'issuer.sameModule' | translate }}
           </p>
           <span
             class="mt-2 inline-flex rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-200"
@@ -62,7 +64,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
           @if (authService.hasPlatformAdmin()) {
             <input
               class="min-w-80 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white"
-              placeholder="UUID de institucion"
+              [placeholder]="'issuer.institutionUuid' | translate"
               [ngModel]="selectedInstitutionId()"
               (ngModelChange)="selectedInstitutionId.set($event)"
             />
@@ -72,7 +74,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
               [disabled]="loading() || !selectedInstitutionId().trim()"
               (click)="loadInstitution()"
             >
-              Cargar
+              {{ 'issuer.load' | translate }}
             </button>
           } @else {
             <select
@@ -95,7 +97,7 @@ import { IssuerTabComponent } from './issuer-tab.component';
             [routerLink]="['/academy']"
             [queryParams]="{ institutionId: selectedInstitutionId() }"
           >
-            Abrir Academy
+            {{ 'issuer.openAcademy' | translate }}
           </a>
         </div>
       </section>
@@ -113,11 +115,11 @@ import { IssuerTabComponent } from './issuer-tab.component';
         <section class="rounded-lg border border-slate-700 bg-slate-800/50 p-10 text-center">
           @if (loading()) {
             <div class="flex min-h-48 flex-col items-center justify-center gap-4 text-sm text-slate-400">
-              <app-hex-loader label="Cargando institucion" />
-              <p>Cargando institucion...</p>
+              <app-hex-loader [label]="'issuer.loadingInstitution' | translate" />
+              <p>{{ 'issuer.loadingInstitution' | translate }}...</p>
             </div>
           } @else {
-            <p class="font-medium text-white">No hay institucion seleccionada</p>
+            <p class="font-medium text-white">{{ 'issuer.noInstitution' | translate }}</p>
           }
         </section>
       }

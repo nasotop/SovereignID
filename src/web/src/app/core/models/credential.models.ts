@@ -36,13 +36,14 @@ export interface IssueCredentialModel {
   issuerDid: string;
 }
 
-export const DOCUMENT_TYPE_OPTIONS = [
-  { label: 'Titulo profesional', code: 'TITULO' },
-  { label: 'Certificado de notas', code: 'NOTAS' },
-  { label: 'Certificado de matricula', code: 'CERTIFICACION' },
-] as const;
-
-export type DocumentTypeOption = (typeof DOCUMENT_TYPE_OPTIONS)[number];
+export interface CredentialTypeOption {
+  readonly id: number;
+  readonly code: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly allowsExpiration: boolean;
+  readonly schemaVersion: string;
+}
 
 /** Result of POST .../documents/anchor (JCS + IPFS via issuer-api). */
 export interface ContentAnchor {

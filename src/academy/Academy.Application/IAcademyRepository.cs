@@ -13,6 +13,11 @@ public interface IAcademyRepository
         DateTimeOffset now,
         CancellationToken cancellationToken);
 
+    Task<InstitutionSummary?> UpdateInstitutionAsync(
+        UpdateInstitutionCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
     Task<bool> CareerCodeExistsAsync(
         Guid institutionId,
         string code,

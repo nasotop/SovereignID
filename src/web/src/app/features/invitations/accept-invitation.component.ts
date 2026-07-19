@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal, WritableSignal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { InstitutionInvitationAccepted } from '../../api/bff/models/institution-invitation-accepted';
 import { AcademyService } from '../../core/services/academy.service';
@@ -12,29 +13,27 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
 @Component({
   selector: 'app-accept-invitation',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TranslatePipe],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-slate-900 px-4">
       <div class="max-w-lg w-full bg-slate-800 border border-slate-700 rounded-xl shadow-lg p-8">
         <div class="text-center mb-8">
           <h1 class="text-2xl font-bold text-white mb-2">SovereignID</h1>
-          <p class="text-slate-400">Aceptar invitación institucional</p>
+          <p class="text-slate-400">{{ 'invitation.title' | translate }}</p>
         </div>
 
         @if (!invitationToken()) {
-          <div
-            class="p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm"
-          >
-            <p class="font-semibold">Token de invitación no encontrado</p>
+          <div class="p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm">
+            <p class="font-semibold">{{ 'invitation.missingTitle' | translate }}</p>
             <p class="mt-1">
-              El enlace debe incluir el parámetro
+              {{ 'invitation.missingBody' | translate }}
               <code class="text-red-200">?token=...</code>.
             </p>
           </div>
         } @else {
           @if (state() === 'loading') {
             <div class="text-center py-6">
-              <p class="text-slate-300">Procesando invitación con MetaMask...</p>
+              <p class="text-slate-300">{{ 'invitation.processing' | translate }}</p>
             </div>
           }
 
@@ -42,24 +41,20 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
             <div class="space-y-4">
               <div class="p-4 bg-emerald-900/30 border border-emerald-700 rounded-lg">
                 <p class="text-emerald-300 font-semibold">
-                  Invitación aceptada correctamente
+                  {{ 'invitation.accepted' | translate }}
                 </p>
                 <dl class="mt-3 space-y-2 text-sm text-slate-300">
                   <div class="flex justify-between gap-4">
-                    <dt class="text-slate-400">Institución</dt>
-                    <dd class="font-mono text-right break-all">
-                      {{ accepted()!.institutionId }}
-                    </dd>
+                    <dt class="text-slate-400">{{ 'invitation.institution' | translate }}</dt>
+                    <dd class="font-mono text-right break-all">{{ accepted()!.institutionId }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
-                    <dt class="text-slate-400">Rol</dt>
+                    <dt class="text-slate-400">{{ 'platform.institutions.role' | translate }}</dt>
                     <dd>{{ accepted()!.role }}</dd>
                   </div>
                   <div class="flex justify-between gap-4">
                     <dt class="text-slate-400">DID</dt>
-                    <dd class="font-mono text-right break-all text-xs">
-                      {{ accepted()!.did }}
-                    </dd>
+                    <dd class="font-mono text-right break-all text-xs">{{ accepted()!.did }}</dd>
                   </div>
                 </dl>
               </div>
@@ -67,16 +62,14 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
                 routerLink="/login"
                 class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition"
               >
-                Ir a iniciar sesión
+                {{ 'invitation.login' | translate }}
               </a>
             </div>
           }
 
           @if (state() === 'error') {
             <div class="space-y-4">
-              <div
-                class="p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm"
-              >
+              <div class="p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm">
                 {{ errorMessage() }}
               </div>
               <button
@@ -84,33 +77,28 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
                 class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-4 rounded-lg transition"
                 (click)="resetState()"
               >
-                Reintentar
+                {{ 'login.tryAgain' | translate }}
               </button>
             </div>
           }
 
           @if (state() === 'idle') {
             @if (!web3Service.isMetaMaskAvailable()) {
-              <div
-                class="mb-6 p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm"
-              >
-                MetaMask no está disponible. Instálalo para vincular tu wallet.
+              <div class="mb-6 p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-100 text-sm">
+                {{ 'invitation.metamaskMissing' | translate }}
               </div>
             }
 
             <div class="space-y-4">
               <div>
-                <label
-                  for="displayName"
-                  class="block text-sm font-medium text-slate-300 mb-1"
-                >
-                  Nombre para mostrar (opcional)
+                <label for="displayName" class="block text-sm font-medium text-slate-300 mb-1">
+                  {{ 'invitation.displayName' | translate }}
                 </label>
                 <input
                   id="displayName"
                   type="text"
                   class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                  placeholder="Ej. Admin Institución"
+                  [placeholder]="'invitation.displayNamePlaceholder' | translate"
                   [value]="displayName()"
                   (input)="onDisplayNameInput($event)"
                 />
@@ -118,11 +106,9 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
 
               @if (connectedWallet()) {
                 <div class="rounded-lg border border-orange-500/40 bg-orange-500/10 p-4 text-sm text-slate-200">
-                  <p class="font-semibold text-orange-200">Wallet seleccionada</p>
+                  <p class="font-semibold text-orange-200">{{ 'invitation.selectedWallet' | translate }}</p>
                   <p class="mt-2 break-all font-mono text-xs">{{ connectedWallet() }}</p>
-                  <p class="mt-2 text-slate-400">
-                    La invitacion quedara asociada a esta wallet. Si no corresponde, cambia la cuenta activa en MetaMask y vuelve a conectar.
-                  </p>
+                  <p class="mt-2 text-slate-400">{{ 'invitation.walletNote' | translate }}</p>
                 </div>
               }
 
@@ -132,7 +118,7 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
                 [disabled]="!web3Service.isMetaMaskAvailable()"
                 (click)="handleConnectWallet()"
               >
-                {{ connectedWallet() ? 'Cambiar wallet conectada' : 'Conectar MetaMask' }}
+                {{ connectedWallet() ? ('invitation.changeWallet' | translate) : ('invitation.connectWallet' | translate) }}
               </button>
 
               <button
@@ -141,7 +127,7 @@ type AcceptState = 'idle' | 'loading' | 'success' | 'error';
                 [disabled]="!connectedWallet()"
                 (click)="handleAccept()"
               >
-                Aceptar invitacion con esta wallet
+                {{ 'invitation.accept' | translate }}
               </button>
             </div>
           }
@@ -154,6 +140,7 @@ export class AcceptInvitationComponent implements OnInit {
   readonly web3Service = inject(Web3Service);
   private readonly academyService = inject(AcademyService);
   private readonly route = inject(ActivatedRoute);
+  private readonly translate = inject(TranslateService);
 
   readonly invitationToken = signal<string | null>(null);
   readonly displayName = signal('');
@@ -204,7 +191,7 @@ export class AcceptInvitationComponent implements OnInit {
     try {
       const walletAddress = await this.web3Service.connectWallet();
       if (!walletAddress) {
-        throw new Error('No se pudo conectar la wallet');
+        throw new Error(this.translate.instant('invitation.walletConnectFailed'));
       }
 
       this.connectedWallet.set(walletAddress);

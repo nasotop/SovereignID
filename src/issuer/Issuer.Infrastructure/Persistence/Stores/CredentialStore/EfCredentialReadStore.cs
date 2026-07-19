@@ -49,7 +49,7 @@ internal sealed class EfCredentialReadStore : ICredentialReadStore
                 c.ExpiresAt,
                 c.RevokedAt,
                 c.SubjectDid,
-                IssuerDid = c.Institution.Did,
+                IssuerDid = c.IssuerDid,
                 IssuerDisplayName = c.Institution.DisplayName,
                 IssuerCode = c.Institution.Code,
                 c.IpfsCid,

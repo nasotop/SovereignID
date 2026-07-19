@@ -147,6 +147,29 @@
         }
       }
     },
+    "/issuer/credential-types": {
+      "get": {
+        "tags": [
+          "CredentialTypes"
+        ],
+        "summary": "Lists active credential types available for issuance.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CredentialTypeSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -703,6 +726,45 @@
           }
         }
       },
+      "CredentialTypeSummary": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "allowsExpiration",
+          "schemaVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allowsExpiration": {
+            "type": "boolean"
+          },
+          "schemaVersion": {
+            "type": "string"
+          }
+        }
+      },
       "HolderCredentialAnchors": {
         "required": [
           "ipfsCid",
@@ -1170,6 +1232,9 @@
   "tags": [
     {
       "name": "Credentials"
+    },
+    {
+      "name": "CredentialTypes"
     },
     {
       "name": "Health"

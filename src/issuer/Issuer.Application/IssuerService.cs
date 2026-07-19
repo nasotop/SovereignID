@@ -152,6 +152,13 @@ public sealed class IssuerService
         return new IssuerSuccess<IReadOnlyList<CredentialSummary>>(credentials);
     }
 
+    public async Task<IssuerResult<IReadOnlyList<CredentialTypeSummary>>> ListCredentialTypesAsync(
+        CancellationToken cancellationToken)
+    {
+        var credentialTypes = await _repository.ListCredentialTypesAsync(cancellationToken);
+        return new IssuerSuccess<IReadOnlyList<CredentialTypeSummary>>(credentialTypes);
+    }
+
     public async Task<IssuerResult<CredentialRevoked>> RevokeCredentialAsync(
         RevokeCredentialCommand command,
         CancellationToken cancellationToken)

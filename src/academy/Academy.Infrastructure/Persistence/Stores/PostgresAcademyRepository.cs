@@ -1,6 +1,16 @@
 ﻿using Academy.Application;
-using Academy.Infrastructure.Persistence.Entities;
+using Academy.Infrastructure.Persistence.Generated;
 using Microsoft.EntityFrameworkCore;
+using CareerEntity = Academy.Infrastructure.Persistence.Generated.Entities.Career;
+using HolderProfileEntity = Academy.Infrastructure.Persistence.Generated.Entities.HolderProfile;
+using InstitutionEntity = Academy.Infrastructure.Persistence.Generated.Entities.Institution;
+using InstitutionInvitationEntity = Academy.Infrastructure.Persistence.Generated.Entities.InstitutionInvitation;
+using InstitutionUserEntity = Academy.Infrastructure.Persistence.Generated.Entities.InstitutionUser;
+using StudentEntity = Academy.Infrastructure.Persistence.Generated.Entities.Student;
+using StudentWalletEntity = Academy.Infrastructure.Persistence.Generated.Entities.StudentWallet;
+using UserEntity = Academy.Infrastructure.Persistence.Generated.Entities.User;
+using UserRole = Academy.Infrastructure.Persistence.Generated.Entities.UserRole;
+using WalletStatus = Academy.Infrastructure.Persistence.Generated.Entities.WalletStatus;
 
 namespace Academy.Infrastructure.Persistence.Stores;
 
@@ -73,6 +83,30 @@ internal sealed class PostgresAcademyRepository : IAcademyRepository
         };
 
         _dbContext.Institutions.Add(entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return ToSummary(entity);
+    }
+
+    public async Task<InstitutionSummary?> UpdateInstitutionAsync(
+        UpdateInstitutionCommand command,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _dbContext.Institutions
+            .SingleOrDefaultAsync(i => i.Id == command.InstitutionId, cancellationToken);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.LegalName = command.LegalName;
+        entity.DisplayName = command.DisplayName;
+        entity.CountryCode = command.CountryCode;
+        entity.WebsiteUrl = command.WebsiteUrl;
+        entity.IsActive = command.IsActive;
+        entity.DeactivatedAt = command.IsActive ? null : UtcDateTime(now);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return ToSummary(entity);
     }

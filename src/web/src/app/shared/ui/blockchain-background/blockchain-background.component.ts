@@ -39,30 +39,42 @@ export class BlockchainBackgroundComponent implements AfterViewInit, OnDestroy {
 
   private animationFrameId = 0;
   private resizeObserver: ResizeObserver | null = null;
+  private readonly resizeListener = (): void => this.resize();
   private nodes: NodePoint[] = [];
   private reducedMotion = false;
 
   ngAfterViewInit(): void {
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.reducedMotion = motionQuery.matches;
+    if (this.isTestDom()) {
+      return;
+    }
+
+    this.reducedMotion = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
 
     this.zone.runOutsideAngular(() => {
       this.resize();
-      this.resizeObserver = new ResizeObserver(() => this.resize());
-      this.resizeObserver.observe(this.canvasRef().nativeElement);
+      this.watchResize();
 
       if (this.reducedMotion) {
         this.draw(0);
         return;
       }
 
-      this.tick(0);
+      if (typeof requestAnimationFrame === 'function') {
+        this.tick(0);
+      } else {
+        this.draw(0);
+      }
     });
   }
 
   ngOnDestroy(): void {
-    cancelAnimationFrame(this.animationFrameId);
+    if (typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this.animationFrameId);
+    }
     this.resizeObserver?.disconnect();
+    window.removeEventListener?.('resize', this.resizeListener);
   }
 
   private tick(time: number): void {
@@ -86,6 +98,16 @@ export class BlockchainBackgroundComponent implements AfterViewInit, OnDestroy {
       vy: (Math.random() - 0.5) * 0.18 * dpr,
       radius: (1.2 + Math.random() * 1.8) * dpr,
     }));
+  }
+
+  private watchResize(): void {
+    if (typeof ResizeObserver === 'function') {
+      this.resizeObserver = new ResizeObserver(() => this.resize());
+      this.resizeObserver.observe(this.canvasRef().nativeElement);
+      return;
+    }
+
+    window.addEventListener?.('resize', this.resizeListener);
   }
 
   private draw(time: number): void {
@@ -199,5 +221,9 @@ export class BlockchainBackgroundComponent implements AfterViewInit, OnDestroy {
       context.arc(node.x, node.y, node.radius * 3.2, 0, Math.PI * 2);
       context.stroke();
     }
+  }
+
+  private isTestDom(): boolean {
+    return window.navigator?.userAgent.toLowerCase().includes('jsdom') ?? false;
   }
 }

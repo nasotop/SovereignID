@@ -1,12 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, inject, input, output, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageSwitcherComponent } from '../language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-user-menu',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe, LanguageSwitcherComponent],
   template: `
     <div class="relative" (click)="$event.stopPropagation()">
       <button
@@ -52,16 +54,19 @@ import { AuthService } from '../../../core/services/auth.service';
             disabled
             role="menuitem"
           >
-            Perfil
-            <span class="text-xs">Pendiente</span>
+            {{ 'menu.profile' | translate }}
+            <span class="text-xs">{{ 'menu.pending' | translate }}</span>
           </button>
+          <div class="border-t border-slate-700" role="none">
+            <app-language-switcher />
+          </div>
           <button
             type="button"
             class="flex w-full items-center px-4 py-3 text-left text-sm font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
             role="menuitem"
             (click)="handleLogout()"
           >
-            Cerrar sesion
+            {{ 'menu.logout' | translate }}
           </button>
         </div>
       }

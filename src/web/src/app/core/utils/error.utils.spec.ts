@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { isProblemDetails } from '../models/problem-details.models';
 import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
@@ -7,7 +7,11 @@ import { toHttpErrorMessage, toThrownError } from '../utils/error.utils';
 import unsupportedChainFixture from '../../../../../../docs/contracts/fixtures/auth-verify-400-unsupported-chain.json';
 
 describe('error.utils', () => {
-  it('maps Problem Details detail to user message', () => {
+  afterEach(() => {
+    localStorage.removeItem('sovereignid.language');
+  });
+
+  it('maps Problem Details error code to a controlled user message', () => {
     const error = new HttpErrorResponse({
       error: unsupportedChainFixture,
       status: 400,
@@ -15,7 +19,20 @@ describe('error.utils', () => {
     });
 
     expect(toHttpErrorMessage(error, 'fallback')).toBe(
-      unsupportedChainFixture.detail,
+      'Switch your wallet to the supported network and try again.',
+    );
+  });
+
+  it('maps Problem Details error code to the selected language', () => {
+    localStorage.setItem('sovereignid.language', 'es');
+    const error = new HttpErrorResponse({
+      error: unsupportedChainFixture,
+      status: 400,
+      statusText: 'Bad Request',
+    });
+
+    expect(toHttpErrorMessage(error, 'fallback')).toBe(
+      'Cambia tu wallet a la red soportada e intentalo nuevamente.',
     );
   });
 
@@ -44,7 +61,7 @@ describe('error.utils', () => {
     expect(isProblemDetails({ message: 'legacy' })).toBe(false);
   });
 
-  it('wraps HttpErrorResponse detail in a plain Error', () => {
+  it('wraps HttpErrorResponse status in a plain Error without exposing detail', () => {
     const error = new HttpErrorResponse({
       error: {
         title: 'Forbidden',
@@ -55,6 +72,8 @@ describe('error.utils', () => {
       statusText: 'Forbidden',
     });
 
-    expect(toThrownError(error, 'fallback').message).toBe('Sin permisos para reportes');
+    expect(toThrownError(error, 'fallback').message).toBe(
+      'You do not have permission to perform this action.',
+    );
   });
 });

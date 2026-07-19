@@ -106,6 +106,19 @@ internal sealed class InMemoryTitleIssuerRepository : ITitleIssuerRepository
         }
     }
 
+    public Task<IReadOnlyList<CredentialTypeSummary>> ListCredentialTypesAsync(
+        CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CredentialTypeSummary>>(
+        [
+            new CredentialTypeSummary(
+                1,
+                "TITULO",
+                "Titulo profesional",
+                "Titulo academico o profesional emitido por una institucion.",
+                false,
+                "1.0")
+        ]);
+
     public Task<CredentialRevoked?> RevokeCredentialAsync(
         RevokeCredentialCommand command,
         DateTimeOffset now,

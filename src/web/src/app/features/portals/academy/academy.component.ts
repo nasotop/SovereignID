@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import {
   CareerSummary,
@@ -10,8 +11,10 @@ import {
   InstitutionUserSummary,
   StudentSummary,
 } from '../../../core/models/academy.models';
+import { PLATFORM_DEFAULT_COUNTRY_CODE } from '../../../core/constants/platform.constants';
 import { AcademyService } from '../../../core/services/academy.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { LanguageService } from '../../../core/services/language.service';
 import { toErrorMessage } from '../../../core/utils/error.utils';
 import { withMinimumVisualDelay } from '../../../core/utils/visual-delay.util';
 import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.component';
@@ -36,6 +39,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
   imports: [
     CommonModule,
     FormsModule,
+    TranslatePipe,
     RouterLink,
     PortalShellComponent,
     ModalComponent,
@@ -47,9 +51,9 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
   ],
   template: `
     <app-portal-shell
-      portalLabel="Academy Portal"
-      title="Gestion academica"
-      subtitle="Instituciones, estudiantes, usuarios y wallets segun tu rol"
+      [portalLabel]="'shell.academyPortal' | translate"
+      [title]="'academy.title' | translate"
+      [subtitle]="'academy.subtitle' | translate"
       layoutWidth="full"
       [hideHeader]="true"
       [userName]="activeUserName()"
@@ -72,14 +76,14 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
         <div class="grid min-h-0 flex-1 grid-rows-[auto_auto_minmax(0,1fr)] gap-4 overflow-hidden">
           <section class="grid shrink-0 gap-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4 lg:grid-cols-[minmax(260px,0.9fr)_minmax(320px,1.1fr)_auto] lg:items-center">
           <div class="min-w-0">
-            <h2 class="text-2xl font-bold text-white">Gestion academica</h2>
+            <h2 class="text-2xl font-bold text-white">{{ 'academy.title' | translate }}</h2>
             <p class="mt-1 text-sm text-slate-400">
-              Instituciones, estudiantes, usuarios y wallets segun tu rol
+              {{ 'academy.subtitle' | translate }}
             </p>
           </div>
 
           <div class="min-w-0 border-slate-700 lg:border-l lg:pl-5">
-            <p class="text-xs font-medium uppercase text-blue-300">Institucion activa</p>
+            <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.activeInstitution' | translate }}</p>
             <h3 class="mt-1 truncate text-xl font-bold text-white">
               {{ selectedInstitution()!.displayName }}
             </h3>
@@ -109,7 +113,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               (click)="loadSelectedInstitution()"
               [disabled]="loading()"
             >
-              {{ loading() ? 'Cargando...' : 'Refrescar' }}
+              {{ loading() ? ('common.loading' | translate) : ('common.refresh' | translate) }}
             </button>
             @if (activeTab() === 'students' && canManageInstitution()) {
               <button
@@ -117,7 +121,16 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
                 (click)="openCreateStudentModal()"
               >
-                Crear estudiante
+                {{ 'academy.students.create' | translate }}
+              </button>
+            }
+            @if (activeTab() === 'careers' && canManageInstitution()) {
+              <button
+                type="button"
+                class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+                (click)="openCareerModal()"
+              >
+                {{ 'academy.careers.create' | translate }}
               </button>
             }
             @if (activeTab() === 'careers' && canManageInstitution()) {
@@ -135,7 +148,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
                 (click)="openInviteUserModal()"
               >
-                Invitar usuario
+                {{ 'academy.users.invite' | translate }}
               </button>
             }
           </div>
@@ -151,7 +164,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 : 'border-transparent text-slate-400 hover:text-white'"
               (click)="setActiveTab('students')"
             >
-              Estudiantes
+              {{ 'academy.tabs.students' | translate }}
             </button>
           }
           @if (canViewAcademyManagement()) {
@@ -163,7 +176,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 : 'border-transparent text-slate-400 hover:text-white'"
               (click)="setActiveTab('careers')"
             >
-              Carreras
+              {{ 'academy.tabs.careers' | translate }}
             </button>
           }
           @if (canManageInstitution()) {
@@ -175,7 +188,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 : 'border-transparent text-slate-400 hover:text-white'"
               (click)="setActiveTab('users')"
             >
-              Usuarios
+              {{ 'academy.tabs.users' | translate }}
             </button>
           }
           @if (canViewAcademyManagement()) {
@@ -187,7 +200,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 : 'border-transparent text-slate-400 hover:text-white'"
               (click)="setActiveTab('reports')"
             >
-              Reportes
+              {{ 'academy.tabs.reports' | translate }}
             </button>
           }
           @if (canUseIssuerTab()) {
@@ -199,7 +212,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 : 'border-transparent text-slate-400 hover:text-white'"
               (click)="setActiveTab('issuer')"
             >
-              Emision
+              {{ 'academy.tabs.issuance' | translate }}
             </button>
           }
         </div>
@@ -213,8 +226,8 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
           @if (activeTab() === 'students') {
             <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
               <div class="border-b border-slate-700 p-4">
-                <h3 class="text-base font-semibold text-white">Estudiantes</h3>
-                <p class="text-xs text-slate-400">{{ students().length }} registros</p>
+                <h3 class="text-base font-semibold text-white">{{ 'academy.students.title' | translate }}</h3>
+                <p class="text-xs text-slate-400">{{ 'academy.records' | translate:{ count: students().length } }}</p>
               </div>
               <div class="min-h-0 flex-1 overflow-auto">
                 @for (student of students(); track student.id) {
@@ -227,29 +240,29 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                     <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-white">
-                          {{ student.externalReference || 'Sin referencia' }}
+                          {{ student.externalReference || ('academy.noReference' | translate) }}
                         </p>
                         <p class="mt-1 truncate font-mono text-xs text-slate-500">{{ student.id }}</p>
                       </div>
                       <app-status-badge
-                        [label]="student.isActive ? 'Activo' : 'Inactivo'"
+                        [label]="student.isActive ? ('common.active' | translate) : ('common.inactive' | translate)"
                         [tone]="student.isActive ? 'success' : 'danger'"
                       />
                     </div>
                     <div class="mt-3 grid gap-2 text-xs text-slate-400 md:grid-cols-2">
-                      <span>Ano: {{ student.enrollmentYear || '-' }}</span>
-                      <span class="truncate font-mono">{{ student.primaryWalletAddress || 'Sin wallet' }}</span>
+                      <span>{{ 'academy.students.year' | translate }}: {{ student.enrollmentYear || '-' }}</span>
+                      <span class="truncate font-mono">{{ student.primaryWalletAddress || ('common.withoutWallet' | translate) }}</span>
                     </div>
                   </button>
                 } @empty {
                   @if (loading()) {
                     <div class="flex min-h-48 flex-col items-center justify-center gap-4 p-10 text-center text-sm text-slate-400">
-                      <app-hex-loader label="Cargando estudiantes" />
-                      <p>Cargando estudiantes...</p>
+                      <app-hex-loader [label]="'academy.students.loading' | translate" />
+                      <p>{{ 'academy.students.loading' | translate }}</p>
                     </div>
                   } @else {
                     <p class="p-10 text-center text-sm text-slate-400">
-                      No hay estudiantes registrados.
+                      {{ 'academy.students.empty' | translate }}
                     </p>
                   }
                 }
@@ -261,15 +274,15 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 <div class="space-y-6">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <p class="text-xs font-medium uppercase text-blue-300">Estudiante seleccionado</p>
+                      <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.students.selected' | translate }}</p>
                       <h3 class="mt-1 truncate text-xl font-semibold text-white">
-                        {{ selectedStudent()!.externalReference || 'Sin referencia' }}
+                        {{ selectedStudent()!.externalReference || ('academy.noReference' | translate) }}
                       </h3>
                     </div>
                     <button
                       type="button"
                       class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
-                      aria-label="Cerrar detalle"
+                      [attr.aria-label]="'common.close' | translate"
                       (click)="selectedStudent.set(null)"
                     >
                       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -283,11 +296,11 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                       <dd><app-copy-value [value]="selectedStudent()!.id" /></dd>
                     </div>
                     <div>
-                      <dt class="text-slate-500">Ano ingreso</dt>
+                      <dt class="text-slate-500">{{ 'academy.students.entryYear' | translate }}</dt>
                       <dd class="text-slate-200">{{ selectedStudent()!.enrollmentYear || '-' }}</dd>
                     </div>
                     <div>
-                      <dt class="text-slate-500">Wallet primaria</dt>
+                      <dt class="text-slate-500">{{ 'academy.students.primaryWallet' | translate }}</dt>
                       <dd><app-copy-value [value]="selectedStudent()!.primaryWalletAddress" /></dd>
                     </div>
                   </dl>
@@ -297,7 +310,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                       class="w-full rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
                       (click)="openWalletModal(selectedStudent()!.id)"
                     >
-                      Vincular wallet
+                      {{ 'academy.students.addWallet' | translate }}
                     </button>
                   }
                 </div>
@@ -312,7 +325,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         : 'border-transparent text-slate-400 hover:text-white'"
                       (click)="infoPanelTab.set('summary')"
                     >
-                      Resumen
+                      {{ 'holder.summary' | translate }}
                     </button>
                     <button
                       type="button"
@@ -322,31 +335,31 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         : 'border-transparent text-slate-400 hover:text-white'"
                       (click)="infoPanelTab.set('institution')"
                     >
-                      Institucion
+                      {{ 'invitation.institution' | translate }}
                     </button>
                   </div>
 
                   @if (infoPanelTab() === 'summary') {
                   <div>
-                    <p class="text-xs font-medium uppercase text-blue-300">Resumen estudiantes</p>
-                    <h3 class="mt-1 text-xl font-semibold text-white">Vista general</h3>
-                    <p class="mt-1 text-sm text-slate-400">Selecciona un estudiante para revisar su detalle.</p>
+                    <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.students.summary' | translate }}</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">{{ 'academy.students.overview' | translate }}</h3>
+                    <p class="mt-1 text-sm text-slate-400">{{ 'academy.students.selectHint' | translate }}</p>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Total</p>
+                      <p class="text-xs text-slate-500">{{ 'common.total' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-white">{{ students().length }}</p>
                     </article>
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Con wallet</p>
+                      <p class="text-xs text-slate-500">{{ 'academy.students.withWallet' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-emerald-300">{{ studentsWithWalletCount() }}</p>
                     </article>
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Sin wallet</p>
+                      <p class="text-xs text-slate-500">{{ 'academy.students.withoutWallet' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-amber-300">{{ studentsWithoutWalletCount() }}</p>
                     </article>
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Activos</p>
+                      <p class="text-xs text-slate-500">{{ 'academy.students.active' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-blue-300">{{ activeStudentsCount() }}</p>
                     </article>
                   </div>
@@ -361,8 +374,8 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
           @if (activeTab() === 'careers') {
             <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
               <div class="border-b border-slate-700 p-4">
-                <h3 class="text-base font-semibold text-white">Pool de carreras</h3>
-                <p class="text-xs text-slate-400">{{ careers().length }} carreras institucionales</p>
+                <h3 class="text-base font-semibold text-white">{{ 'academy.careers.pool' | translate }}</h3>
+                <p class="text-xs text-slate-400">{{ 'academy.careers.count' | translate:{ count: careers().length } }}</p>
               </div>
               <div class="min-h-0 flex-1 overflow-auto">
                 @for (career of careers(); track career.id) {
@@ -378,25 +391,25 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         <p class="mt-1 font-mono text-xs text-slate-500">{{ career.code }}</p>
                       </div>
                       <app-status-badge
-                        [label]="career.isActive ? 'Activa' : 'Inactiva'"
+                        [label]="career.isActive ? ('common.active' | translate) : ('common.inactive' | translate)"
                         [tone]="career.isActive ? 'success' : 'danger'"
                       />
                     </div>
                     <div class="mt-3 flex items-center gap-2 text-xs text-slate-400">
                       <span class="h-1.5 w-1.5 rounded-full" [ngClass]="career.isActive ? 'bg-emerald-400' : 'bg-red-400'"></span>
-                      <span>{{ career.isActive ? 'Disponible para futuras emisiones' : 'Fuera del flujo de emision' }}</span>
+                      <span>{{ career.isActive ? ('academy.careers.availableForIssuance' | translate) : ('academy.careers.outOfIssuance' | translate) }}</span>
                     </div>
                   </button>
                 } @empty {
                   <div class="p-10 text-center">
                     @if (loading()) {
                       <div class="flex min-h-40 flex-col items-center justify-center gap-4 text-sm text-slate-400">
-                        <app-hex-loader label="Cargando carreras" />
-                        <p>Cargando carreras...</p>
+                        <app-hex-loader [label]="'academy.careers.loading' | translate" />
+                        <p>{{ 'academy.careers.loading' | translate }}</p>
                       </div>
                     } @else {
                       <p class="text-sm font-medium text-white">
-                        Aun no hay carreras en esta institucion.
+                        {{ 'academy.careers.empty' | translate }}
                       </p>
                     }
                     @if (!loading() && canManageInstitution()) {
@@ -405,7 +418,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
                         (click)="openCareerModal()"
                       >
-                        Crear primera carrera
+                        {{ 'academy.careers.createFirst' | translate }}
                       </button>
                     }
                   </div>
@@ -418,7 +431,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 <div class="space-y-6">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <p class="text-xs font-medium uppercase text-blue-300">Carrera seleccionada</p>
+                      <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.careers.selected' | translate }}</p>
                       <h3 class="mt-1 truncate text-xl font-semibold text-white">
                         {{ selectedCareer()!.name }}
                       </h3>
@@ -426,7 +439,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                     <button
                       type="button"
                       class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
-                      aria-label="Cerrar detalle"
+                      [attr.aria-label]="'common.close' | translate"
                       (click)="selectedCareer.set(null)"
                     >
                       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -435,14 +448,14 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                     </button>
                   </div>
                   <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                    <p class="text-xs text-slate-500">Estado operativo</p>
+                    <p class="text-xs text-slate-500">{{ 'academy.careers.operationalStatus' | translate }}</p>
                     <p class="mt-2 text-sm font-semibold" [ngClass]="selectedCareer()!.isActive ? 'text-emerald-300' : 'text-red-300'">
-                      {{ selectedCareer()!.isActive ? 'Activa para emision' : 'Inactiva' }}
+                      {{ selectedCareer()!.isActive ? ('academy.careers.activeForIssuance' | translate) : ('common.inactive' | translate) }}
                     </p>
                   </div>
                   <dl class="space-y-4 text-sm">
                     <div>
-                      <dt class="text-slate-500">Codigo</dt>
+                      <dt class="text-slate-500">{{ 'platform.institutions.code' | translate }}</dt>
                       <dd class="font-mono text-slate-200">{{ selectedCareer()!.code }}</dd>
                     </div>
                     <div>
@@ -450,8 +463,8 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                       <dd><app-copy-value [value]="selectedCareer()!.id" /></dd>
                     </div>
                     <div>
-                      <dt class="text-slate-500">Creada</dt>
-                      <dd class="text-slate-200">{{ selectedCareer()!.createdAt | date: 'mediumDate' }}</dd>
+                      <dt class="text-slate-500">{{ 'academy.careers.createdAt' | translate }}</dt>
+                      <dd class="text-slate-200">{{ formatDate(selectedCareer()!.createdAt) }}</dd>
                     </div>
                   </dl>
 
@@ -462,7 +475,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         class="w-full rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600"
                         (click)="openCareerModal(selectedCareer()!)"
                       >
-                        Editar carrera
+                        {{ 'academy.careers.edit' | translate }}
                       </button>
                       @if (selectedCareer()!.isActive) {
                         <button
@@ -471,7 +484,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                           (click)="handleDeactivateCareer(selectedCareer()!)"
                           [disabled]="submitting()"
                         >
-                          Desactivar carrera
+                          {{ 'academy.careers.deactivate' | translate }}
                         </button>
                       }
                     </div>
@@ -480,19 +493,19 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
               } @else {
                 <div class="space-y-6">
                   <div>
-                    <p class="text-xs font-medium uppercase text-blue-300">Catalogo academico</p>
-                    <h3 class="mt-1 text-xl font-semibold text-white">Carreras institucionales</h3>
+                    <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.careers.catalog' | translate }}</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">{{ 'academy.careers.institutional' | translate }}</h3>
                     <p class="mt-1 text-sm text-slate-400">
-                      Este pool alimentara el flujo de emision de titulos en el modulo issuer.
+                      {{ 'academy.careers.poolHint' | translate }}
                     </p>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Activas</p>
+                      <p class="text-xs text-slate-500">{{ 'common.active' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-emerald-300">{{ activeCareersCount() }}</p>
                     </article>
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Inactivas</p>
+                      <p class="text-xs text-slate-500">{{ 'common.inactive' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-red-300">{{ inactiveCareersCount() }}</p>
                     </article>
                   </div>
@@ -505,8 +518,8 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
           @if (activeTab() === 'users' && canManageInstitution()) {
             <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
               <div class="border-b border-slate-700 p-4">
-                <h3 class="text-base font-semibold text-white">Usuarios institucionales</h3>
-                <p class="text-xs text-slate-400">{{ institutionUsers().length }} usuarios activos</p>
+                <h3 class="text-base font-semibold text-white">{{ 'academy.users.title' | translate }}</h3>
+                <p class="text-xs text-slate-400">{{ 'academy.users.activeCount' | translate:{ count: institutionUsers().length } }}</p>
               </div>
               <div class="min-h-0 flex-1 overflow-auto">
                 @for (user of institutionUsers(); track user.id) {
@@ -527,12 +540,12 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 } @empty {
                   @if (loading()) {
                     <div class="flex min-h-48 flex-col items-center justify-center gap-4 p-10 text-center text-sm text-slate-400">
-                      <app-hex-loader label="Cargando usuarios" />
-                      <p>Cargando usuarios...</p>
+                      <app-hex-loader [label]="'academy.users.loading' | translate" />
+                      <p>{{ 'academy.users.loading' | translate }}</p>
                     </div>
                   } @else {
                     <p class="p-10 text-center text-sm text-slate-400">
-                      No hay usuarios institucionales activos.
+                      {{ 'academy.users.empty' | translate }}
                     </p>
                   }
                 }
@@ -544,15 +557,15 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 <div class="space-y-6">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <p class="text-xs font-medium uppercase text-blue-300">Usuario seleccionado</p>
+                      <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.users.selected' | translate }}</p>
                       <h3 class="mt-1 truncate text-xl font-semibold text-white">
-                        {{ selectedUser()!.displayName || selectedUser()!.email || 'Usuario institucional' }}
+                        {{ selectedUser()!.displayName || selectedUser()!.email || ('academy.users.institutional' | translate) }}
                       </h3>
                     </div>
                     <button
                       type="button"
                       class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
-                      aria-label="Cerrar detalle"
+                      [attr.aria-label]="'common.close' | translate"
                       (click)="selectedUser.set(null)"
                     >
                       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -566,17 +579,17 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                       <dd class="text-slate-200">{{ selectedUser()!.email || '-' }}</dd>
                     </div>
                     <div>
-                      <dt class="text-slate-500">Wallet</dt>
+                      <dt class="text-slate-500">{{ 'common.wallet' | translate }}</dt>
                       <dd><app-copy-value [value]="selectedUser()!.walletAddress" /></dd>
                     </div>
                     <div>
-                      <dt class="text-slate-500">Rol</dt>
+                      <dt class="text-slate-500">{{ 'platform.institutions.role' | translate }}</dt>
                       <dd class="text-slate-200">{{ selectedUser()!.role }}</dd>
                     </div>
                   </dl>
 
                   <div class="space-y-3 border-t border-slate-700 pt-5">
-                    <label class="block text-sm font-medium text-slate-300" for="detailUserRole">Cambiar rol</label>
+                    <label class="block text-sm font-medium text-slate-300" for="detailUserRole">{{ 'academy.users.changeRole' | translate }}</label>
                     <select
                       id="detailUserRole"
                       class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white"
@@ -592,7 +605,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                       class="w-full rounded-lg border border-red-500/40 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10"
                       (click)="handleRevokeUser(selectedUser()!)"
                     >
-                      Revocar acceso
+                      {{ 'academy.users.revokeAccess' | translate }}
                     </button>
                   </div>
                 </div>
@@ -607,7 +620,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         : 'border-transparent text-slate-400 hover:text-white'"
                       (click)="infoPanelTab.set('summary')"
                     >
-                      Resumen
+                      {{ 'holder.summary' | translate }}
                     </button>
                     <button
                       type="button"
@@ -617,19 +630,19 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                         : 'border-transparent text-slate-400 hover:text-white'"
                       (click)="infoPanelTab.set('institution')"
                     >
-                      Institucion
+                      {{ 'invitation.institution' | translate }}
                     </button>
                   </div>
 
                   @if (infoPanelTab() === 'summary') {
                   <div>
-                    <p class="text-xs font-medium uppercase text-blue-300">Resumen usuarios</p>
-                    <h3 class="mt-1 text-xl font-semibold text-white">Vista general</h3>
-                    <p class="mt-1 text-sm text-slate-400">Selecciona un usuario para cambiar rol o revocar acceso.</p>
+                    <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.users.summary' | translate }}</p>
+                    <h3 class="mt-1 text-xl font-semibold text-white">{{ 'academy.students.overview' | translate }}</h3>
+                    <p class="mt-1 text-sm text-slate-400">{{ 'academy.users.selectHint' | translate }}</p>
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-                      <p class="text-xs text-slate-500">Total</p>
+                      <p class="text-xs text-slate-500">{{ 'common.total' | translate }}</p>
                       <p class="mt-2 text-2xl font-bold text-white">{{ institutionUsers().length }}</p>
                     </article>
                     <article class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
@@ -663,9 +676,9 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
         </div>
       } @else {
         <section class="shrink-0 rounded-lg border border-slate-700 bg-slate-800/50 p-10 text-center">
-          <p class="font-medium text-white">Selecciona una institucion</p>
+          <p class="font-medium text-white">{{ 'academy.selectInstitution' | translate }}</p>
           <p class="mt-2 text-sm text-slate-400">
-            Tu rol define que acciones puedes ejecutar dentro de la institucion.
+            {{ 'academy.roleHint' | translate }}
           </p>
         </section>
       }
@@ -674,18 +687,18 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       <ng-template #institutionContextPanel>
         <div class="space-y-5">
           <div>
-            <p class="text-xs font-medium uppercase text-blue-300">Contexto institucional</p>
+            <p class="text-xs font-medium uppercase text-blue-300">{{ 'academy.institutionContext' | translate }}</p>
             <h3 class="mt-1 text-xl font-semibold text-white">
               {{ selectedInstitution()?.displayName }}
             </h3>
             <p class="mt-1 text-sm text-slate-400">
-              Cambia de institucion o revisa datos rapidos del contexto activo.
+              {{ 'academy.institutionContextHint' | translate }}
             </p>
           </div>
 
           <div>
             <label class="mb-1 block text-sm font-medium text-slate-300" for="institutionSelector">
-              Institucion
+              {{ 'invitation.institution' | translate }}
             </label>
 
             @if (authService.hasPlatformAdmin()) {
@@ -693,7 +706,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                 <input
                   id="institutionSelector"
                   class="min-w-0 flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                  placeholder="UUID de institucion"
+                  [placeholder]="'issuer.institutionUuid' | translate"
                   [ngModel]="selectedInstitutionId()"
                   (ngModelChange)="selectedInstitutionId.set($event)"
                 />
@@ -703,7 +716,7 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
                   [disabled]="loading() || !selectedInstitutionId().trim()"
                   (click)="loadSelectedInstitution()"
                 >
-                  Cargar
+                  {{ 'issuer.load' | translate }}
                 </button>
               </div>
             } @else {
@@ -723,30 +736,41 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
           </div>
 
           <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-4">
-            <p class="text-xs text-slate-500">Rol activo</p>
+            <p class="text-xs text-slate-500">{{ 'academy.activeRole' | translate }}</p>
             <p class="mt-1 text-sm font-semibold text-white">{{ activeRoleLabel() }}</p>
           </div>
 
+          @if (canManageInstitution()) {
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-center rounded-lg border border-blue-500/50 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-100 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="loading()"
+              (click)="openEditInstitutionModal()"
+            >
+              {{ 'platform.institutions.edit' | translate }}
+            </button>
+          }
+
           <dl class="space-y-3 text-sm">
             <div>
-              <dt class="text-slate-500">Codigo</dt>
+              <dt class="text-slate-500">{{ 'platform.institutions.code' | translate }}</dt>
               <dd class="text-slate-200">{{ selectedInstitution()?.code || '-' }}</dd>
             </div>
             <div>
-              <dt class="text-slate-500">Pais</dt>
+              <dt class="text-slate-500">{{ 'platform.institutions.country' | translate }}</dt>
               <dd class="text-slate-200">{{ selectedInstitution()?.countryCode || '-' }}</dd>
             </div>
             <div>
-              <dt class="text-slate-500">Wallet emisora</dt>
+              <dt class="text-slate-500">{{ 'issuer.issuerWallet' | translate }}</dt>
               <dd class="break-all font-mono text-xs text-slate-200">
-                <app-copy-value [value]="selectedInstitution()?.issuerWalletAddress" emptyLabel="Sin wallet emisora" />
+                <app-copy-value [value]="selectedInstitution()?.issuerWalletAddress" [emptyLabel]="'issuer.noIssuerWallet' | translate" />
               </dd>
             </div>
           </dl>
 
           @if (authService.hasPlatformAdmin() && institutions().length) {
             <div class="border-t border-slate-700 pt-4">
-              <p class="mb-3 text-sm font-semibold text-white">Instituciones recientes</p>
+              <p class="mb-3 text-sm font-semibold text-white">{{ 'academy.recentInstitutions' | translate }}</p>
               <div class="space-y-2">
                 @for (institution of institutions(); track institution.id) {
                   <button
@@ -765,18 +789,64 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
       </ng-template>
 
       <app-modal
+        [isOpen]="editInstitutionModalOpen()"
+        [title]="'platform.institutions.edit' | translate"
+        [description]="'platform.institutions.editDescription' | translate"
+        size="lg"
+        (closed)="closeEditInstitutionModal()"
+      >
+        <form class="grid gap-4 md:grid-cols-2" (submit)="handleUpdateInstitution($event)">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditCode">{{ 'platform.institutions.code' | translate }}</label>
+            <input id="academyEditCode" class="w-full cursor-not-allowed rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-500" [value]="selectedInstitution()?.code || ''" disabled />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditCountryCode">{{ 'platform.institutions.country' | translate }}</label>
+            <input id="academyEditCountryCode" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" [ngModel]="editInstitutionCountryCode()" name="academyEditCountryCode" (ngModelChange)="editInstitutionCountryCode.set($event)" required />
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditLegalName">{{ 'platform.institutions.legalName' | translate }}</label>
+            <input id="academyEditLegalName" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" [ngModel]="editInstitutionLegalName()" name="academyEditLegalName" (ngModelChange)="editInstitutionLegalName.set($event)" required />
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditDisplayName">{{ 'platform.institutions.displayName' | translate }}</label>
+            <input id="academyEditDisplayName" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" [ngModel]="editInstitutionDisplayName()" name="academyEditDisplayName" (ngModelChange)="editInstitutionDisplayName.set($event)" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditWebsiteUrl">{{ 'platform.institutions.websiteUrl' | translate }}</label>
+            <input id="academyEditWebsiteUrl" type="url" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" [ngModel]="editInstitutionWebsiteUrl()" name="academyEditWebsiteUrl" (ngModelChange)="editInstitutionWebsiteUrl.set($event)" />
+          </div>
+          <label class="flex items-center gap-3 self-end rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-200">
+            <input type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500" [ngModel]="editInstitutionIsActive()" name="academyEditIsActive" (ngModelChange)="editInstitutionIsActive.set($event)" />
+            {{ 'platform.institutions.activeInstitution' | translate }}
+          </label>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-slate-300" for="academyEditIssuerWallet">{{ 'platform.institutions.issuerWallet' | translate }}</label>
+            <input id="academyEditIssuerWallet" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30" [placeholder]="'platform.institutions.issuerWalletPlaceholder' | translate" [ngModel]="editInstitutionIssuerWallet()" name="academyEditIssuerWallet" (ngModelChange)="editInstitutionIssuerWallet.set($event)" />
+            <p class="mt-1 text-xs text-slate-500">{{ 'platform.institutions.issuerWalletHint' | translate }}</p>
+          </div>
+          <div class="flex justify-end gap-3 md:col-span-2">
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeEditInstitutionModal()">{{ 'common.cancel' | translate }}</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting()">
+              {{ submitting() ? ('common.saving' | translate) : ('platform.institutions.saveChanges' | translate) }}
+            </button>
+          </div>
+        </form>
+      </app-modal>
+
+      <app-modal
         [isOpen]="careerModalOpen()"
-        [title]="editingCareer() ? 'Editar carrera' : 'Crear carrera'"
-        description="Administra el catalogo academico que luego usara issuer para emitir titulos."
+        [title]="editingCareer() ? ('academy.careers.edit' | translate) : ('academy.careers.create' | translate)"
+        [description]="'academy.careers.modalDescription' | translate"
         (closed)="closeCareerModal()"
       >
         <form class="grid gap-4" (submit)="handleSaveCareer($event)">
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white" placeholder="Codigo, ej: ING-SW" [ngModel]="careerCode()" name="careerCode" (ngModelChange)="careerCode.set($event)" />
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Nombre de carrera" [ngModel]="careerName()" name="careerName" (ngModelChange)="careerName.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white" [placeholder]="'academy.careers.codePlaceholder' | translate" [ngModel]="careerCode()" name="careerCode" (ngModelChange)="careerCode.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.careers.namePlaceholder' | translate" [ngModel]="careerName()" name="careerName" (ngModelChange)="careerName.set($event)" />
           <div class="flex justify-end gap-3">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCareerModal()">Cancelar</button>
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCareerModal()">{{ 'common.cancel' | translate }}</button>
             <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting() || !careerCode().trim() || !careerName().trim()">
-              {{ submitting() ? 'Guardando...' : (editingCareer() ? 'Guardar cambios' : 'Crear carrera') }}
+              {{ submitting() ? ('common.saving' | translate) : (editingCareer() ? ('academy.careers.save' | translate) : ('academy.careers.create' | translate)) }}
             </button>
           </div>
         </form>
@@ -784,18 +854,18 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
 
       <app-modal
         [isOpen]="createStudentModalOpen()"
-        title="Crear estudiante"
-        description="Registra un estudiante dentro de la institucion activa. La wallet es opcional."
+        [title]="'academy.students.create' | translate"
+        [description]="'academy.students.createDescription' | translate"
         (closed)="closeCreateStudentModal()"
       >
         <form class="grid gap-4" (submit)="handleCreateStudent($event)">
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Referencia externa" [ngModel]="studentReference()" name="studentReference" (ngModelChange)="studentReference.set($event)" />
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Ano ingreso" type="number" [ngModel]="studentYear()" name="studentYear" (ngModelChange)="studentYear.set($event)" />
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Wallet opcional 0x..." [ngModel]="studentWallet()" name="studentWallet" (ngModelChange)="studentWallet.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.students.referencePlaceholder' | translate" [ngModel]="studentReference()" name="studentReference" (ngModelChange)="studentReference.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.students.yearPlaceholder' | translate" type="number" [ngModel]="studentYear()" name="studentYear" (ngModelChange)="studentYear.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.students.walletPlaceholder' | translate" [ngModel]="studentWallet()" name="studentWallet" (ngModelChange)="studentWallet.set($event)" />
           <div class="flex justify-end gap-3">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCreateStudentModal()">Cancelar</button>
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeCreateStudentModal()">{{ 'common.cancel' | translate }}</button>
             <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting()">
-              {{ submitting() ? 'Creando...' : 'Crear estudiante' }}
+              {{ submitting() ? ('academy.creating' | translate) : ('academy.students.create' | translate) }}
             </button>
           </div>
         </form>
@@ -803,17 +873,17 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
 
       <app-modal
         [isOpen]="walletModalOpen()"
-        title="Vincular wallet"
-        description="Asocia manualmente una wallet existente al estudiante seleccionado."
+        [title]="'academy.students.addWallet' | translate"
+        [description]="'academy.students.walletDescription' | translate"
         (closed)="closeWalletModal()"
       >
         <form class="grid gap-4" (submit)="handleAddWallet($event)">
           <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white" placeholder="Student ID" [ngModel]="walletStudentId()" name="walletStudentId" (ngModelChange)="walletStudentId.set($event)" />
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="Wallet 0x..." [ngModel]="walletAddress()" name="walletAddress" (ngModelChange)="walletAddress.set($event)" />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.students.walletAddressPlaceholder' | translate" [ngModel]="walletAddress()" name="walletAddress" (ngModelChange)="walletAddress.set($event)" />
           <div class="flex justify-end gap-3">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeWalletModal()">Cancelar</button>
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeWalletModal()">{{ 'common.cancel' | translate }}</button>
             <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting() || !walletStudentId().trim() || !walletAddress().trim()">
-              {{ submitting() ? 'Vinculando...' : 'Vincular wallet' }}
+              {{ submitting() ? ('academy.students.linkingWallet' | translate) : ('academy.students.addWallet' | translate) }}
             </button>
           </div>
         </form>
@@ -821,21 +891,21 @@ const INSTITUTION_ROLES: readonly InstitutionRole[] = ['admin', 'issuer', 'viewe
 
       <app-modal
         [isOpen]="inviteUserModalOpen()"
-        title="Invitar usuario"
-        description="Invita un usuario institucional y define su rol inicial."
+        [title]="'academy.users.invite' | translate"
+        [description]="'academy.users.inviteDescription' | translate"
         (closed)="closeInviteUserModal()"
       >
         <form class="grid gap-4" (submit)="handleInviteUser($event)">
-          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" placeholder="email@institucion.cl" type="email" [ngModel]="inviteEmail()" name="inviteEmail" (ngModelChange)="inviteEmail.set($event)" required />
+          <input class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [placeholder]="'academy.users.emailPlaceholder' | translate" type="email" [ngModel]="inviteEmail()" name="inviteEmail" (ngModelChange)="inviteEmail.set($event)" required />
           <select class="rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white" [ngModel]="inviteRole()" name="inviteRole" (ngModelChange)="inviteRole.set($event)">
             @for (role of roles; track role) {
               <option [value]="role">{{ role }}</option>
             }
           </select>
           <div class="flex justify-end gap-3">
-            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeInviteUserModal()">Cancelar</button>
+            <button type="button" class="rounded-lg border border-slate-600 bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600" (click)="closeInviteUserModal()">{{ 'common.cancel' | translate }}</button>
             <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50" [disabled]="submitting() || !inviteEmail().trim()">
-              {{ submitting() ? 'Enviando...' : 'Enviar invitacion' }}
+              {{ submitting() ? ('platform.institutions.sending' | translate) : ('platform.institutions.sendInvitation' | translate) }}
             </button>
           </div>
         </form>
@@ -864,6 +934,8 @@ export class AcademyComponent implements OnInit {
   private readonly academyService = inject(AcademyService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
+  private readonly languageService = inject(LanguageService);
 
   readonly roles = INSTITUTION_ROLES;
   readonly activeTab = signal<AcademyTab>('students');
@@ -885,6 +957,7 @@ export class AcademyComponent implements OnInit {
 
   readonly careerModalOpen = signal(false);
   readonly editingCareer = signal<CareerSummary | null>(null);
+  readonly editInstitutionModalOpen = signal(false);
   readonly createStudentModalOpen = signal(false);
   readonly walletModalOpen = signal(false);
   readonly inviteUserModalOpen = signal(false);
@@ -898,6 +971,12 @@ export class AcademyComponent implements OnInit {
   readonly walletAddress = signal('');
   readonly inviteEmail = signal('');
   readonly inviteRole = signal<InstitutionRole>('viewer');
+  readonly editInstitutionLegalName = signal('');
+  readonly editInstitutionDisplayName = signal('');
+  readonly editInstitutionCountryCode = signal(PLATFORM_DEFAULT_COUNTRY_CODE);
+  readonly editInstitutionWebsiteUrl = signal('');
+  readonly editInstitutionIssuerWallet = signal('');
+  readonly editInstitutionIsActive = signal(true);
 
   readonly studentsWithWalletCount = computed(
     () => this.students().filter((student) => Boolean(student.primaryWalletAddress)).length,
@@ -1028,6 +1107,27 @@ export class AcademyComponent implements OnInit {
     this.careerModalOpen.set(true);
   }
 
+  openEditInstitutionModal(): void {
+    const institution = this.selectedInstitution();
+    if (!institution) {
+      return;
+    }
+
+    this.editInstitutionLegalName.set(institution.legalName);
+    this.editInstitutionDisplayName.set(institution.displayName);
+    this.editInstitutionCountryCode.set(institution.countryCode || PLATFORM_DEFAULT_COUNTRY_CODE);
+    this.editInstitutionWebsiteUrl.set(institution.websiteUrl ?? '');
+    this.editInstitutionIssuerWallet.set(institution.issuerWalletAddress ?? '');
+    this.editInstitutionIsActive.set(institution.isActive);
+    this.editInstitutionModalOpen.set(true);
+  }
+
+  closeEditInstitutionModal(): void {
+    if (!this.submitting()) {
+      this.editInstitutionModalOpen.set(false);
+    }
+  }
+
   closeCareerModal(force = false): void {
     if (force || !this.submitting()) {
       this.careerModalOpen.set(false);
@@ -1113,7 +1213,20 @@ export class AcademyComponent implements OnInit {
       return 'platform_admin';
     }
 
-    return this.currentInstitutionRole() ?? 'sin rol';
+    return this.currentInstitutionRole() ?? this.translate.instant('academy.noRole');
+  }
+
+  formatDate(value?: string | null): string {
+    if (!value) {
+      return '-';
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat(this.languageService.locale(), {
+        dateStyle: 'medium',
+      }).format(date);
   }
 
   activeUserName(): string {
@@ -1169,6 +1282,52 @@ export class AcademyComponent implements OnInit {
     return this.canUseIssuerTab();
   }
 
+  async handleUpdateInstitution(event: Event): Promise<void> {
+    event.preventDefault();
+    const institution = this.selectedInstitution();
+    const institutionId = this.selectedInstitutionId().trim();
+    if (!institution?.id || !institutionId || !this.canManageInstitution()) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const issuerWallet = this.normalizeWallet(this.editInstitutionIssuerWallet().trim());
+      if (this.editInstitutionIssuerWallet().trim() && !issuerWallet) {
+        this.errorMessage.set(this.translate.instant('platform.institutions.invalidIssuerWallet'));
+        return;
+      }
+
+      await this.academyService.updateInstitution(institutionId, {
+        legalName: this.editInstitutionLegalName().trim(),
+        displayName: this.editInstitutionDisplayName().trim(),
+        countryCode: this.editInstitutionCountryCode().trim() || PLATFORM_DEFAULT_COUNTRY_CODE,
+        websiteUrl: this.editInstitutionWebsiteUrl().trim() || null,
+        isActive: this.editInstitutionIsActive(),
+      });
+
+      if (issuerWallet && issuerWallet !== this.normalizeWallet(institution.issuerWalletAddress ?? '')) {
+        await this.linkIssuerWallet(institutionId, issuerWallet);
+      }
+
+      const refreshed = await this.academyService.getInstitution(institutionId);
+      this.selectedInstitution.set(refreshed as InstitutionSummary);
+      if (this.authService.hasPlatformAdmin()) {
+        await this.loadInstitutions();
+      }
+
+      this.editInstitutionModalOpen.set(false);
+      this.successMessage.set(this.translate.instant('platform.institutions.updatedSuccess', { institution: refreshed.displayName }));
+    } catch (error: unknown) {
+      this.errorMessage.set(toErrorMessage(error));
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
   async handleSaveCareer(event: Event): Promise<void> {
     event.preventDefault();
     const institutionId = this.selectedInstitutionId().trim();
@@ -1191,7 +1350,7 @@ export class AcademyComponent implements OnInit {
       this.careers.set(await this.academyService.listCareers(institutionId));
       this.selectedCareer.set(career);
       this.closeCareerModal(true);
-      this.successMessage.set(`Carrera ${career.code} guardada correctamente.`);
+      this.successMessage.set(this.translate.instant('academy.messages.careerSaved', { code: career.code }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1213,7 +1372,7 @@ export class AcademyComponent implements OnInit {
       const updatedCareer = await this.academyService.deactivateCareer(institutionId, career.id);
       this.careers.set(await this.academyService.listCareers(institutionId));
       this.selectedCareer.set(updatedCareer);
-      this.successMessage.set(`Carrera ${updatedCareer.code} desactivada.`);
+      this.successMessage.set(this.translate.instant('academy.messages.careerDisabled', { code: updatedCareer.code }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1244,7 +1403,7 @@ export class AcademyComponent implements OnInit {
       this.createStudentModalOpen.set(false);
       this.students.set(await this.academyService.listStudents(institutionId));
       this.selectedStudent.set(student);
-      this.successMessage.set(`Estudiante ${student.externalReference ?? student.id} creado correctamente.`);
+      this.successMessage.set(this.translate.instant('academy.messages.studentCreated', { student: student.externalReference ?? student.id }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1276,7 +1435,7 @@ export class AcademyComponent implements OnInit {
       this.students.set(await this.academyService.listStudents(institutionId));
       const refreshedStudent = this.students().find((student) => student.id === studentId);
       this.selectedStudent.set(refreshedStudent ?? this.selectedStudent());
-      this.successMessage.set(`Wallet ${wallet.walletAddress} vinculada correctamente.`);
+      this.successMessage.set(this.translate.instant('academy.messages.walletLinked', { wallet: wallet.walletAddress }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1303,7 +1462,7 @@ export class AcademyComponent implements OnInit {
       });
       this.inviteEmail.set('');
       this.inviteUserModalOpen.set(false);
-      this.successMessage.set(`Invitacion ${invitation.role} enviada a ${invitation.email}.`);
+      this.successMessage.set(this.translate.instant('academy.messages.invitationSent', { role: invitation.role, email: invitation.email }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1335,7 +1494,7 @@ export class AcademyComponent implements OnInit {
       );
       const refreshedUser = this.institutionUsers().find((item) => item.userId === user.userId);
       this.selectedUser.set(refreshedUser ?? updatedUser);
-      this.successMessage.set(`Rol actualizado a ${role}.`);
+      this.successMessage.set(this.translate.instant('academy.messages.roleUpdated', { role }));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1359,7 +1518,7 @@ export class AcademyComponent implements OnInit {
         await this.academyService.listInstitutionUsers(institutionId),
       );
       this.selectedUser.set(null);
-      this.successMessage.set('Acceso revocado correctamente.');
+      this.successMessage.set(this.translate.instant('academy.messages.accessRevoked'));
     } catch (error: unknown) {
       this.errorMessage.set(toErrorMessage(error));
     } finally {
@@ -1414,5 +1573,20 @@ export class AcademyComponent implements OnInit {
       this.selectedStudent.set(null);
       this.selectedUser.set(null);
     }
+  }
+
+  private async linkIssuerWallet(institutionId: string, walletAddress: string): Promise<void> {
+    await this.academyService.linkInstitutionIssuerWallet(institutionId, {
+      walletAddress,
+      did: `did:ethr:sepolia:${walletAddress}`,
+      publicKey: null,
+    });
+  }
+
+  private normalizeWallet(value: string): string | null {
+    const trimmed = value.trim();
+    return /^0x[a-fA-F0-9]{40}$/.test(trimmed)
+      ? trimmed.toLowerCase()
+      : null;
   }
 }

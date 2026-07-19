@@ -65,6 +65,30 @@ public sealed class InstitutionsController : ControllerBase
         return FromResult(result, success => Ok(success));
     }
 
+    /// <summary>Actualiza datos editables de una institucion sin cambiar su codigo institucional.</summary>
+    [HttpPatch("{institutionId:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]
+    [ProducesResponseType(typeof(InstitutionSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<InstitutionSummary>> UpdateInstitution(
+        Guid institutionId,
+        [FromBody] UpdateInstitutionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _academyService.UpdateInstitutionAsync(
+            new UpdateInstitutionCommand(
+                institutionId,
+                request.LegalName,
+                request.DisplayName,
+                request.CountryCode,
+                request.WebsiteUrl,
+                request.IsActive),
+            cancellationToken);
+
+        return FromResult(result, success => Ok(success));
+    }
+
     /// <summary>Crea una carrera dentro de una institucion.</summary>
     [HttpPost("{institutionId:guid}/careers")]
     [Authorize(Policy = AuthorizationPolicies.InstitutionAdmin)]

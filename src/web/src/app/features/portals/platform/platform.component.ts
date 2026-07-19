@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { BlockchainBackgroundComponent } from '../../../shared/ui/blockchain-background/blockchain-background.component';
@@ -15,6 +16,7 @@ type PlatformTab = 'institutions' | 'reports';
   standalone: true,
   imports: [
     CommonModule,
+    TranslatePipe,
     BlockchainBackgroundComponent,
     UserMenuComponent,
     PlatformInstitutionsTabComponent,
@@ -35,7 +37,7 @@ type PlatformTab = 'institutions' | 'reports';
             </div>
             <div>
               <h1 class="text-lg font-bold tracking-tight text-white">SovereignID</h1>
-              <p class="text-xs text-slate-400">Platform Portal</p>
+              <p class="text-xs text-slate-400">{{ 'platform.portal' | translate }}</p>
             </div>
           </div>
 
@@ -53,7 +55,7 @@ type PlatformTab = 'institutions' | 'reports';
               : 'border-transparent text-slate-400 hover:text-white'"
             (click)="setActiveTab('institutions')"
           >
-            Instituciones
+            {{ 'platform.tabs.institutions' | translate }}
           </button>
           <button
             type="button"
@@ -63,7 +65,7 @@ type PlatformTab = 'institutions' | 'reports';
               : 'border-transparent text-slate-400 hover:text-white'"
             (click)="setActiveTab('reports')"
           >
-            Reportes
+            {{ 'platform.tabs.reports' | translate }}
           </button>
         </div>
 

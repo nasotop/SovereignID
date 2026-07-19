@@ -98,7 +98,7 @@ describe('ReportsService', () => {
     ).rejects.toBeInstanceOf(PlatformUnauthorizedError);
   });
 
-  it('should translate Problem Details detail on errors', async () => {
+  it('should map Problem Details status to a controlled user message', async () => {
     apiInvoke.mockRejectedValue(
       new HttpErrorResponse({
         status: 403,
@@ -113,7 +113,7 @@ describe('ReportsService', () => {
 
     await expect(
       service.getPlatformStudentsByInstitution('2026-07-05'),
-    ).rejects.toThrow('Sin permisos para reportes');
+    ).rejects.toThrow('You do not have permission to perform this action.');
   });
 
   it('should require authentication before calling reports', async () => {
