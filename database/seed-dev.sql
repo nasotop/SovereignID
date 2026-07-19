@@ -222,6 +222,12 @@ ON CONFLICT (id) DO UPDATE SET
   rotation_reason = EXCLUDED.rotation_reason;
 
 -- Credencial 1: TITULO active
+-- content_hash = SHA-256 JCS (RFC 8785) del VC seed documentado abajo.
+-- ipfs_cid es determinístico (mismo algoritmo que InMemoryContentPinningAdapter);
+-- el gateway público NO resuelve estos CID hasta re-pinnear con
+-- POST /issuer/institutions/{id}/documents/anchor (Pinata) y actualizar cid/url.
+-- VC JCS source (titulo):
+-- {"@context":["https://www.w3.org/ns/credentials/v2"],"type":["VerifiableCredential","UniversityDegreeCredential"],"id":"urn:uuid:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","issuer":"did:ethr:sepolia:0x1111111111111111111111111111111111111111","credentialSubject":{"id":"did:ethr:sepolia:0xf6461f392288b5732a7703e8b83f64cab134eada","degree":{"name":"Ingenieria en Informatica","type":"BachelorDegree"}}}
 INSERT INTO credentials (
   id,
   institution_id,
@@ -253,9 +259,9 @@ VALUES (
   '44444444-4444-4444-4444-444444444444',
   'did:ethr:sepolia:0xf6461f392288b5732a7703e8b83f64cab134eada',
   'did:ethr:sepolia:0x1111111111111111111111111111111111111111',
-  'bafybeigdyrztdevtitulo000000000000000001',
-  'https://ipfs.io/ipfs/bafybeigdyrztdevtitulo000000000000000001',
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+  'bafybei2044591808e08be57eae1192300fd6a616c4dd',
+  'https://ipfs.io/ipfs/bafybei2044591808e08be57eae1192300fd6a616c4dd',
+  '0x2044591808e08be57eae1192300fd6a616c4dde882141c654339f91d5ee0e703',
   '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1',
   123456,
   11155111,
@@ -322,9 +328,9 @@ VALUES (
   '44444444-4444-4444-4444-444444444444',
   'did:ethr:sepolia:0xf6461f392288b5732a7703e8b83f64cab134eada',
   'did:ethr:sepolia:0x1111111111111111111111111111111111111111',
-  'bafybeigdyrztdevnotas0000000000000000002',
-  'https://ipfs.io/ipfs/bafybeigdyrztdevnotas0000000000000000002',
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2',
+  'bafybei6cfecd5cab0e540f05c928e3007e8805058c23',
+  'https://ipfs.io/ipfs/bafybei6cfecd5cab0e540f05c928e3007e8805058c23',
+  '0x6cfecd5cab0e540f05c928e3007e8805058c23580394296d8bb5d2c2525a7fd8',
   '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2',
   123457,
   11155111,
@@ -391,9 +397,9 @@ VALUES (
   '44444444-4444-4444-4444-444444444444',
   'did:ethr:sepolia:0xf6461f392288b5732a7703e8b83f64cab134eada',
   'did:ethr:sepolia:0x1111111111111111111111111111111111111111',
-  'bafybeigdyrztdevcert00000000000000000003',
-  'https://ipfs.io/ipfs/bafybeigdyrztdevcert00000000000000000003',
-  '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa3',
+  'bafybeib249c53eabb661adb7a0f38faa55ef2dd7c2a0',
+  'https://ipfs.io/ipfs/bafybeib249c53eabb661adb7a0f38faa55ef2dd7c2a0',
+  '0xb249c53eabb661adb7a0f38faa55ef2dd7c2a0b43e521639d463ffe91b0605c1',
   '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3',
   123458,
   11155111,

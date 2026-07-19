@@ -115,6 +115,12 @@ services:
       Issuer__CredentialRegistryAddress: ${Issuer__CredentialRegistryAddress:-}
       Issuer__Blockchain__Enabled: ${Issuer__Blockchain__Enabled:-false}
       Issuer__Blockchain__RpcUrl: ${Issuer__Blockchain__RpcUrl:-https://ethereum-sepolia-rpc.publicnode.com}
+      Issuer__ContentAnchor__Enabled: ${Issuer__ContentAnchor__Enabled:-true}
+      Issuer__ContentAnchor__VerifyEnabled: ${Issuer__ContentAnchor__VerifyEnabled:-true}
+      Issuer__ContentAnchor__GatewayBase: ${Issuer__ContentAnchor__GatewayBase:-https://ipfs.io/ipfs}
+      Issuer__ContentAnchor__PinataApiKey: ${Issuer__ContentAnchor__PinataApiKey:-}
+      Issuer__ContentAnchor__PinataApiSecret: ${Issuer__ContentAnchor__PinataApiSecret:-}
+      Issuer__ContentAnchor__IpfsTimeoutSeconds: ${Issuer__ContentAnchor__IpfsTimeoutSeconds:-30}
     expose:
       - "8080"
     depends_on:

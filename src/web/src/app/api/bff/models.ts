@@ -3,8 +3,10 @@
 
 export type { AcceptInstitutionInvitationRequest } from './models/accept-institution-invitation-request';
 export type { AddStudentWalletRequest } from './models/add-student-wallet-request';
+export type { AnchorCredentialDocumentRequest } from './models/anchor-credential-document-request';
 export type { AnchorsResponse } from './models/anchors-response';
 export type { CareerSummary } from './models/career-summary';
+export type { ContentAnchorResponse } from './models/content-anchor-response';
 export type { CreateCareerRequest } from './models/create-career-request';
 export type { CreateInstitutionInvitationRequest } from './models/create-institution-invitation-request';
 export type { CreateInstitutionRequest } from './models/create-institution-request';
@@ -32,6 +34,7 @@ export type { StudentSummary } from './models/student-summary';
 export type { StudentTitleLinked } from './models/student-title-linked';
 export type { StudentWalletSummary } from './models/student-wallet-summary';
 export type { UntypedNode } from './models/untyped-node';
+export type { UpdateCareerRequest } from './models/update-career-request';
 export type { UpdateHolderProfileRequest } from './models/update-holder-profile-request';
 export type { UpdateInstitutionUserRoleRequest } from './models/update-institution-user-role-request';
 export type { VerificationChecksResponse } from './models/verification-checks-response';

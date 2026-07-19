@@ -44,6 +44,13 @@ export const DOCUMENT_TYPE_OPTIONS = [
 
 export type DocumentTypeOption = (typeof DOCUMENT_TYPE_OPTIONS)[number];
 
+/** Result of POST .../documents/anchor (JCS + IPFS via issuer-api). */
+export interface ContentAnchor {
+  contentHash: string;
+  ipfsCid: string;
+  ipfsGatewayUrl: string;
+}
+
 export interface LinkStudentTitleRequest {
   credentialId?: string;
   careerId?: string;

@@ -30,10 +30,6 @@ Set the address in the Angular app:
 localStorage.setItem('sovereignid.registry.address', '<deployed-address>');
 ```
 
-### Pinata (optional)
+### IPFS / Pinata
 
-```js
-localStorage.setItem('sovereignid.pinata.jwt', '<pinata-jwt>');
-```
-
-Without Pinata JWT, the frontend uses a deterministic dev CID for local demos.
+Pinning is server-side only (`issuer-api` via `Issuer__ContentAnchor__*`). See [`docs/deployment.md`](../docs/deployment.md). Do not configure Pinata JWTs in the browser.

@@ -13,7 +13,7 @@ import {
   IssuedCredential,
 } from '../../../core/models/credential.models';
 import { CredentialService } from '../../../core/services/credential.service';
-import { toErrorMessage } from '../../../core/utils/error.utils';
+import { toHttpErrorMessage } from '../../../core/utils/error.utils';
 import { CopyValueComponent } from '../../../shared/ui/copy-value/copy-value.component';
 import { HexLoaderComponent } from '../../../shared/ui/hex-loader/hex-loader.component';
 import { ModalComponent } from '../../../shared/ui/modal/modal.component';
@@ -624,7 +624,9 @@ export class IssuerTabComponent {
       this.issueModalOpen.set(false);
       this.successMessage.set(`Titulo emitido para ${student.externalReference || student.id} en ${career.name}.`);
     } catch (error: unknown) {
-      this.errorMessage.set(toErrorMessage(error));
+      this.errorMessage.set(
+        toHttpErrorMessage(error, 'No se pudo emitir la credencial'),
+      );
     } finally {
       this.isBusy.set(false);
     }
@@ -660,7 +662,9 @@ export class IssuerTabComponent {
       this.selectedCredential.set(null);
       this.successMessage.set('Credencial revocada correctamente.');
     } catch (error: unknown) {
-      this.errorMessage.set(toErrorMessage(error));
+      this.errorMessage.set(
+        toHttpErrorMessage(error, 'No se pudo revocar la credencial'),
+      );
     } finally {
       this.isBusy.set(false);
     }

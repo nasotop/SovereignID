@@ -126,7 +126,9 @@ public sealed class IssuerAuthenticatedWebApplicationFactory : WebApplicationFac
                 ["Auth:JwtIssuer"] = JwtTestHelper.TestIssuer,
                 ["Auth:JwtAudience"] = JwtTestHelper.TestAudience,
                 ["Auth:JwtSigningKey"] = JwtTestHelper.TestSigningKey,
-                [$"{IssuerOptions.SectionName}:Auth:RequireAuthentication"] = "true"
+                [$"{IssuerOptions.SectionName}:Auth:RequireAuthentication"] = "true",
+                ["Issuer:ContentAnchor:Enabled"] = "false",
+                ["Issuer:ContentAnchor:VerifyEnabled"] = "false"
             });
         });
     }

@@ -256,14 +256,15 @@ El microservicio `issuer` concentra la emision y vinculacion de credenciales ver
 | Endpoint | Proposito |
 |----------|-----------|
 | `POST /issuer/institutions/{institutionId}/wallet` | Vincula wallet/DID emisor de una institucion |
+| `POST /issuer/institutions/{institutionId}/documents/anchor` | Canonicaliza JCS, hashea y pinnea VC JSON-LD (Pinata server-side) |
 | `POST /issuer/students/{studentId}/title` | Vincula un titulo emitido a un estudiante |
 | `GET /issuer/holders/me/credentials` | Lista credenciales del titular autenticado (JWT SIWE) |
 | `GET /issuer/holders/me/credentials/{credentialId}` | Detalle de credencial del titular |
 | `GET /issuer/credentials/{credentialId}` | Detalle autenticado (ownership por `subject_did`) |
 
-Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincular un titulo, el estudiante debe tener wallet primaria activa y la institucion debe tener DID emisor. El servicio valida carrera, tipo de credencial, datos IPFS, hash, transaccion y firma EIP-712 antes de registrar la fila en `credentials`. Las consultas del portal Holder filtran por claim `did` del JWT contra `credentials.subject_did`.
+Regla MVP: `issuer` vincula la wallet/DID emisor de la institucion y, para vincular un titulo, el estudiante debe tener wallet primaria activa y la institucion debe tener DID emisor. El flujo de emision del portal Angular (`TitleIssuanceService`) es: `VcDocumentService` construye el VC → `POST .../documents/anchor` (JCS + Pinata `pinFileToIPFS` en issuer-api) → firma on-chain (MetaMask) → `POST .../title`. El navegador **no** pinnea ni calcula hash/CID. Con `ContentAnchor:VerifyEnabled=true`, el link verifica que el gateway devuelve bytes cuyo SHA-256 coincide con `contentHash`. Las consultas del portal Holder filtran por claim `did` del JWT contra `credentials.subject_did`.
 
-Contrato HTTP: OpenAPI generado por `Issuer.Api` → `docs/contracts/issuer.openapi.json` (incluye `bearerAuth` en operaciones holder y `status` como `enum` tipado). Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
+Contrato HTTP: OpenAPI generado por `Issuer.Api` → `docs/contracts/issuer.openapi.json` (incluye `bearerAuth` en operaciones holder y anchor; `status` como `enum` tipado). Contrato de dominio: [`docs/issuer-domain-contract.md`](docs/issuer-domain-contract.md).
 
 **Portal web del holder:** `/holder` requiere sesión SIWE (`authGuard`) y carga credenciales reales con `GET /issuer/holders/me/credentials`. El componente habla solo con **`HolderService`**, fachada sobre el cliente generado (`ng-openapi-gen` → `src/app/api/bff/`). El JWT se adjunta vía interceptor global y la fachada falla temprano si no hay sesión. Estados UI: `loading` / `loaded` / `empty` / `error`; badge de `status` (`active|revoked|expired`); icono por `typeCode` (`TITULO` → degree). Download JSON usa el detalle holder (con caché local en componente); Share v1 copia el UUID al portapapeles; **«Ver anclas»** abre modal lazy con **`CredentialAnchorsPanel`** y enlace al verifier público. El front llega al backend vía **`/api/issuer/…`** (nginx strip → `bff-api` → Kiota → `issuer-api`; JWT reenviado sin validar en BFF v1).
 
@@ -302,7 +303,7 @@ Backend-for-Frontend entre el portal web y los microservicios internos. Decisió
 | Downstream v1 | verifier, issuer (holder + admin), academy, reports |
 | JWT holder | Reenvío del header `Authorization`; validación en `issuer-api` |
 
-Rutas issuer admin expuestas en v1: `POST /issuer/institutions/{id}/wallet`, `POST /issuer/students/{id}/title`, `GET /issuer/credentials/{id}`.
+Rutas issuer admin expuestas en v1: `POST /issuer/institutions/{id}/wallet`, `POST /issuer/institutions/{id}/documents/anchor`, `POST /issuer/students/{id}/title`, `GET /issuer/credentials/{id}`.
 
 Clientes Kiota se regeneran con `scripts/gen-kiota-clients.ps1` desde los snapshots de cada microservicio; código commiteado en `Bff.Clients/Generated/`. Los clientes Angular se regeneran con `npm run gen:api:bff` (desde `docs/contracts/bff.openapi.json`) y `npm run gen:api:auth` (desde `docs/contracts/auth.openapi.json`).
 

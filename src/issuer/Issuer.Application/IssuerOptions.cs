@@ -10,6 +10,8 @@ public sealed class IssuerOptions
 
     public BlockchainOptions Blockchain { get; set; } = new();
 
+    public ContentAnchorOptions ContentAnchor { get; set; } = new();
+
     public AuthOptions Auth { get; set; } = new();
 }
 
@@ -18,6 +20,21 @@ public sealed class BlockchainOptions
     public bool Enabled { get; set; }
 
     public string RpcUrl { get; set; } = "https://rpc.sepolia.org";
+}
+
+public sealed class ContentAnchorOptions
+{
+    public bool Enabled { get; set; }
+
+    public bool VerifyEnabled { get; set; }
+
+    public string GatewayBase { get; set; } = "https://ipfs.io/ipfs";
+
+    public string PinataApiKey { get; set; } = string.Empty;
+
+    public string PinataApiSecret { get; set; } = string.Empty;
+
+    public int IpfsTimeoutSeconds { get; set; } = 30;
 }
 
 public sealed class AuthOptions

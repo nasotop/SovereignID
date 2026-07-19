@@ -11,8 +11,16 @@ export type { AcademyInstitutionsPost$Params as AcademyInstitutionsPost$Params }
 export { academyInstitutionsPost as academyInstitutionsPost } from './fn/academy-institutions/academy-institutions-post';
 export type { AcademyInstitutionsInstitutionIdGet$Params as AcademyInstitutionsInstitutionIdGet$Params } from './fn/academy-institutions/academy-institutions-institution-id-get';
 export { academyInstitutionsInstitutionIdGet as academyInstitutionsInstitutionIdGet } from './fn/academy-institutions/academy-institutions-institution-id-get';
+export type { AcademyInstitutionsInstitutionIdCareersGet$Params as AcademyInstitutionsInstitutionIdCareersGet$Params } from './fn/academy-institutions/academy-institutions-institution-id-careers-get';
+export { academyInstitutionsInstitutionIdCareersGet as academyInstitutionsInstitutionIdCareersGet } from './fn/academy-institutions/academy-institutions-institution-id-careers-get';
 export type { AcademyInstitutionsInstitutionIdCareersPost$Params as AcademyInstitutionsInstitutionIdCareersPost$Params } from './fn/academy-institutions/academy-institutions-institution-id-careers-post';
 export { academyInstitutionsInstitutionIdCareersPost as academyInstitutionsInstitutionIdCareersPost } from './fn/academy-institutions/academy-institutions-institution-id-careers-post';
+export type { AcademyInstitutionsInstitutionIdCareersCareerIdGet$Params as AcademyInstitutionsInstitutionIdCareersCareerIdGet$Params } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-get';
+export { academyInstitutionsInstitutionIdCareersCareerIdGet as academyInstitutionsInstitutionIdCareersCareerIdGet } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-get';
+export type { AcademyInstitutionsInstitutionIdCareersCareerIdDelete$Params as AcademyInstitutionsInstitutionIdCareersCareerIdDelete$Params } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-delete';
+export { academyInstitutionsInstitutionIdCareersCareerIdDelete as academyInstitutionsInstitutionIdCareersCareerIdDelete } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-delete';
+export type { AcademyInstitutionsInstitutionIdCareersCareerIdPatch$Params as AcademyInstitutionsInstitutionIdCareersCareerIdPatch$Params } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-patch';
+export { academyInstitutionsInstitutionIdCareersCareerIdPatch as academyInstitutionsInstitutionIdCareersCareerIdPatch } from './fn/academy-institutions/academy-institutions-institution-id-careers-career-id-patch';
 export type { AcademyInstitutionsInstitutionIdStudentsGet$Params as AcademyInstitutionsInstitutionIdStudentsGet$Params } from './fn/academy-institutions/academy-institutions-institution-id-students-get';
 export { academyInstitutionsInstitutionIdStudentsGet as academyInstitutionsInstitutionIdStudentsGet } from './fn/academy-institutions/academy-institutions-institution-id-students-get';
 export type { AcademyInstitutionsInstitutionIdStudentsPost$Params as AcademyInstitutionsInstitutionIdStudentsPost$Params } from './fn/academy-institutions/academy-institutions-institution-id-students-post';
@@ -45,6 +53,8 @@ export type { IssuerHoldersMeCredentialsCredentialIdGet$Params as IssuerHoldersM
 export { issuerHoldersMeCredentialsCredentialIdGet as issuerHoldersMeCredentialsCredentialIdGet } from './fn/holder-credentials/issuer-holders-me-credentials-credential-id-get';
 export type { IssuerInstitutionsInstitutionIdCredentialsGet$Params as IssuerInstitutionsInstitutionIdCredentialsGet$Params } from './fn/institution-credentials/issuer-institutions-institution-id-credentials-get';
 export { issuerInstitutionsInstitutionIdCredentialsGet as issuerInstitutionsInstitutionIdCredentialsGet } from './fn/institution-credentials/issuer-institutions-institution-id-credentials-get';
+export type { IssuerInstitutionsInstitutionIdDocumentsAnchorPost$Params as IssuerInstitutionsInstitutionIdDocumentsAnchorPost$Params } from './fn/institution-documents/issuer-institutions-institution-id-documents-anchor-post';
+export { issuerInstitutionsInstitutionIdDocumentsAnchorPost as issuerInstitutionsInstitutionIdDocumentsAnchorPost } from './fn/institution-documents/issuer-institutions-institution-id-documents-anchor-post';
 export type { IssuerInstitutionsInstitutionIdWalletPost$Params as IssuerInstitutionsInstitutionIdWalletPost$Params } from './fn/institution-issuer-wallet/issuer-institutions-institution-id-wallet-post';
 export { issuerInstitutionsInstitutionIdWalletPost as issuerInstitutionsInstitutionIdWalletPost } from './fn/institution-issuer-wallet/issuer-institutions-institution-id-wallet-post';
 export type { ReportsInstitutionsInstitutionIdCredentialsIssuedGet$Params as ReportsInstitutionsInstitutionIdCredentialsIssuedGet$Params } from './fn/reports/reports-institutions-institution-id-credentials-issued-get';

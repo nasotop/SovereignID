@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { BFF_API_BASE } from '../constants/api.constants';
 import {
+  ContentAnchor,
   CredentialRevokedResponse,
   CredentialSummaryResponse,
   LinkStudentTitleRequest,
@@ -32,6 +33,16 @@ export class IssuerApiService {
   ): Observable<ReadonlyArray<CredentialSummaryResponse>> {
     return this.http.get<ReadonlyArray<CredentialSummaryResponse>>(
       `${BFF_API_BASE}/issuer/institutions/${institutionId}/credentials`,
+    );
+  }
+
+  anchorDocument(
+    institutionId: string,
+    document: unknown,
+  ): Observable<ContentAnchor> {
+    return this.http.post<ContentAnchor>(
+      `${BFF_API_BASE}/issuer/institutions/${institutionId}/documents/anchor`,
+      { document },
     );
   }
 

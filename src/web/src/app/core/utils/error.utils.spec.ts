@@ -19,6 +19,26 @@ describe('error.utils', () => {
     );
   });
 
+  it('maps content-anchor domain error codes to Spanish copy', () => {
+    const error = new HttpErrorResponse({
+      error: {
+        title: 'Service Unavailable',
+        status: 503,
+        detail: 'IPFS content anchoring is not configured.',
+        error: 'ipfs_not_configured',
+      },
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+
+    expect(toHttpErrorMessage(error, 'fallback')).toBe(
+      'IPFS no configurado en el servidor emisor',
+    );
+    expect(toThrownError(error, 'fallback').message).toBe(
+      'IPFS no configurado en el servidor emisor',
+    );
+  });
+
   it('recognizes Problem Details shape', () => {
     expect(isProblemDetails(unsupportedChainFixture)).toBe(true);
     expect(isProblemDetails({ message: 'legacy' })).toBe(false);

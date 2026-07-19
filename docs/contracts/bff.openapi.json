@@ -9,11 +9,6 @@
     },
     "version": "v1"
   },
-  "servers": [
-    {
-      "url": "http://127.0.0.1:5194/"
-    }
-  ],
   "paths": {
     "/academy/holders/me": {
       "get": {
@@ -24,7 +19,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -69,7 +64,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "400": {
@@ -1048,7 +1043,7 @@
           "204": {
             "description": "No Content",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           },
           "404": {
@@ -1390,6 +1385,96 @@
         }
       }
     },
+    "/issuer/institutions/{institutionId}/documents/anchor": {
+      "post": {
+        "tags": [
+          "InstitutionDocuments"
+        ],
+        "parameters": [
+          {
+            "name": "institutionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnchorCredentialDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAnchorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/issuer/institutions/{institutionId}/wallet": {
       "post": {
         "tags": [
@@ -1496,7 +1581,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1538,7 +1623,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1572,7 +1657,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1614,7 +1699,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1656,7 +1741,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1689,7 +1774,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1714,7 +1799,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": { }
+              "application/json": {}
             }
           }
         }
@@ -1891,6 +1976,17 @@
           }
         }
       },
+      "AnchorCredentialDocumentRequest": {
+        "required": [
+          "document"
+        ],
+        "type": "object",
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "AnchorsResponse": {
         "required": [
           "ipfsCid",
@@ -1966,6 +2062,25 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ContentAnchorResponse": {
+        "required": [
+          "contentHash",
+          "ipfsCid",
+          "ipfsGatewayUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "contentHash": {
+            "type": "string"
+          },
+          "ipfsCid": {
+            "type": "string"
+          },
+          "ipfsGatewayUrl": {
+            "type": "string"
           }
         }
       },
@@ -2756,7 +2871,7 @@
           }
         }
       },
-      "JsonElement": { },
+      "JsonElement": {},
       "LinkInstitutionIssuerWalletRequest": {
         "required": [
           "walletAddress",
@@ -3334,6 +3449,9 @@
     },
     {
       "name": "InstitutionCredentials"
+    },
+    {
+      "name": "InstitutionDocuments"
     },
     {
       "name": "InstitutionIssuerWallet"

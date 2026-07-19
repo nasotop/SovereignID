@@ -3,6 +3,7 @@
 using Microsoft.Kiota.Abstractions.Extensions;
 using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions;
+using SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item;
 using SovereignID.Bff.Clients.Academy.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,31 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers
     [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
     public partial class CareersRequestBuilder : BaseRequestBuilder
     {
+        /// <summary>Gets an item from the SovereignID.Bff.Clients.Academy.academy.institutions.item.careers.item collection</summary>
+        /// <param name="position">Unique identifier of the item</param>
+        /// <returns>A <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder"/></returns>
+        public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder this[Guid position]
+        {
+            get
+            {
+                var urlTplParams = new Dictionary<string, object>(PathParameters);
+                urlTplParams.Add("careerId", position);
+                return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder(urlTplParams, RequestAdapter);
+            }
+        }
+        /// <summary>Gets an item from the SovereignID.Bff.Clients.Academy.academy.institutions.item.careers.item collection</summary>
+        /// <param name="position">Unique identifier of the item</param>
+        /// <returns>A <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder"/></returns>
+        [Obsolete("This indexer is deprecated and will be removed in the next major version. Use the one with the typed parameter instead.")]
+        public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder this[string position]
+        {
+            get
+            {
+                var urlTplParams = new Dictionary<string, object>(PathParameters);
+                if (!string.IsNullOrWhiteSpace(position)) urlTplParams.Add("careerId", position);
+                return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.Item.WithCareerItemRequestBuilder(urlTplParams, RequestAdapter);
+            }
+        }
         /// <summary>
         /// Instantiates a new <see cref="global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.CareersRequestBuilder"/> and sets the default values.
         /// </summary>
@@ -32,6 +58,30 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers
         /// <param name="requestAdapter">The request adapter to use to execute the requests.</param>
         public CareersRequestBuilder(string rawUrl, IRequestAdapter requestAdapter) : base(requestAdapter, "{+baseurl}/academy/institutions/{institutionId}/careers", rawUrl)
         {
+        }
+        /// <summary>
+        /// Lista carreras de una institucion.
+        /// </summary>
+        /// <returns>A List&lt;global::SovereignID.Bff.Clients.Academy.Models.CareerSummary&gt;</returns>
+        /// <param name="cancellationToken">Cancellation token to use when cancelling requests</param>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+        /// <exception cref="global::SovereignID.Bff.Clients.Academy.Models.ProblemDetails">When receiving a 404 status code</exception>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public async Task<List<global::SovereignID.Bff.Clients.Academy.Models.CareerSummary>?> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#nullable restore
+#else
+        public async Task<List<global::SovereignID.Bff.Clients.Academy.Models.CareerSummary>> GetAsync(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default, CancellationToken cancellationToken = default)
+        {
+#endif
+            var requestInfo = ToGetRequestInformation(requestConfiguration);
+            var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>
+            {
+                { "404", global::SovereignID.Bff.Clients.Academy.Models.ProblemDetails.CreateFromDiscriminatorValue },
+            };
+            var collectionResult = await RequestAdapter.SendCollectionAsync<global::SovereignID.Bff.Clients.Academy.Models.CareerSummary>(requestInfo, global::SovereignID.Bff.Clients.Academy.Models.CareerSummary.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
+            return collectionResult?.AsList();
         }
         /// <summary>
         /// Crea una carrera dentro de una institucion.
@@ -63,6 +113,25 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers
             return await RequestAdapter.SendAsync<global::SovereignID.Bff.Clients.Academy.Models.CareerSummary>(requestInfo, global::SovereignID.Bff.Clients.Academy.Models.CareerSummary.CreateFromDiscriminatorValue, errorMapping, cancellationToken).ConfigureAwait(false);
         }
         /// <summary>
+        /// Lista carreras de una institucion.
+        /// </summary>
+        /// <returns>A <see cref="RequestInformation"/></returns>
+        /// <param name="requestConfiguration">Configuration for the request such as headers, query parameters, and middleware options.</param>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+#nullable enable
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>>? requestConfiguration = default)
+        {
+#nullable restore
+#else
+        public RequestInformation ToGetRequestInformation(Action<RequestConfiguration<DefaultQueryParameters>> requestConfiguration = default)
+        {
+#endif
+            var requestInfo = new RequestInformation(Method.GET, UrlTemplate, PathParameters);
+            requestInfo.Configure(requestConfiguration);
+            requestInfo.Headers.TryAdd("Accept", "application/json");
+            return requestInfo;
+        }
+        /// <summary>
         /// Crea una carrera dentro de una institucion.
         /// </summary>
         /// <returns>A <see cref="RequestInformation"/></returns>
@@ -92,6 +161,14 @@ namespace SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers
         public global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.CareersRequestBuilder WithUrl(string rawUrl)
         {
             return new global::SovereignID.Bff.Clients.Academy.Academy.Institutions.Item.Careers.CareersRequestBuilder(rawUrl, RequestAdapter);
+        }
+        /// <summary>
+        /// Configuration for the request such as headers, query parameters, and middleware options.
+        /// </summary>
+        [Obsolete("This class is deprecated. Please use the generic RequestConfiguration class generated by the generator.")]
+        [global::System.CodeDom.Compiler.GeneratedCode("Kiota", "1.0.0")]
+        public partial class CareersRequestBuilderGetRequestConfiguration : RequestConfiguration<DefaultQueryParameters>
+        {
         }
         /// <summary>
         /// Configuration for the request such as headers, query parameters, and middleware options.

@@ -1,2 +1,3 @@
+Warning: KiotaBuilder Unable to check for updates
 Warning: KiotaBuilder OpenAPI warning: #/components/schemas/AnchorsResponse/properties/chainId - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
 Warning: KiotaBuilder OpenAPI warning: #/components/schemas/ProblemDetails/properties/status - The format int32 is not supported by Kiota for the type Integer, String and the string type will be used.
