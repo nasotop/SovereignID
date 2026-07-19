@@ -33,12 +33,21 @@ export interface EvidenceBannerViewModel {
 
 export type VerdictResultTone = 'success' | 'warning' | 'danger' | 'neutral';
 
+export interface VerdictCredentialViewModel {
+  raw: NonNullable<VerificationResponse['credential']>;
+  /** i18n key when status is a known credential status; otherwise null and use statusFallback. */
+  statusKey: string | null;
+  statusFallback: string;
+  issuedAtDisplay: string;
+  expiresAtDisplay: string;
+}
+
 export interface VerdictViewModel {
   resultLabelKey: string;
   resultTone: VerdictResultTone;
   groups: CheckGroupViewModel[];
   evidenceBanner: EvidenceBannerViewModel;
-  credential: VerificationResponse['credential'];
+  credential: VerdictCredentialViewModel | null;
 }
 
 type BooleanCheckKey =
@@ -100,6 +109,41 @@ const RESULT_TONES: Record<VerificationResponse['result'], VerdictResultTone> = 
   integrity_failed: 'danger',
 };
 
+const CREDENTIAL_STATUS_KEYS: Record<string, string> = {
+  active: 'common.status.active',
+  revoked: 'common.status.revoked',
+  expired: 'common.status.expired',
+};
+
+function formatDateTime(value: string | null | undefined, locale: string): string {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function buildCredentialViewModel(
+  credential: NonNullable<VerificationResponse['credential']>,
+  locale: string,
+): VerdictCredentialViewModel {
+  return {
+    raw: credential,
+    statusKey: CREDENTIAL_STATUS_KEYS[credential.status] ?? null,
+    statusFallback: credential.status,
+    issuedAtDisplay: formatDateTime(credential.issuedAt, locale),
+    expiresAtDisplay: formatDateTime(credential.expiresAt, locale),
+  };
+}
+
 function formatBooleanCheck(value: boolean | null | undefined): {
   displayValueKey: string;
   tone: CheckRowTone;
@@ -159,6 +203,7 @@ function buildBooleanRows(
 
 export function buildVerdictViewModel(
   response: VerificationResponse,
+  locale: string,
   presentation: VerdictPresentation = VERIFIER_FULL_PRESENTATION,
 ): VerdictViewModel {
   if (presentation.preset !== 'verifierFull') {
@@ -201,6 +246,6 @@ export function buildVerdictViewModel(
       visible: isEvidenceDisabled(checks),
       messageKey: 'verificationVerdict.evidenceDisabled',
     },
-    credential: response.credential,
+    credential: response.credential ? buildCredentialViewModel(response.credential, locale) : null,
   };
 }

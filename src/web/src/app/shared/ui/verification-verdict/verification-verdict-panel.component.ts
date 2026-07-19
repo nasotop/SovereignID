@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { VerificationResponse } from '../../../api/bff/models/verification-response';
+import { LanguageService } from '../../../core/services/language.service';
 import { CredentialAnchorsPanelComponent } from '../credential-anchors';
 import { CopyValueComponent } from '../copy-value/copy-value.component';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
@@ -57,7 +58,7 @@ import {
           </div>
         }
 
-        @if (vm.credential; as credential) {
+        @if (vm.credential; as credentialVm) {
           <div>
             <h3 class="text-sm font-medium text-slate-300 mb-3">{{ 'verificationVerdict.credential' | translate }}</h3>
             <div class="rounded-lg bg-slate-900/60 p-4 space-y-4">
@@ -65,42 +66,48 @@ import {
                 <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">ID</dt>
                   <dd>
-                    <app-copy-value [value]="credential.id" />
+                    <app-copy-value [value]="credentialVm.raw.id" />
                   </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">{{ 'issuer.type' | translate }}</dt>
-                  <dd class="text-slate-200">{{ credential.type }}</dd>
+                  <dd class="text-slate-200">{{ credentialVm.raw.type }}</dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">{{ 'platform.institutions.status' | translate }}</dt>
-                  <dd class="text-slate-200">{{ credential.status }}</dd>
+                  <dd class="text-slate-200">
+                    {{
+                      credentialVm.statusKey
+                        ? (credentialVm.statusKey | translate)
+                        : credentialVm.statusFallback
+                    }}
+                  </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">{{ 'issuer.headerTitle' | translate }}</dt>
                   <dd class="text-slate-200">
-                    {{ credential.issuer.displayName }} ({{ credential.issuer.code }})
+                    {{ credentialVm.raw.issuer.displayName }} ({{ credentialVm.raw.issuer.code }})
                   </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">{{ 'issuer.issuerDid' | translate }}</dt>
                   <dd>
-                    <app-copy-value [value]="credential.issuer.did" />
+                    <app-copy-value [value]="credentialVm.raw.issuer.did" />
                   </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] items-center gap-2">
                   <dt class="text-slate-500">{{ 'verificationVerdict.subjectDid' | translate }}</dt>
                   <dd>
-                    <app-copy-value [value]="credential.subjectDid" />
+                    <app-copy-value [value]="credentialVm.raw.subjectDid" />
                   </dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">{{ 'verificationVerdict.issuedAt' | translate }}</dt>
-                  <dd class="text-slate-200">{{ credential.issuedAt }}</dd>
+                  <dd class="text-slate-200">{{ credentialVm.issuedAtDisplay }}</dd>
                 </div>
                 <div class="grid grid-cols-[8rem_1fr] gap-2">
                   <dt class="text-slate-500">{{ 'verificationVerdict.expiresAt' | translate }}</dt>
-                  <dd class="text-slate-200">{{ credential.expiresAt ?? '—' }}</dd>
+                  <dd class="text-slate-200">{{ credentialVm.expiresAtDisplay }}</dd>
                 </div>
               </dl>
 
@@ -108,7 +115,7 @@ import {
                 <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
                   {{ 'holder.anchorsTitle' | translate }}
                 </h4>
-                <app-credential-anchors-panel [anchors]="credential.anchors" />
+                <app-credential-anchors-panel [anchors]="credentialVm.raw.anchors" />
               </div>
             </div>
           </div>
@@ -118,11 +125,13 @@ import {
   `,
 })
 export class VerificationVerdictPanelComponent {
+  private readonly languageService = inject(LanguageService);
+
   readonly response = input.required<VerificationResponse>();
   readonly presentation = input<VerdictPresentation>(VERIFIER_FULL_PRESENTATION);
 
   readonly viewModel = computed(() =>
-    buildVerdictViewModel(this.response(), this.presentation()),
+    buildVerdictViewModel(this.response(), this.languageService.locale(), this.presentation()),
   );
 
   rowToneClass(tone: 'success' | 'danger' | 'neutral' | 'muted'): string {
