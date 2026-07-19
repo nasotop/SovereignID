@@ -71,6 +71,13 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_HTTP_PORTS: ${ASPNETCORE_HTTP_PORTS:-8080}
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-sovereignid};Username=${POSTGRES_USER:-sovereignid};Password=${POSTGRES_PASSWORD:-sovereignid_dev}
+      Verifier__Evidence__OnChainCheckEnabled: ${Verifier__Evidence__OnChainCheckEnabled:-false}
+      Verifier__Evidence__IpfsCheckEnabled: ${Verifier__Evidence__IpfsCheckEnabled:-false}
+      Verifier__Evidence__SignatureCheckEnabled: ${Verifier__Evidence__SignatureCheckEnabled:-false}
+      Verifier__Evidence__RpcUrl: ${Verifier__Evidence__RpcUrl:-https://rpc.sepolia.org}
+      Verifier__Evidence__RegistryAddress: ${Verifier__Evidence__RegistryAddress:-}
+      Verifier__Evidence__ChainId: ${Verifier__Evidence__ChainId:-11155111}
+      Verifier__Evidence__IpfsTimeoutSeconds: ${Verifier__Evidence__IpfsTimeoutSeconds:-8}
     expose:
       - "8080"
     depends_on:

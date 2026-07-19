@@ -92,6 +92,32 @@ El anclaje de VC se hace **solo en issuer-api** (no en el navegador; no hay JWT 
 
 Cuenta free tier de Pinata es suficiente para demos. Sin Key/Secret con `Enabled=true` → `503 ipfs_not_configured`.
 
+**Nota:** las variables Pinata del issuer **no** activan la evidencia on-chain/IPFS del verifier. Ver sección siguiente.
+
+## Verifier — chequeos de evidencia (on-chain / IPFS / firma)
+
+Por defecto los chequeos `onChainExists`, `hashMatches` y `signatureValid` quedan en `null` (“No evaluado” en la UI). Para activarlos en **Portainer → Stack → Environment variables** (además del cableado en `docker-compose.yml`):
+
+| Variable | Valor recomendado (prod) |
+|----------|--------------------------|
+| `Verifier__Evidence__OnChainCheckEnabled` | `true` |
+| `Verifier__Evidence__IpfsCheckEnabled` | `true` |
+| `Verifier__Evidence__SignatureCheckEnabled` | `true` |
+| `Verifier__Evidence__RpcUrl` | `https://rpc.sepolia.org` (o RPC propio) |
+| `Verifier__Evidence__RegistryAddress` | `0x28b9137739fff83fEDC1AFEB1948cAA90EC0bD93` (mismo contrato que el front) |
+| `Verifier__Evidence__ChainId` | `11155111` |
+| `Verifier__Evidence__IpfsTimeoutSeconds` | `8` |
+
+También conviene alinear el issuer:
+
+| Variable | Valor |
+|----------|-------|
+| `Issuer__CredentialRegistryAddress` | misma address que `Verifier__Evidence__RegistryAddress` |
+
+Tras cambiar env: **Pull and redeploy** del stack (o webhook). Sin el cableado de `Verifier__Evidence__*` en `docker-compose.yml` del branch desplegado, Portainer no inyecta esas variables al contenedor `verifier-api`.
+
+Si la BD previa no tiene el patch de evidencia, aplicar `database/patches/2026-07-06-verifier-evidence-checks.sql` antes de activar los flags (columnas `signature_validation_source` / `revocation_source` en `verification_logs`).
+
 ## Verificación tras deploy
 
 1. **GitHub Actions:** job "Deploy to Portainer" en verde.
