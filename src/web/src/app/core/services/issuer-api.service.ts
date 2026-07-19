@@ -44,6 +44,9 @@ export class IssuerApiService {
     return this.http.post<ContentAnchor>(
       `${BFF_API_BASE}/issuer/institutions/${institutionId}/documents/anchor`,
       { document },
+    );
+  }
+
   listCredentialTypes(): Observable<ReadonlyArray<CredentialTypeOption>> {
     return this.http.get<ReadonlyArray<CredentialTypeOption>>(
       `${BFF_API_BASE}/issuer/credential-types`,
