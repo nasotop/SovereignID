@@ -227,6 +227,22 @@ const ERROR_CODE_MESSAGES: Record<string, LocalizedMessage> = {
     en: 'This record has expired.',
     es: 'Este registro expiro.',
   },
+  ipfs_not_configured: {
+    en: 'IPFS is not configured on the issuer server.',
+    es: 'IPFS no configurado en el servidor emisor',
+  },
+  content_anchor_failed: {
+    en: 'Could not anchor the document on IPFS.',
+    es: 'No se pudo anclar el documento en IPFS',
+  },
+  invalid_anchor_document: {
+    en: 'Invalid credential document.',
+    es: 'Documento de credencial inválido',
+  },
+  content_anchor_invalid: {
+    en: 'IPFS content does not match the credential hash.',
+    es: 'El contenido IPFS no coincide con el hash de la credencial',
+  },
 };
 
 const KNOWN_LOCAL_MESSAGES: Record<string, LocalizedMessage> = {

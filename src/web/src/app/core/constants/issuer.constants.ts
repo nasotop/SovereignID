@@ -28,8 +28,6 @@ export function resolveRegistryAddress(
 
 export const CREDENTIAL_TYPE_TITULO = 'TITULO';
 
-export const IPFS_GATEWAY_BASE = 'https://ipfs.io/ipfs';
-
 export const ISSUER_INSTITUTION_STORAGE_KEY = 'sovereignid.issuer.institutionId';
 
 export const EIP712_DOMAIN_NAME = 'SovereignID';

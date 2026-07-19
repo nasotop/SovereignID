@@ -45,6 +45,13 @@ export interface CredentialTypeOption {
   readonly schemaVersion: string;
 }
 
+/** Result of POST .../documents/anchor (JCS + IPFS via issuer-api). */
+export interface ContentAnchor {
+  contentHash: string;
+  ipfsCid: string;
+  ipfsGatewayUrl: string;
+}
+
 export interface LinkStudentTitleRequest {
   credentialId?: string;
   careerId?: string;

@@ -77,6 +77,21 @@ El job de deploy usa `environment: production`. En **Settings → Environments �
 
 Al recibir el webhook, Portainer clona el repo, reconstruye las imágenes (`build:` en compose) y levanta el stack.
 
+## Issuer — anclaje IPFS (Pinata)
+
+El anclaje de VC se hace **solo en issuer-api** (no en el navegador; no hay JWT Pinata en `localStorage`). Variables (ver [`.env.example`](../.env.example)):
+
+| Variable | Descripción |
+|----------|-------------|
+| `Issuer__ContentAnchor__Enabled` | Activa `POST .../documents/anchor` (fail-hard sin Pinata) |
+| `Issuer__ContentAnchor__VerifyEnabled` | Verifica gateway vs `contentHash` en `POST .../title` |
+| `Issuer__ContentAnchor__GatewayBase` | Prefijo del gateway (p. ej. `https://ipfs.io/ipfs` o gateway Pinata) |
+| `Issuer__ContentAnchor__PinataApiKey` | API Key de Pinata (server-side) |
+| `Issuer__ContentAnchor__PinataApiSecret` | API Secret de Pinata |
+| `Issuer__ContentAnchor__IpfsTimeoutSeconds` | Timeout HTTP (default 30) |
+
+Cuenta free tier de Pinata es suficiente para demos. Sin Key/Secret con `Enabled=true` → `503 ipfs_not_configured`.
+
 ## Verificación tras deploy
 
 1. **GitHub Actions:** job "Deploy to Portainer" en verde.

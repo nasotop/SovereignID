@@ -1,5 +1,7 @@
 using Issuer.Application;
+using Issuer.Application.ContentAnchor;
 using Issuer.Infrastructure.Blockchain;
+using Issuer.Infrastructure.ContentAnchor;
 using Issuer.Infrastructure.Persistence.Composition;
 using Issuer.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -24,6 +26,26 @@ public static class DependencyInjection
         services.AddHttpClient<RpcBlockchainAnchorVerifier>();
         services.AddSingleton<NullBlockchainAnchorVerifier>();
         services.AddScoped<IBlockchainAnchorVerifier, ConfigurableBlockchainAnchorVerifier>();
+
+        services.AddHttpClient<PinataContentPinningAdapter>();
+        services.AddSingleton<UnconfiguredContentPinningAdapter>();
+        services.AddSingleton<InMemoryContentPinningAdapter>();
+        services.AddScoped<IContentPinningAdapter>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<IssuerOptions>>().Value.ContentAnchor;
+            if (!string.IsNullOrWhiteSpace(options.PinataApiKey)
+                && !string.IsNullOrWhiteSpace(options.PinataApiSecret))
+            {
+                return sp.GetRequiredService<PinataContentPinningAdapter>();
+            }
+
+            return sp.GetRequiredService<UnconfiguredContentPinningAdapter>();
+        });
+        services.AddScoped<IContentAnchorService, CredentialContentAnchorService>();
+
+        services.AddHttpClient<HttpContentAnchorVerifier>();
+        services.AddSingleton<NullContentAnchorVerifier>();
+        services.AddScoped<IContentAnchorVerifier, ConfigurableContentAnchorVerifier>();
 
         services.AddIssuerJwtAuthentication(configuration);
         services.AddIssuerAuthorizationHandlers();

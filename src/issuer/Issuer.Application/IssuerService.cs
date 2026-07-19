@@ -1,3 +1,4 @@
+using Issuer.Application.ContentAnchor;
 using Microsoft.Extensions.Options;
 
 namespace Issuer.Application;
@@ -6,17 +7,20 @@ public sealed class IssuerService
 {
     private readonly ITitleIssuerRepository _repository;
     private readonly IBlockchainAnchorVerifier _blockchainVerifier;
+    private readonly IContentAnchorVerifier _contentAnchorVerifier;
     private readonly TimeProvider _timeProvider;
     private readonly IssuerOptions _options;
 
     public IssuerService(
         ITitleIssuerRepository repository,
         IBlockchainAnchorVerifier blockchainVerifier,
+        IContentAnchorVerifier contentAnchorVerifier,
         TimeProvider timeProvider,
         IOptions<IssuerOptions> options)
     {
         _repository = repository;
         _blockchainVerifier = blockchainVerifier;
+        _contentAnchorVerifier = contentAnchorVerifier;
         _timeProvider = timeProvider;
         _options = options.Value;
     }
@@ -93,6 +97,21 @@ public sealed class IssuerService
                 "title_link_failed",
                 409,
                 "Title could not be linked. Check that student, wallet, institution DID, career and credential type exist.");
+        }
+
+        var contentCheck = await _contentAnchorVerifier.VerifyAsync(
+            new ContentAnchorCheck(
+                normalized.IpfsCid,
+                normalized.IpfsGatewayUrl,
+                normalized.ContentHash),
+            cancellationToken);
+
+        if (!contentCheck.IsValid)
+        {
+            return Fail<StudentTitleLinked>(
+                contentCheck.ErrorCode ?? "content_anchor_invalid",
+                409,
+                contentCheck.Detail ?? "IPFS content anchor verification failed.");
         }
 
         var anchorCheck = await _blockchainVerifier.VerifyIssueAnchorAsync(

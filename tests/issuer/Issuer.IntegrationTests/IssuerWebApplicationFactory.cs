@@ -18,7 +18,10 @@ public sealed class IssuerWebApplicationFactory : WebApplicationFactory<Program>
                 [$"{PersistenceOptions.SectionName}:Provider"] = PersistenceProviders.InMemory,
                 ["Auth:JwtIssuer"] = JwtTestHelper.TestIssuer,
                 ["Auth:JwtAudience"] = JwtTestHelper.TestAudience,
-                ["Auth:JwtSigningKey"] = JwtTestHelper.TestSigningKey
+                ["Auth:JwtSigningKey"] = JwtTestHelper.TestSigningKey,
+                // Keep legacy title-link tests stable; ContentAnchor suites override these.
+                ["Issuer:ContentAnchor:Enabled"] = "false",
+                ["Issuer:ContentAnchor:VerifyEnabled"] = "false"
             });
         });
     }

@@ -18,11 +18,12 @@ internal static class IssuerOpenApiExtensions
         "expired",
     ];
 
-    private static readonly string[] SecuredHolderPaths =
+    private static readonly string[] SecuredBearerPaths =
     [
         "/issuer/holders/me/credentials",
         "/issuer/holders/me/credentials/{credentialId}",
         "/issuer/credentials/{credentialId}",
+        "/issuer/institutions/{institutionId}/documents/anchor",
     ];
 
     public static IServiceCollection AddIssuerOpenApiDocumentation(this IServiceCollection services)
@@ -58,7 +59,7 @@ internal static class IssuerOpenApiExtensions
                     Description = "JWT SIWE emitido por el servicio auth.",
                 };
 
-                ApplyBearerSecurityToHolderOperations(document);
+                ApplyBearerSecurityToSecuredOperations(document);
 
                 return Task.CompletedTask;
             });
@@ -91,7 +92,7 @@ internal static class IssuerOpenApiExtensions
         return services;
     }
 
-    private static void ApplyBearerSecurityToHolderOperations(OpenApiDocument document)
+    private static void ApplyBearerSecurityToSecuredOperations(OpenApiDocument document)
     {
         if (document.Paths is null)
         {
@@ -103,7 +104,7 @@ internal static class IssuerOpenApiExtensions
             [new OpenApiSecuritySchemeReference(BearerAuthSchemeId, document)] = [],
         };
 
-        foreach (var pathKey in SecuredHolderPaths)
+        foreach (var pathKey in SecuredBearerPaths)
         {
             if (!document.Paths.TryGetValue(pathKey, out var pathItem)
                 || pathItem.Operations is null)

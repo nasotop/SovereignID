@@ -1,4 +1,8 @@
 using Bff.Api.Models;
+using Microsoft.Kiota.Abstractions.Serialization;
+using Microsoft.Kiota.Serialization.Json;
+using System.Text;
+using System.Text.Json;
 using KiotaVerifier = SovereignID.Bff.Clients.Verifier.Models;
 using KiotaIssuer = SovereignID.Bff.Clients.Issuer.Models;
 
@@ -6,6 +10,23 @@ namespace Bff.Api;
 
 internal static class KiotaWireMappers
 {
+    public static UntypedNode? ToUntypedNode(JsonElement element)
+    {
+        var bytes = Encoding.UTF8.GetBytes(element.GetRawText());
+        using var stream = new MemoryStream(bytes);
+        var parseNode = new JsonParseNodeFactory()
+            .GetRootParseNodeAsync("application/json", stream)
+            .GetAwaiter()
+            .GetResult();
+        return parseNode.GetObjectValue(UntypedNode.CreateFromDiscriminatorValue);
+    }
+
+    public static ContentAnchorResponse ToWire(KiotaIssuer.ContentAnchorResponse response) =>
+        new(
+            response.ContentHash ?? string.Empty,
+            response.IpfsCid ?? string.Empty,
+            response.IpfsGatewayUrl ?? string.Empty);
+
     public static VerificationResponse ToWire(KiotaVerifier.VerificationResponse response)
     {
         var checks = response.Checks;

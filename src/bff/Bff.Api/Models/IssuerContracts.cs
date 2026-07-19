@@ -116,3 +116,10 @@ public sealed record StudentTitleLinked(
     string IssuerDid,
     string Status,
     DateTimeOffset IssuedAt);
+
+public sealed record AnchorCredentialDocumentRequest(JsonElement Document);
+
+public sealed record ContentAnchorResponse(
+    string ContentHash,
+    string IpfsCid,
+    string IpfsGatewayUrl);
