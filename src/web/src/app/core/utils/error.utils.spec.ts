@@ -37,6 +37,7 @@ describe('error.utils', () => {
   });
 
   it('maps content-anchor domain error codes to Spanish copy', () => {
+    localStorage.setItem('sovereignid.language', 'es');
     const error = new HttpErrorResponse({
       error: {
         title: 'Service Unavailable',
@@ -55,7 +56,6 @@ describe('error.utils', () => {
       'IPFS no configurado en el servidor emisor',
     );
   });
-
   it('recognizes Problem Details shape', () => {
     expect(isProblemDetails(unsupportedChainFixture)).toBe(true);
     expect(isProblemDetails({ message: 'legacy' })).toBe(false);

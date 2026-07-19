@@ -227,6 +227,22 @@ const ERROR_CODE_MESSAGES: Record<string, LocalizedMessage> = {
     en: 'This record has expired.',
     es: 'Este registro expiro.',
   },
+  ipfs_not_configured: {
+    en: 'IPFS is not configured on the issuer server.',
+    es: 'IPFS no configurado en el servidor emisor',
+  },
+  content_anchor_failed: {
+    en: 'Could not anchor the document on IPFS.',
+    es: 'No se pudo anclar el documento en IPFS',
+  },
+  invalid_anchor_document: {
+    en: 'Invalid credential document.',
+    es: 'Documento de credencial inválido',
+  },
+  content_anchor_invalid: {
+    en: 'IPFS content does not match the credential hash.',
+    es: 'El contenido IPFS no coincide con el hash de la credencial',
+  },
 };
 
 const KNOWN_LOCAL_MESSAGES: Record<string, LocalizedMessage> = {
@@ -377,13 +393,6 @@ function isUnsupportedNetworkMessage(message: string): boolean {
   return message.startsWith('Unsupported network');
 }
 
-/** Domain error codes → Spanish UI copy (issuer content anchor, etc.) */
-const DOMAIN_ERROR_MESSAGES: Readonly<Record<string, string>> = {
-  ipfs_not_configured: 'IPFS no configurado en el servidor emisor',
-  content_anchor_failed: 'No se pudo anclar el documento en IPFS',
-  invalid_anchor_document: 'Documento de credencial inválido',
-};
-
 /** Narrows unknown catch/observable errors to a human-readable message */
 export function toErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
@@ -418,8 +427,6 @@ export function toHttpErrorMessage(error: unknown, fallback: string): string {
     const body = error.error;
 
     if (isProblemDetails(body)) {
-      const mapped = body.error ? DOMAIN_ERROR_MESSAGES[body.error] : undefined;
-      return mapped ?? body.detail;
       return messageForProblemDetails(body, fallback);
     }
 
